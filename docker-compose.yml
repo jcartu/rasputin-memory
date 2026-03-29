@@ -1,0 +1,76 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  falkordb:
+    image: falkordb/falkordb:latest
+    ports:
+      - "127.0.0.1:6380:6379"
+    volumes:
+      - falkordb_data:/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Optional: BGE Reranker
+  # Uncomment if you want the reranker as a container.
+  # Otherwise, run tools/reranker_server.py directly on the host with GPU access.
+  #
+  # reranker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.reranker
+  #   ports:
+  #     - "8006:8006"
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - capabilities: [gpu]
+
+  brain:
+    build: .
+    ports:
+      - "7777:7777"
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - FALKORDB_HOST=falkordb
+      - REDIS_HOST=redis
+      - OLLAMA_URL=http://host.docker.internal:11434
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7777/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  qdrant_storage:
+  falkordb_data:
+  redis_data:

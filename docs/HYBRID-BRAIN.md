@@ -1,0 +1,332 @@
+# Hybrid Brain API
+
+The core service: `hybrid_brain.py` running on port 7777. This is the single entry point for all memory operations.
+
+## Endpoints
+
+### GET /search
+
+Hybrid semantic + graph + BM25 search with neural reranking.
+
+```bash
+curl "http://localhost:7777/search?q=LATAM+campaigns&limit=5"
+curl "http://localhost:7777/search?q=Alice+project+planning&limit=10&source=email"
+```
+
+**Parameters:**
+- `q` (required) — search query string
+- `limit` (optional, default 10) — max results to return
+- `source` (optional) — filter by source type: `email`, `chatgpt`, `perplexity`, `conversation`
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "id": "abc123",
+      "score": 0.87,
+      "rerank_score": 0.94,
+      "payload": {
+        "text": "the user decided to use Acme Corp for LATAM campaigns, regional only",
+        "source": "conversation",
+        "date": "2026-03-15T14:22:00",
+        "importance": 70
+      }
+    }
+  ],
+  "graph_context": "Acme Corp (company): SaaS brand, Rival platform",
+  "total": 1,
+  "query_time_ms": 187
+}
+```
+
+---
+
+### POST /commit
+
+Store a memory with full enrichment pipeline (A-MAC → embed → dedup → store → entity extract → graph write).
+
+```bash
+curl -X POST http://localhost:7777/commit \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "text": "the user decided to go with Acme Corp for LATAM campaigns, regional only",
+    "source": "conversation",
+    "importance": 70,
+    "metadata": {
+      "session": "2026-03-15",
+      "tags": ["business", "latam", "acme-corp"]
+    }
+  }'
+```
+
+**Request body:**
+- `text` (required) — the memory text (max 4000 chars stored, first 800 chars used for A-MAC)
+- `source` (optional, default `"conversation"`) — source type for filtering/display
+- `importance` (optional, default 60) — importance score 0–100, affects retrieval ranking
+- `metadata` (optional) — additional key/value pairs merged into the Qdrant payload
+- `force` (optional, default false) — bypass A-MAC quality gate
+
+**Response (accepted):**
+```json
+{
+  "status": "accepted",
+  "point_id": 1234567890,
+  "entities": ["Acme Corp", "LATAM", "regional"],
+  "graph_written": true,
+  "amac": {
+    "relevance": 8.0,
+    "novelty": 7.0,
+    "specificity": 9.0,
+    "composite": 8.0
+  },
+  "duplicate": false
+}
+```
+
+**Response (rejected by A-MAC):**
+```json
+{
+  "status": "rejected",
+  "reason": "amac_quality_gate",
+  "amac": {
+    "relevance": 2.0,
+    "novelty": 1.0,
+    "specificity": 3.0,
+    "composite": 2.0
+  }
+}
+```
+
+---
+
+### GET /health
+
+Check health of all components.
+
+```bash
+curl http://localhost:7777/health
+```
+
+```json
+{
+  "status": "ok",
+  "qdrant": "ok",
+  "falkordb": "ok",
+  "reranker": "available",
+  "embeddings": "ok",
+  "amac_llm": "ok"
+}
+```
+
+---
+
+### GET /stats
+
+Get counts and metrics.
+
+```bash
+curl http://localhost:7777/stats
+```
+
+```json
+{
+  "qdrant_count": 134821,
+  "falkordb_nodes": 240152,
+  "falkordb_edges": 535891,
+  "amac_stats": {
+    "accepted": 12450,
+    "rejected": 3201,
+    "bypassed": 44,
+    "timeout_accepts": 12,
+    "avg_score": 6.84
+  }
+}
+```
+
+---
+
+### POST /graph
+
+Direct Cypher query against FalkorDB.
+
+```bash
+curl -X POST http://localhost:7777/graph \
+  -H 'Content-Type: application/json' \
+  -d '{"query": "MATCH (p:Entity {type: \"person\"}) RETURN p.name LIMIT 10"}'
+```
+
+---
+
+## Internal Search Pipeline (hybrid_search function)
+
+```python
+def hybrid_search(query, limit=10, graph_hops=2, source_filter=None):
+    # 1. Embed query
+    vector = get_embedding(query)  # → Ollama 11434, nomic-embed-text
+
+    # 2. Qdrant ANN search
+    qdrant_results = qdrant_search(query, limit=20, source_filter=source_filter)
+    # threshold=0.50, with_payload=True
+
+    # 3. FalkorDB graph search
+    entities = extract_entities(query)           # fast NER
+    graph_results = graph_search(query, hops=2)  # Cypher MATCH + traversal
+    
+    # 4. Merge via RRF (Reciprocal Rank Fusion)
+    merged = rrf_merge(qdrant_results, graph_results)
+    
+    # 5. BM25 sparse scoring
+    merged = bm25_hybrid_rerank(query, merged)
+    
+    # 6. Temporal decay (Ebbinghaus power law)
+    merged = apply_temporal_decay(merged, half_life_days=30)
+    
+    # 7. Multi-factor scoring
+    merged = apply_multifactor_scoring(merged)
+    
+    # 8. Neural rerank (bge-reranker-v2-m3)
+    final = neural_rerank(query, merged[:50], top_k=limit)
+    
+    # 9. Enrich with graph context
+    final = enrich_with_graph(final)
+    
+    return final[:limit]
+```
+
+---
+
+## Internal Commit Pipeline (commit_memory function)
+
+```python
+def commit_memory(text, source="conversation", importance=60, metadata=None):
+    # 1. A-MAC quality gate
+    allowed, reason, amac_scores = amac_gate(text, source)
+    if not allowed:
+        return {"status": "rejected", "reason": reason, "amac": amac_scores}
+    
+    # 2. Embed text
+    vector = get_embedding(text)  # → Ollama 11434
+    
+    # 3. Deduplication check
+    existing_id = check_duplicate(vector, text, threshold=0.92)
+    
+    if existing_id:
+        # Update existing point (PATCH payload)
+        update_qdrant_point(existing_id, text, metadata)
+        return {"status": "updated", "point_id": existing_id}
+    
+    # 4. Generate point ID
+    point_id = abs(hash(text + str(datetime.now()))) % (2**63)
+    
+    # 5. Build payload
+    payload = {
+        "text": text[:4000],
+        "source": source,
+        "date": datetime.now().isoformat(),
+        "importance": importance,
+        "auto_committed": True,
+    }
+    if metadata:
+        payload.update(metadata)
+    
+    # 6. Store in Qdrant
+    qdrant_upsert(point_id, vector, payload)
+    
+    # 7. Extract entities (fast NER)
+    entities = extract_entities_fast(text)
+    
+    # 8. Write to FalkorDB graph
+    graph_written = write_to_graph(point_id, text, entities, timestamp=payload["date"])
+    
+    return {
+        "status": "accepted",
+        "point_id": point_id,
+        "entities": entities,
+        "graph_written": graph_written,
+        "amac": amac_scores,
+        "duplicate": False
+    }
+```
+
+---
+
+## Configuration
+
+Key constants at the top of `hybrid_brain.py`:
+
+```python
+QDRANT_URL = "http://localhost:6333"
+COLLECTION = "second_brain"
+EMBED_URL = "http://localhost:11434/api/embed"
+EMBED_MODEL = "nomic-embed-text"
+RERANKER_URL = "http://localhost:8006/rerank"
+FALKORDB_HOST = "localhost"
+FALKORDB_PORT = 6380
+FALKORDB_GRAPH = "brain"
+
+# A-MAC settings
+AMAC_THRESHOLD = 4.0           # Minimum composite score to accept
+AMAC_OLLAMA_MODEL = "qwen3.5:35b"
+AMAC_REJECT_LOG = "/tmp/amac_rejected.log"
+AMAC_TIMEOUT = 30              # Seconds — fail-open on timeout
+
+# Search settings
+DEFAULT_SEARCH_THRESHOLD = 0.50   # Minimum cosine similarity
+DEDUP_THRESHOLD = 0.92            # Cosine similarity = duplicate
+```
+
+---
+
+## Running as HTTP Server
+
+```python
+# Start the server (default port 7777)
+python3 hybrid_brain.py serve
+
+# Custom port
+python3 hybrid_brain.py serve 8888
+
+# Or with PM2
+pm2 start hybrid_brain.py --name rasputin --interpreter python3
+```
+
+The server is a simple Python `http.server.BaseHTTPRequestHandler` subclass — no external web framework required.
+
+---
+
+## CLI Usage (hybrid_brain.py)
+
+Beyond the HTTP server, `hybrid_brain.py` also has CLI modes:
+
+```bash
+# Direct search from command line
+python3 hybrid_brain.py search "LATAM campaigns"
+
+# Commit directly
+python3 hybrid_brain.py commit "Important decision about X"
+
+# Run self-tests
+python3 hybrid_brain.py test
+
+# Show stats
+python3 hybrid_brain.py stats
+```
+
+---
+
+## memory_engine.py vs hybrid_brain.py
+
+There are two Python files — here's the difference:
+
+| | `hybrid_brain.py` | `memory_engine.py` |
+|---|---|---|
+| **Role** | HTTP API server | CLI tool / library |
+| **Runs as** | PM2 daemon on port 7777 | Called directly or imported |
+| **A-MAC** | ✅ Full quality gate | ❌ Simpler commit |
+| **Graph** | ✅ FalkorDB integration | ❌ JSON entity graph only |
+| **BM25** | ✅ via bm25_search.py | ✅ via bm25_search.py |
+| **Reranker** | ✅ bge-reranker-v2-m3 | ✅ bge-reranker-v2-m3 |
+| **Use for** | Production API | CLI recall, briefings, whois |
+
+`memory_engine.py` is the high-level CLI that calls `hybrid_brain.py`'s HTTP API for commits, and does its own multi-angle search for recalls.
