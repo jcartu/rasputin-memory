@@ -83,6 +83,11 @@ if FALKORDB_DISABLED:
 
 qdrant = QdrantClient(url=QDRANT_URL)
 _commit_lock = threading.Lock()
+_redis_pool = redis.ConnectionPool(host=FALKOR_HOST, port=FALKOR_PORT, max_connections=10)
+
+
+def get_redis() -> redis.Redis:
+    return redis.Redis(connection_pool=_redis_pool)
 
 
 # Neural reranker — checked dynamically per-request, not cached at startup
@@ -354,7 +359,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
     if FALKORDB_DISABLED:
         return True, []
     try:
-        r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
+        r = get_redis()
         r.ping()
     except Exception as e:
         logger.error("Graph commit FalkorDB connection error: %s", e)
@@ -903,7 +908,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
     if FALKORDB_DISABLED:
         return []
     try:
-        r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
+        r = get_redis()
         r.ping()
     except Exception as e:
         logger.error("Graph connection error: %s", e)
@@ -1481,7 +1486,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 qdrant_count = -1
 
             try:
-                r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
+                r = get_redis()
                 node_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
                 edge_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
             except:
@@ -1518,7 +1523,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 health["status"] = "degraded"
             # Check FalkorDB
             try:
-                r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
+                r = get_redis()
                 r.ping()
                 health["components"]["falkordb"] = "up"
             except Exception:
@@ -1699,7 +1704,7 @@ def serve(port: int = SERVER_PORT) -> None:
     logger.info("Serving on http://127.0.0.1:%s", port)
     logger.info("Qdrant: %s (%s pts)", COLLECTION, qdrant.get_collection(COLLECTION).points_count)
     try:
-        r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
+        r = get_redis()
         nc = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
         ec = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
         logger.info("FalkorDB: %s nodes, %s edges", nc, ec)
