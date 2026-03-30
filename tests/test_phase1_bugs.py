@@ -89,3 +89,9 @@ def test_memory_engine_commit_uses_api():
     source = (ROOT / "tools" / "memory_engine.py").read_text()
     assert 'requests.post(' in source
     assert 'http://localhost:7777/commit' in source
+
+
+def test_consolidator_uses_commit_api():
+    source = (ROOT / "tools" / "memory_consolidator_v4.py").read_text()
+    assert 'http://localhost:7777/commit' in source
+    assert '/collections/second_brain/points' not in source

@@ -219,46 +219,22 @@ def fact_hash(text):
     return hashlib.md5(text.lower().strip()[:200].encode()).hexdigest()
 
 def commit_to_brain(fact_text, category):
-    """Commit directly to Qdrant via Ollama embedding — bypasses A-MAC quality gate.
-    These facts are already LLM-curated so double-scoring wastes GPU and deadlocks hybrid-brain."""
-    import uuid
+    """Commit consolidated fact through hybrid_brain /commit API."""
     try:
-        # Get embedding from Ollama (nomic-embed-text v1 on port 11434)
-        embed_url = os.environ.get("EMBED_URL", "http://localhost:11434/api/embeddings")
-        emb_r = requests.post(embed_url, json={
-            "model": "nomic-embed-text",
-            "prompt": fact_text
-        }, timeout=10)
-        if emb_r.status_code != 200:
-            return False
-        embedding = emb_r.json().get("embedding")
-        if not embedding:
-            return False
-        
-        # Reject garbage embeddings (near-zero magnitude = Ollama mid-swap)
-        import math
-        mag = math.sqrt(sum(x * x for x in embedding))
-        if mag < 0.1:
-            log(f"  ⚠️ Rejected garbage embedding (magnitude={mag:.4f}): {fact_text[:60]}...")
-            return False
-        
-        # Write directly to Qdrant
-        point_id = str(uuid.uuid4())
-        q_r = requests.put("http://localhost:6333/collections/second_brain/points", json={
-            "points": [{
-                "id": point_id,
-                "vector": embedding,
-                "payload": {
-                    "text": f"[{category}] {fact_text}",
-                    "source": "consolidator-v4",
-                    "category": category,
-                    "timestamp": datetime.datetime.now().isoformat(),
-                    "type": "fact"
-                }
-            }]
-        }, timeout=10)
-        return q_r.status_code == 200
-    except:
+        resp = requests.post(
+            "http://localhost:7777/commit",
+            json={
+                "text": f"[{category}] {fact_text}",
+                "source": "consolidator-v4",
+                "importance": 60,
+                "metadata": {"category": category, "type": "fact"},
+            },
+            timeout=30,
+        )
+        data = resp.json()
+        return bool(data.get("ok"))
+    except Exception as e:
+        log(f"  [Consolidator-v4] Commit error: {e}")
         return False
 
 def process_session(fpath, endpoint, worker_id):
