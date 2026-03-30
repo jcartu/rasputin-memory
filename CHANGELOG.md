@@ -1,44 +1,49 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-03-30
+### Changed
+- Ongoing hardening and operational improvements.
+
+## [3.0.0] - 2026-03-31
+
+This release completes the 78-task work order across seven phases.
 
 ### Added
-- Honcho integration for peer-derived conclusions
-- Graph Brain knowledge graph with FalkorDB
-- Predictive Memory (access tracking, pattern analysis, anticipatory prefetch)
-- OpenClaw-Mem hook (auto-recall on every message)
-- MCP server for external tool integration
-- Memory Consolidator v4 with A-MAC quality gate
-- STORM Wiki generator from memory
-- BrainBox procedural (Hebbian) memory
-- Multi-tenant isolation (per-agent memory partitioning)
-- Cloud provider guide (OpenAI, Cohere, Voyage, OpenRouter alternatives)
-- Comprehensive cron job documentation
-- End-to-end Getting Started guide
-- Quickstart bootstrap script
+- **Phase 4 (Graph Layer Overhaul):** unified graph extraction/query flow and safer graph query behavior.
+- **Phase 5 (New Features):** contradiction detection, feedback-assisted retrieval tuning, and expanded scoring signals.
+- **Phase 6 (Test Suite):** comprehensive unit/integration test coverage plus benchmark dataset support.
+- **Phase 7 (CI/CD & Documentation):** modern CI workflow with lint, typing, coverage, and integration-test path.
 
 ### Changed
-- Renamed kebab-case Python files to snake_case
-- Updated all tools to use environment variables instead of hardcoded values
-- Overhauled README with architecture diagram, comparison tables, budget stacks
+- **Phase 1 (Critical Bug Fixes):** fixed high-impact correctness issues in decay, BM25 flow, extraction, and concurrency handling.
+- **Phase 2 (Pipeline Unification):** consolidated retrieval path to reduce drift between components and improve consistency.
+- **Phase 3 (Architecture Cleanup):** config normalization, dead-code removal, and type-hint improvements for maintainability.
+- **Documentation:** README refreshed for v3.0 architecture, setup, config, API usage, and developer workflow.
 
 ### Fixed
-- Shell interpolation syntax in Python files (${VAR:-default} → os.environ.get())
-- GPU UUID hardcodes removed
+- Race-prone and edge-case behavior in maintenance paths and ingestion filters identified during the audit-driven work order.
 
-## [1.0.0] - 2026-03-28
+### CI / DevEx
+- Python matrix CI standardized around 3.11/3.12.
+- Coverage and type-checking gates added to pull request validation.
 
-### Added
-- Hybrid Brain server (4-stage retrieval: Vector + BM25 + Graph + Reranker)
-- Memory engine (commit/search/recall API)
-- BM25 keyword search
-- Reranker server (BGE cross-encoder)
-- Memory dedup pipeline
-- Fact extractor
-- Embed server
-- Docker Compose infrastructure
-- Initial documentation
+---
+
+## Work-order phase summary
+
+- **Phase 1:** Tasks 1-25 — Critical bug fixes
+- **Phase 2:** Tasks 26-29 — Pipeline unification
+- **Phase 3:** Tasks 30-45 — Architecture cleanup
+- **Phase 4:** Tasks 46-53 — Graph layer overhaul
+- **Phase 5:** Tasks 54-59 — New features
+- **Phase 6:** Tasks 60-68 — Test suite
+- **Phase 7:** Tasks 69-78 — CI/CD and documentation
+
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v3.0.0
