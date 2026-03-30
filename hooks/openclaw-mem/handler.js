@@ -21,6 +21,9 @@ console.log('[openclaw-mem] >>> HANDLER LOADED AT', new Date().toISOString(), '<
 const USE_LLM_EXTRACTION = false; // Disabled: no DEEPSEEK_API_KEY, saves failed spawn attempts
 const SUMMARY_MAX_MESSAGES = 200;
 const MCP_API_PORT = 18790;
+const MEMORY_API_BASE = process.env.MEMORY_API_URL || `http://${process.env.MEMORY_API_HOST || 'localhost:7777'}`;
+const HONCHO_BASE = `${process.env.HONCHO_URL || 'http://localhost:7780'}/v3`;
+const HONCHO_WORKSPACE = process.env.WORKSPACE_NAME || 'memory';
 
 // Track API server process
 let apiServerProcess = null;
@@ -438,7 +441,7 @@ async function handleAgentBootstrap(event) {
     // Qdrant bootstrap search — pre-load relevant memories for this session
     let qdrantSection = '';
     try {
-      const resp = await fetch('${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q=active+tasks+recent+decisions+important+context&limit=25', {
+      const resp = await fetch(`${MEMORY_API_BASE}/search?q=active+tasks+recent+decisions+important+context&limit=25`, {
         signal: AbortSignal.timeout(5000)
       });
       if (resp.ok) {
@@ -750,7 +753,7 @@ async function handleMessage(event) {
 
     (async () => {
       try {
-        const resp = await fetch(`${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
+        const resp = await fetch(`${MEMORY_API_BASE}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
           signal: AbortSignal.timeout(3000)
         });
         if (!resp.ok) {
@@ -1088,8 +1091,6 @@ async function handleUserPromptSubmit(event) {
 
   // HONCHO INGEST: push user message into Honcho for deriver processing — fire and forget
   try {
-    const HONCHO_BASE = 'http://${HONCHO_URL:-localhost:7780}/v3';
-    const HONCHO_WORKSPACE = os.environ.get('WORKSPACE_NAME', 'memory');
     const HONCHO_PEER = 'user';
     // Use a stable session name derived from the OpenClaw session key
     const honchoSessionName = `openclaw-${sessionKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)}`;
@@ -1161,7 +1162,7 @@ async function handleUserPromptSubmit(event) {
     if (keywords.length > 5) {
       (async () => {
         try {
-          const resp = await fetch(`${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
+          const resp = await fetch(`${MEMORY_API_BASE}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
             signal: AbortSignal.timeout(3000)
           });
           if (!resp.ok) return;
@@ -1195,8 +1196,6 @@ async function handleUserPromptSubmit(event) {
   // Queries both /context (representation + peer card, fast ~0.6s) and /chat (dialectic, ~1.5s)
   // Writes combined result to memory/honcho-context.md
   try {
-    const HONCHO_BASE = 'http://${HONCHO_URL:-localhost:7780}/v3';
-    const HONCHO_WORKSPACE = os.environ.get('WORKSPACE_NAME', 'memory');
     const HONCHO_PEER = 'user';
 
     // Extract meaningful search terms from the prompt
@@ -1317,8 +1316,6 @@ async function handleAgentStop(event) {
 
   // HONCHO INGEST: push agent response into Honcho — fire and forget
   try {
-    const HONCHO_BASE = 'http://${HONCHO_URL:-localhost:7780}/v3';
-    const HONCHO_WORKSPACE = os.environ.get('WORKSPACE_NAME', 'memory');
     const honchoSessionName = `openclaw-${sessionKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)}`;
 
     // Extract agent response text from the event

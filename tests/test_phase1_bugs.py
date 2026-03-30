@@ -95,3 +95,11 @@ def test_consolidator_uses_commit_api():
     source = (ROOT / "tools" / "memory_consolidator_v4.py").read_text()
     assert 'http://localhost:7777/commit' in source
     assert '/collections/second_brain/points' not in source
+
+
+def test_handler_js_uses_process_env_urls():
+    source = (ROOT / "hooks" / "openclaw-mem" / "handler.js").read_text()
+    assert 'process.env.MEMORY_API_URL' in source
+    assert 'process.env.HONCHO_URL' in source
+    assert '${MEMORY_API_URL:-' not in source
+    assert 'os.environ.get' not in source
