@@ -15,7 +15,6 @@ import json
 import os
 import sys
 import hashlib
-import uuid
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -388,33 +387,6 @@ def store_fact(fact, state):
     with open(FACTS_FILE, 'a') as f:
         f.write(json.dumps(entry) + '\n')
 
-    # Store in Qdrant
-    try:
-        emb_resp = requests.post(EMBED_URL, json={
-            "model": "nomic-embed-text",
-            "prompt": f"Personal fact about the user: {fact_text}"
-        }, timeout=30)
-
-        if emb_resp.status_code == 200:
-            embedding = emb_resp.json()["embedding"]
-            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"fact-{fact_hash}"))
-
-            requests.put(f"{QDRANT_URL}/collections/second_brain/points", json={
-                "points": [{
-                    "id": point_id,
-                    "vector": embedding,
-                    "payload": {
-                        "text": f"Personal fact [{category}]: {fact_text}",
-                        "type": "personal_fact",
-                        "category": category,
-                        "source": "fact_extractor",
-                        "timestamp": datetime.now().isoformat()
-                    }
-                }]
-            }, timeout=10)
-    except Exception as e:
-        print(f"  Qdrant store error: {e}")
-
     # Also commit to Second Brain API for A-MAC scoring + graph extraction
     try:
         brain_resp = requests.post("http://localhost:7777/commit", json={
@@ -426,7 +398,7 @@ def store_fact(fact, state):
             if brain_data.get('ok'):
                 print(f"    → Second Brain: accepted (score={brain_data.get('amac',{}).get('scores',{}).get('composite','?')})")
     except Exception:
-        pass  # Non-critical, Qdrant direct store is primary
+        pass
 
     state.setdefault('fact_hashes', []).append(fact_hash)
     return True

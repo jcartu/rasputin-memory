@@ -38,3 +38,9 @@ def test_bm25_tokenizer_cyrillic():
     bm25_mod = importlib.import_module("bm25_search")
     tokens = bm25_mod.BM25Scorer().tokenize("Москва river")
     assert "москва" in tokens
+
+
+def test_fact_extractor_single_commit():
+    source = (ROOT / "tools" / "fact_extractor.py").read_text()
+    assert '/collections/second_brain/points' not in source
+    assert 'http://localhost:7777/commit' in source
