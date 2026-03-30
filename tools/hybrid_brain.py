@@ -292,6 +292,7 @@ AMAC_REJECT_LOG = os.environ.get("AMAC_REJECT_LOG", "/tmp/amac_rejected.log")
 AMAC_TIMEOUT = 30  # seconds — 35B may be busy with swarm agents, give it time
 
 # In-memory metrics (reset on restart)
+_amac_metrics_lock = threading.Lock()
 _amac_metrics = {
     "accepted": 0,
     "rejected": 0,
@@ -300,6 +301,10 @@ _amac_metrics = {
     "score_count": 0,
     "timeout_accepts": 0,
 }
+
+def _inc_metric(key, amount=1):
+    with _amac_metrics_lock:
+        _amac_metrics[key] += amount
 
 AMAC_PROMPT_TEMPLATE = """You are a memory quality filter for an AI agent. Score the following memory on 3 dimensions.
 Return ONLY three integers separated by commas. No text, no explanation, no reasoning. Just three numbers like: 7,4,8
@@ -393,7 +398,7 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
     global _amac_metrics
 
     if force:
-        _amac_metrics["bypassed"] += 1
+        _inc_metric("bypassed")
         return True, "bypassed", {}
 
     # Skip A-MAC for health check / diagnostic messages - they're system tests, not actual memories
@@ -405,8 +410,8 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
 
     if scores is None:
         # Fail-open: Ollama unavailable/timeout
-        _amac_metrics["accepted"] += 1
-        _amac_metrics["timeout_accepts"] += 1
+        _inc_metric("accepted")
+        _inc_metric("timeout_accepts")
         return True, "timeout_failopen", {}
 
     relevance, novelty, specificity, composite = scores
@@ -418,14 +423,14 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
     }
 
     # Update metrics
-    _amac_metrics["score_sum"] += composite
-    _amac_metrics["score_count"] += 1
+    _inc_metric("score_sum", composite)
+    _inc_metric("score_count")
 
     if composite >= AMAC_THRESHOLD:
-        _amac_metrics["accepted"] += 1
+        _inc_metric("accepted")
         return True, "accepted", score_dict
     else:
-        _amac_metrics["rejected"] += 1
+        _inc_metric("rejected")
         # Log rejection
         try:
             import datetime

@@ -56,3 +56,10 @@ def test_concurrent_commits_no_dupes():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert '_commit_lock = threading.Lock()' in source
     assert 'with _commit_lock:' in source
+
+
+def test_amac_metrics_thread_safe():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert '_amac_metrics_lock = threading.Lock()' in source
+    assert 'def _inc_metric(key, amount=1):' in source
+    assert '_amac_metrics["accepted"] += 1' not in source
