@@ -1,4 +1,10 @@
-from bm25_search import BM25Scorer, hybrid_rerank, reciprocal_rank_fusion
+import importlib
+
+
+bm25_search = importlib.import_module("bm25_search")
+BM25Scorer = bm25_search.BM25Scorer
+hybrid_rerank = bm25_search.hybrid_rerank
+reciprocal_rank_fusion = bm25_search.reciprocal_rank_fusion
 
 
 def test_tokenize_basic():
