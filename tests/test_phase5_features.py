@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 contradiction = importlib.import_module("tools.pipeline.contradiction")
 importance_recalculator = importlib.import_module("tools.importance_recalculator")
 hybrid_brain = importlib.import_module("tools.hybrid_brain")
+embedding_health = importlib.import_module("tools.embedding_health")
 
 
 class _FakePoint:
@@ -150,7 +151,9 @@ def test_feedback_positive_boosts(monkeypatch):
     result = hybrid_brain.apply_relevance_feedback(point_id="p1", helpful=True)
     assert result["ok"] is True
     assert result["importance_after"] == 65
-    assert "last_feedback" in state["update"]["payload"]
+    updated_payload = state["update"]["payload"]
+    assert isinstance(updated_payload, dict)
+    assert "last_feedback" in updated_payload
 
 
 def test_feedback_negative_decays(monkeypatch):
@@ -167,7 +170,9 @@ def test_feedback_negative_decays(monkeypatch):
     result = hybrid_brain.apply_relevance_feedback(point_id="p2", helpful=False)
     assert result["ok"] is True
     assert result["importance_after"] == 50
-    assert "last_feedback" in state["update"]["payload"]
+    updated_payload = state["update"]["payload"]
+    assert isinstance(updated_payload, dict)
+    assert "last_feedback" in updated_payload
 
 
 def test_graph_enrichment_returns_data(monkeypatch):
@@ -219,3 +224,36 @@ def test_proactive_surfaces_related_memories(monkeypatch):
     assert len(rows) == 1
     assert "Europe launch" in rows[0]["text"]
     assert rows[0]["reason"] == "Related to: BrandA"
+
+
+def test_embedding_health_no_drift():
+    class _Point:
+        def __init__(self, point_id, text, vector):
+            self.id = point_id
+            self.payload = {"text": text}
+            self.vector = vector
+
+    class _Qdrant:
+        def scroll(self, **_kwargs):
+            return [
+                _Point(1, "alpha", [1.0, 0.0, 0.0]),
+                _Point(2, "beta", [0.0, 1.0, 0.0]),
+            ], None
+
+    expected = {
+        "alpha": [1.0, 0.0, 0.0],
+        "beta": [0.0, 1.0, 0.0],
+    }
+    embed_fn = lambda text: expected[text]
+
+    out = embedding_health.check_embedding_consistency(
+        qdrant_client=_Qdrant(),
+        collection="second_brain",
+        embed_fn=embed_fn,
+        sample_size=2,
+        threshold=0.95,
+        seed=42,
+    )
+    assert out["total"] == 2
+    assert out["drifted"] == 0
+    assert out["drift_rate"] == 0.0

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import subprocess
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -10,9 +11,10 @@ from typing import Any
 from qdrant_client import QdrantClient
 
 try:
-    from config import load_config
+    _config_module = importlib.import_module("config")
 except ModuleNotFoundError:
-    from tools.config import load_config
+    _config_module = importlib.import_module("tools.config")
+load_config = _config_module.load_config
 
 
 def _parse_iso(value: str | None) -> datetime | None:
