@@ -18,6 +18,7 @@ import os
 import re
 import sys
 import time
+import threading
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -46,6 +47,7 @@ if FALKORDB_DISABLED:
     print("[HybridBrain] ⚠ FalkorDB DISABLED via DISABLE_FALKORDB env var", flush=True)
 
 qdrant = QdrantClient(url=QDRANT_URL)
+_commit_lock = threading.Lock()
 
 # Neural reranker — checked dynamically per-request, not cached at startup
 # This avoids the race condition where reranker is still loading when hybrid_brain starts
@@ -442,91 +444,92 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
 def commit_memory(text, source="conversation", importance=60, metadata=None):
     """Commit a memory to Qdrant + FalkorDB graph with inline deduplication.
     If a near-duplicate exists (cosine > 0.92 + text overlap > 0.5), updates instead of creating."""
-    try:
-        vector = get_embedding(text[:4000], prefix="search_document: ")
-    except Exception as e:
-        print(f"[commit_memory] Embedding failed, aborting commit: {e}", flush=True)
-        return {"ok": False, "error": f"Embedding failed: {e}"}
-
-    # Reject garbage embeddings (e.g. Ollama mid-model-swap returns near-zero vectors)
-    import math
-    magnitude = math.sqrt(sum(x * x for x in vector))
-    if magnitude < 0.1:
-        print(f"[commit_memory] REJECTED: embedding magnitude {magnitude:.4f} too low (garbage vector)", flush=True)
-        return {"ok": False, "error": f"Embedding magnitude too low: {magnitude:.4f}"}
-
-    import hashlib
-    from datetime import datetime
-    
-    # Inline dedup check
-    is_dupe, existing_id, similarity = check_duplicate(vector, text)
-    dedup_action = "created"
-    
-    if is_dupe and existing_id is not None:
-        # Update existing point instead of creating new one
-        point_id = existing_id
-        dedup_action = "updated"
-        print(f"[Dedup] Near-duplicate found (sim={similarity}), updating point {point_id}", flush=True)
-    else:
-        point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
-    
-    timestamp = datetime.now().isoformat()
-
-    payload = {
-        "text": text[:4000],
-        "source": source,
-        "date": timestamp,
-        "importance": importance,
-        "auto_committed": True,
-        "retrieval_count": 0,
-    }
-    if metadata and isinstance(metadata, dict):
-        payload.update(metadata)
-
-    try:
-        from qdrant_client.models import PointStruct
-        qdrant.upsert(
-            collection_name=COLLECTION,
-            points=[PointStruct(id=point_id, vector=vector, payload=payload)]
-        )
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-    # FalkorDB graph write (non-blocking — don't fail commit if graph is down)
-    graph_ok = False
-    graph_entities = 0
-    connected_to = []
-    try:
-        entities = extract_entities_fast(text)
-        graph_entities = len(entities)
-        if entities:
-            graph_result = write_to_graph(point_id, text, entities, timestamp)
-            if isinstance(graph_result, tuple):
-                graph_ok, connected_to = graph_result
-            else:
-                # Fallback for old return format
-                graph_ok = graph_result
-        else:
-            graph_ok = True  # No entities to write is not a failure
-    except Exception as e:
-        print(f"[Graph-Commit] Error (non-fatal): {e}", flush=True)
-
-    # Update Qdrant payload with connected_to field if we have connected entities
-    if connected_to:
+    with _commit_lock:
         try:
-            qdrant.set_payload(
+            vector = get_embedding(text[:4000], prefix="search_document: ")
+        except Exception as e:
+            print(f"[commit_memory] Embedding failed, aborting commit: {e}", flush=True)
+            return {"ok": False, "error": f"Embedding failed: {e}"}
+
+        # Reject garbage embeddings (e.g. Ollama mid-model-swap returns near-zero vectors)
+        import math
+        magnitude = math.sqrt(sum(x * x for x in vector))
+        if magnitude < 0.1:
+            print(f"[commit_memory] REJECTED: embedding magnitude {magnitude:.4f} too low (garbage vector)", flush=True)
+            return {"ok": False, "error": f"Embedding magnitude too low: {magnitude:.4f}"}
+
+        import hashlib
+        from datetime import datetime
+        
+        # Inline dedup check
+        is_dupe, existing_id, similarity = check_duplicate(vector, text)
+        dedup_action = "created"
+        
+        if is_dupe and existing_id is not None:
+            # Update existing point instead of creating new one
+            point_id = existing_id
+            dedup_action = "updated"
+            print(f"[Dedup] Near-duplicate found (sim={similarity}), updating point {point_id}", flush=True)
+        else:
+            point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
+        
+        timestamp = datetime.now().isoformat()
+
+        payload = {
+            "text": text[:4000],
+            "source": source,
+            "date": timestamp,
+            "importance": importance,
+            "auto_committed": True,
+            "retrieval_count": 0,
+        }
+        if metadata and isinstance(metadata, dict):
+            payload.update(metadata)
+
+        try:
+            from qdrant_client.models import PointStruct
+            qdrant.upsert(
                 collection_name=COLLECTION,
-                points=[point_id],
-                payload={"connected_to": connected_to}
+                points=[PointStruct(id=point_id, vector=vector, payload=payload)]
             )
         except Exception as e:
-            print(f"[Graph-Commit] Failed to update connected_to in Qdrant: {e}", flush=True)
+            return {"ok": False, "error": str(e)}
 
-    return {
-        "ok": True, "id": point_id, "source": source,
-        "dedup": {"action": dedup_action, "similarity": similarity if is_dupe else None},
-        "graph": {"written": graph_ok, "entities": graph_entities, "connected_to": connected_to}
-    }
+        # FalkorDB graph write (non-blocking — don't fail commit if graph is down)
+        graph_ok = False
+        graph_entities = 0
+        connected_to = []
+        try:
+            entities = extract_entities_fast(text)
+            graph_entities = len(entities)
+            if entities:
+                graph_result = write_to_graph(point_id, text, entities, timestamp)
+                if isinstance(graph_result, tuple):
+                    graph_ok, connected_to = graph_result
+                else:
+                    # Fallback for old return format
+                    graph_ok = graph_result
+            else:
+                graph_ok = True  # No entities to write is not a failure
+        except Exception as e:
+            print(f"[Graph-Commit] Error (non-fatal): {e}", flush=True)
+
+        # Update Qdrant payload with connected_to field if we have connected entities
+        if connected_to:
+            try:
+                qdrant.set_payload(
+                    collection_name=COLLECTION,
+                    points=[point_id],
+                    payload={"connected_to": connected_to}
+                )
+            except Exception as e:
+                print(f"[Graph-Commit] Failed to update connected_to in Qdrant: {e}", flush=True)
+
+        return {
+            "ok": True, "id": point_id, "source": source,
+            "dedup": {"action": dedup_action, "similarity": similarity if is_dupe else None},
+            "graph": {"written": graph_ok, "entities": graph_entities, "connected_to": connected_to}
+        }
 
 def _parse_date(date_str):
     """Parse various date formats, return datetime or None."""

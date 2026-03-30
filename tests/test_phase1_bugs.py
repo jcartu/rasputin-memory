@@ -50,3 +50,9 @@ def test_embed_url_consistency():
     source = (ROOT / "tools" / "fact_extractor.py").read_text()
     assert 'http://localhost:11434/api/embed' in source
     assert '/api/embeddings' not in source
+
+
+def test_concurrent_commits_no_dupes():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert '_commit_lock = threading.Lock()' in source
+    assert 'with _commit_lock:' in source
