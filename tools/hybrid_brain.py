@@ -583,7 +583,9 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
             "retrieval_count": 0,
         }
         if metadata and isinstance(metadata, dict):
-            payload.update(metadata)
+            protected_fields = {"text", "source", "date", "importance", "auto_committed", "retrieval_count"}
+            safe_metadata = {k: v for k, v in metadata.items() if k not in protected_fields}
+            payload.update(safe_metadata)
 
         try:
             from qdrant_client.models import PointStruct

@@ -140,3 +140,9 @@ def test_task19_request_body_size_limit():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "MAX_BODY_SIZE = 1 * 1024 * 1024" in source
     assert "Request body too large (max 1MB)" in source
+
+
+def test_task20_commit_metadata_protects_core_fields():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert 'protected_fields = {"text", "source", "date", "importance", "auto_committed", "retrieval_count"}' in source
+    assert "payload.update(safe_metadata)" in source
