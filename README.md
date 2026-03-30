@@ -323,15 +323,75 @@ No. CPU inference works for embeddings (nomic-embed-text via Ollama). A GPU spee
 
 No. The memory system is standalone — it works with any AI agent, framework, or direct HTTP calls. The OpenClaw hook is an optional integration for automatic memory recall.
 
+## Benchmarks (v0.3.0)
+
+Evaluated on [BEIR](https://github.com/beir-cellar/beir) benchmark datasets using the full local infrastructure
+(nomic-embed-text-v2-moe embeddings, Qdrant, BGE reranker). All numbers are on 50-query test splits.
+
+### BEIR Results
+
+| Dataset | Pipeline | NDCG@10 | Recall@10 | Recall@100 |
+|---------|----------|---------|-----------|------------|
+| SciFact | Vector Only | 0.8230 | 0.8860 | 0.9800 |
+| SciFact | **Hybrid Full** | **0.8336** | 0.8660 | 0.9800 |
+| NFCorpus | Vector Only | 0.3710 | 0.1779 | 0.3136 |
+| NFCorpus | **Hybrid Full** | 0.3323 | 0.1581 | 0.3136 |
+
+Hybrid Full = Vector + BM25 (RRF) + Neural Reranker.
+
+### Ablation Study (SciFact)
+
+| Configuration | NDCG@10 | Recall@10 | MRR@10 | ΔNDCG |
+|---------------|---------|-----------|--------|-------|
+| 1. Vector Only | 0.8230 | 0.8860 | 0.8061 | — |
+| 2. BM25 Only | 0.7866 | 0.8880 | 0.7744 | -0.036 |
+| 3. Vector + BM25 (RRF) | 0.8111 | **0.9010** | 0.7912 | -0.012 |
+| 4. Vector + BM25 + Reranker | **0.8322** | 0.8860 | **0.8287** | +0.009 |
+
+The MoE embedding model (nomic-embed-text-v2-moe) is a strong baseline. RRF fusion boosts Recall@10 (+1.5%).
+The neural reranker recovers NDCG (+0.9%) at the cost of some recall. Full results: [`benchmarks/ABLATION.md`](benchmarks/ABLATION.md).
+
+Reproduce:
+```bash
+python3 benchmarks/run_beir.py --datasets scifact nfcorpus
+python3 benchmarks/run_ablation.py --datasets scifact nfcorpus
+```
+
+## Library API (v0.3.0)
+
+The core pipeline is now available as an importable Python package:
+
+```python
+from hybrid_brain import HybridSearch, RRFFusion, TemporalDecay, QualityGate
+
+# Hybrid search over your Qdrant collection
+search = HybridSearch(collection="second_brain")
+results = search.query("Josh meeting about Q3 targets", limit=5)
+for r in results:
+    print(f"{r['score']:.3f}  {r['text'][:80]}")
+
+# RRF fusion standalone
+fuser = RRFFusion(k=60)
+merged = fuser.fuse([vector_ranked_ids, bm25_ranked_ids])
+
+# Temporal decay
+decay = TemporalDecay()
+results = decay.apply(results)
+
+# AMAC quality gate (LLM-scored admission control)
+gate = QualityGate(threshold=4.0)
+if gate.evaluate(text).admitted:
+    commit_memory(text)
+```
+
+The server entry point (`tools/hybrid_brain.py`) is unchanged — `python hybrid_brain.py` still starts the full server.
+The library lives in `hybrid_brain/` and is independently importable without starting any server.
+
 ## Roadmap
 
-This system is a personal deployment, not a maintained library. That said, these improvements would meaningfully validate and generalize it:
-
-- **BEIR benchmarks** — Run formal retrieval quality evaluation on BEIR benchmark datasets to validate the hybrid pipeline claims objectively
-- **Ablation studies** — Quantify the contribution of each retrieval stage (vector / BM25 / graph / reranker) to final recall quality
-- **Library-ification** — Package the core pipeline as an installable Python library with a stable API, removing the assumption of specific local service ports
 - **Config file support** — Replace hardcoded env vars with a single `config.yaml` per-deployment
 - **Async ingestion pipeline** — Non-blocking write path so query latency is not affected during batch imports
+- **More BEIR datasets** — FiQA, TREC-COVID, HotpotQA evaluation
 
 PRs toward any of these are welcome.
 
