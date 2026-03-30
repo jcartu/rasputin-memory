@@ -17,7 +17,7 @@ WORKSPACE_DIR = os.path.expanduser("~/.openclaw/workspace")
 
 prompt = sys.argv[1] if len(sys.argv) > 1 else "How is the business business performing?"
 
-print(f"=== Honcho Integration Test ===")
+print("=== Honcho Integration Test ===")
 print(f"Prompt: {prompt}\n")
 
 # Extract search terms
@@ -79,4 +79,4 @@ os.makedirs(os.path.dirname(out_path), exist_ok=True)
 with open(out_path, "w") as f:
     f.write(output)
 print(f"--- Written {len(output)} chars to {out_path} ---")
-print(f"\n=== Test Complete ===")
+print("\n=== Test Complete ===")

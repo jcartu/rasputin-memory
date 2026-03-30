@@ -6,15 +6,14 @@ Exposes: search, commit, proactive surfacing, graph queries, stats.
 Run: python3 tools/memory-mcp-server.py          (stdio for MCP clients)
 Run: python3 tools/memory-mcp-server.py --http    (HTTP/SSE on port 8101)
 """
-import json
-import subprocess
-import sys
 import argparse
-from typing import Any
+import json
+import os
+import subprocess
 
 from mcp.server.fastmcp import FastMCP
 
-BRAIN_URL = "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}"
+BRAIN_URL = "http://localhost:7777"
 FALKORDB_HOST = "localhost"
 FALKORDB_PORT = 6380
 

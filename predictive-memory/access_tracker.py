@@ -6,8 +6,6 @@ Append-only JSONL, lightweight, zero dependencies beyond stdlib.
 
 import json
 import os
-import re
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -17,10 +15,8 @@ ACCESS_LOG = DATA_DIR / "access_log.jsonl"
 # Common topic extraction patterns
 ENTITY_KEYWORDS = {
     "family": ["family", "spouse", "partner", "household", "relatives"],
-    "health": ["health", "medical", "doctor", "appointment", "wellness"],
-    "business": ["business", "revenue", "deposits", "metrics", "growth", "performance", "analytics"],
-    "health": ["testosterone", "hgh", "peptides", "mounjaro", "cgm", "whoop", "supplements", "bpc-157", "tb-500"],
-    "business": ["revenue", "deposits", "growth", "licensing", "platform", "operations"],
+    "health": ["health", "medical", "doctor", "appointment", "wellness", "testosterone", "hgh", "peptides", "mounjaro", "cgm", "whoop", "supplements", "bpc-157", "tb-500"],
+    "business": ["business", "revenue", "deposits", "metrics", "growth", "performance", "analytics", "licensing", "platform", "operations"],
     "crypto": ["bitcoin", "btc", "usdt", "crypto"],
     "tech": ["ollama", "qdrant", "${WORKSPACE_NAME:-memory}", "server", "gpu", "vllm", "proxy"],
     "travel": ["passport", "travel", "visa", "citizenship"],

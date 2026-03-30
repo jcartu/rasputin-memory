@@ -11,12 +11,11 @@ Endpoints:
 Connects to FalkorDB on localhost:6380, graph "brain".
 """
 
-import json
 import time
 from contextlib import asynccontextmanager
 
 import redis
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 import uvicorn
 

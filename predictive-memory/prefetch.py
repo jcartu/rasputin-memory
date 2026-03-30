@@ -12,8 +12,6 @@ Usage:
 import json
 import os
 import sys
-import tempfile
-import time
 import requests
 from datetime import datetime
 from pathlib import Path
@@ -24,11 +22,9 @@ QDRANT_SEARCH = "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/se
 
 # Queries per topic for pre-fetching
 TOPIC_QUERIES = {
-    "business": ["business revenue this month", "deposit numbers", "platform A performance", "platform B stats"],
-    "business": ["monthly revenue growth", "curacao license status", "platform performance"],
-    "health": ["testosterone protocol", "supplement stack", "peptide schedule", "mounjaro dosage"],
+    "business": ["business revenue this month", "deposit numbers", "platform A performance", "platform B stats", "monthly revenue growth", "curacao license status", "platform performance"],
+    "health": ["testosterone protocol", "supplement stack", "peptide schedule", "mounjaro dosage", "health updates", "medical status", "treatment progress"],
     "family": ["family planning progress", "wellness supplements", "document status"],
-    "health": ["health updates", "medical status", "treatment progress"],
     "tech": ["server status", "gpu utilization", "ollama performance", "qdrant stats"],
     "crypto": ["bitcoin price", "usdt operations", "crypto holdings"],
     "travel": ["passport application", "russian travel restrictions"],
@@ -182,7 +178,7 @@ if __name__ == "__main__":
             try:
                 ct = datetime.fromisoformat(entry.get("cached_at", ""))
                 age = f"{(datetime.now() - ct).total_seconds() / 3600:.1f}h"
-            except:
+            except Exception:
                 pass
             print(f"  {topic}: {len(entry.get('results', []))} results, age={age}, ttl={entry.get('ttl_hours', '?')}h")
     else:

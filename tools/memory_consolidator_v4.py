@@ -6,9 +6,16 @@ Large context windows per session (30K chars), fresh dedup (no old hashes).
 Resume-safe.
 """
 
-import json, os, sys, time, hashlib, glob, datetime, requests, re, threading
+import json
+import os
+import time
+import hashlib
+import glob
+import datetime
+import requests
+import re
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
 
 # === CONFIG ===
 SESSIONS_DIR = os.environ.get("SESSIONS_DIR", os.path.expanduser("~/.openclaw/agents/main/sessions"))
@@ -117,7 +124,7 @@ def read_session(path, max_chars=MAX_CHARS_PER_SESSION):
                     continue
                 try:
                     entry = json.loads(line)
-                except:
+                except Exception:
                     continue
                 if entry.get("type") != "message":
                     continue
@@ -148,7 +155,7 @@ def read_session(path, max_chars=MAX_CHARS_PER_SESSION):
                     break
                 messages.append(entry_text)
                 total_chars += len(entry_text)
-    except Exception as e:
+    except Exception:
         return None
     
     if len(messages) < 3:
@@ -204,7 +211,7 @@ def call_llm(endpoint, session_text, worker_id):
                 f = json.loads(line)
                 if f.get("category") not in (None, "SKIP") and f.get("fact") and len(f["fact"]) > 15:
                     facts.append(f)
-            except:
+            except Exception:
                 continue
         return facts
     except requests.exceptions.Timeout:
@@ -258,7 +265,7 @@ def commit_to_brain(fact_text, category):
             }]
         }, timeout=10)
         return q_r.status_code == 200
-    except:
+    except Exception:
         return False
 
 def process_session(fpath, endpoint, worker_id):
@@ -311,7 +318,7 @@ def process_session(fpath, endpoint, worker_id):
                         log(f"  📊 Committed {stats['committed']} facts so far...")
                         time.sleep(5)  # batch pause every 100 commits
             time.sleep(0.5)  # rate limit: max 2 commits/sec
-        except:
+        except Exception:
             pass
         
         new_count += 1
@@ -354,7 +361,7 @@ def main():
                 try:
                     d = json.loads(line)
                     seen_hashes.add(d.get("hash", fact_hash(d.get("fact", ""))))
-                except:
+                except Exception:
                     pass
     log(f"  Existing v4 hashes: {len(seen_hashes)}")
     
@@ -412,7 +419,6 @@ def main():
                     log(f"  📊 {len(processed_set)}/{len(all_files)} ({pct}%) | Facts: {stats['facts']} | Brain: {stats['committed']} | ETA: {eta_min:.0f}min")
     
     log(f"\n🚀 Launching {MAX_WORKERS} workers...")
-    t0 = time.time()
     
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = [executor.submit(worker, i) for i in range(MAX_WORKERS)]
@@ -434,7 +440,7 @@ def main():
                     r = json.loads(line)
                     c = r.get("category", "?")
                     cats[c] = cats.get(c, 0) + 1
-                except:
+                except Exception:
                     pass
     
     report = f"""# 🧠 Memory Consolidation Report — v4 MAX PARALLEL
@@ -464,7 +470,7 @@ def main():
             try:
                 r = json.loads(line)
                 report += f"- `[{r['category']}]` {r['fact']}\n"
-            except:
+            except Exception:
                 pass
     
     with open(SUMMARY_FILE, "w") as f:

@@ -37,7 +37,6 @@ def load_heatmap() -> dict:
     return {
         "topics": {
             "business": {"heat": 70, "last_access": datetime.now().isoformat(), "access_count": 0},
-            "business": {"heat": 65, "last_access": datetime.now().isoformat(), "access_count": 0},
             "health": {"heat": 60, "last_access": datetime.now().isoformat(), "access_count": 0},
             "family": {"heat": 55, "last_access": datetime.now().isoformat(), "access_count": 0},
             "tech": {"heat": 50, "last_access": datetime.now().isoformat(), "access_count": 0},

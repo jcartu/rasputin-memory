@@ -5,11 +5,9 @@ Tests all components of the memory pipeline end-to-end.
 Returns a status report or raises alarms.
 """
 
-import json
 import os
 import sys
 import time
-import hashlib
 import requests
 
 CHECKS = []
@@ -75,7 +73,7 @@ def check_reranker():
     return f"2 passages scored ({scores[0]:.3f}, {scores[1]:.3f})"
 
 def check_hybrid_brain():
-    r = requests.get("${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/health", timeout=5)
+    r = requests.get("http://localhost:7777/health", timeout=5)
     data = r.json()
     status = data.get("status", "unknown")
     components = data.get("components", {})
@@ -95,7 +93,6 @@ def check_openclaw_mem():
 def check_round_trip():
     """The critical test: commit → search → find. Proves the pipeline works end-to-end.
     Uses semantically rich text so vector search can find it, then verifies by point_id."""
-    import hashlib
     ts = int(time.time())
     # Semantically meaningful text so vector search works
     test_text = (f"PIPELINE_TEST_{ts}: The RASPUTIN memory system is running a scheduled "
@@ -103,7 +100,7 @@ def check_round_trip():
                  f"being verified. Timestamp: {ts}.")
 
     # Commit
-    r = requests.post("${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/commit", json={
+    r = requests.post("http://localhost:7777/commit", json={
         "text": test_text,
         "source": "health_check",
         "importance": 1
@@ -119,7 +116,7 @@ def check_round_trip():
 
     # Search with semantic terms from the committed text
     search_query = "RASPUTIN memory system self-diagnostic embedding pipeline verification"
-    r = requests.get(f"${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q={search_query}&limit=5", timeout=15)
+    r = requests.get(f"http://localhost:7777/search?q={search_query}&limit=5", timeout=15)
     r.raise_for_status()
     data = r.json()
 
@@ -136,7 +133,7 @@ def check_round_trip():
     try:
         requests.post("http://localhost:6333/collections/second_brain/points/delete",
                       json={"points": [point_id]}, timeout=5)
-    except:
+    except Exception:
         pass
 
     if not found:

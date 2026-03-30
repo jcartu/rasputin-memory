@@ -9,7 +9,6 @@ import requests
 import time
 import sys
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 
 EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
@@ -231,7 +230,7 @@ class SecondBrainConsolidator:
             
             if resp.status_code == 200:
                 # Note: scroll doesn't return total count, but if we can query it, migration worked
-                self.log(f"  ✓ Verified migration - points queryable in second_brain")
+                self.log("  ✓ Verified migration - points queryable in second_brain")
             
         except Exception as e:
             self.log(f"  ⚠ Verification warning: {e}")
@@ -408,12 +407,12 @@ class SecondBrainConsolidator:
         self.log(f"Vectors migrated: {self.total_migrated:,}")
         self.log(f"Vectors skipped: {self.total_skipped:,}")
         self.log(f"Collections deleted: {self.collections_deleted}")
-        self.log(f"")
-        self.log(f"Second Brain Stats:")
+        self.log("")
+        self.log("Second Brain Stats:")
         self.log(f"  Total vectors: {stats.get('vectors', 'unknown'):,}")
         self.log(f"  Segments: {stats.get('segments', 'unknown')}")
         self.log(f"  Status: {stats.get('status', 'unknown')}")
-        self.log(f"")
+        self.log("")
         self.log(f"Throughput: {self.total_migrated/elapsed:.1f} vectors/sec")
         self.log("="*60)
 

@@ -10,8 +10,6 @@ Also provides a standalone CLI for testing:
   python3 integration.py "what supplements are recommended"
 """
 
-import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -122,5 +120,5 @@ if __name__ == "__main__":
     print(f"Cache hits: {result['cache_hits']}")
     print(f"Confidence: {result['confidence']}")
     print(f"Predicted topics: {result['predicted_topics']}")
-    print(f"\n--- LLM Context ---")
+    print("\n--- LLM Context ---")
     print(format_for_llm(result))

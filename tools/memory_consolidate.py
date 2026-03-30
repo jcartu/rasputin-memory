@@ -132,7 +132,7 @@ def verify_facts(facts: list[dict], source_files: list[tuple[str, str]]) -> list
         return []
 
     # Create a lookup of filename → content snippet
-    file_lookup = {name: content[:3000] for name, content in source_files}
+    _file_lookup = {name: content[:3000] for name, content in source_files}
 
     # Process in batches of 25 to avoid timeout
     batch_size = 25
@@ -338,7 +338,7 @@ def apply_entries(entries: list[dict], current_memory: str, dry_run: bool = Fals
                 lines.insert(insert_at, bullet)
                 added += 1
             else:
-                if not any("## New" in l for l in lines):
+                if not any("## New" in line for line in lines):
                     lines.append("\n## New")
                 bullet = f"- {text}" if not text.startswith("-") else text
                 lines.append(bullet)
@@ -413,7 +413,7 @@ def main():
     print(f"   After enrichment: {len(enriched)} facts")
 
     # ── Pass 5: Diff against MEMORY.md ──
-    print(f"\n📋 Pass 5: Diffing against MEMORY.md...")
+    print("\n📋 Pass 5: Diffing against MEMORY.md...")
     entries = diff_and_format(merged, current_memory)
     print(f"   New entries to apply: {len(entries)}")
 

@@ -19,14 +19,19 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+
+try:
+    from access_tracker import extract_topics
+except ImportError:
+    def extract_topics(text: str) -> list:
+        """Fallback topic extractor."""
+        return []
+
 DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
 ASSOCIATIONS_FILE = DATA_DIR / "associations.json"
 PATTERNS_FILE = DATA_DIR / "patterns.json"
 CACHE_FILE = DATA_DIR / "cache.json"
-
-# Import topic extraction
-sys.path.insert(0, str(Path(__file__).parent))
-from access_tracker import extract_topics, ENTITY_KEYWORDS
 
 
 def load_associations() -> dict:

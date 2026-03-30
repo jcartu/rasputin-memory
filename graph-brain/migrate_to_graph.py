@@ -12,11 +12,8 @@ Usage:
 """
 
 import json
-import os
-import sys
 import time
 import argparse
-import hashlib
 import requests
 from pathlib import Path
 from datetime import datetime
@@ -118,7 +115,7 @@ def extract_entities_single(text, timeout=120):
         if start >= 0 and end > start:
             try:
                 return json.loads(raw[start:end])
-            except:
+            except Exception:
                 pass
     return None
 
@@ -152,7 +149,7 @@ def extract_entities_batch(texts, timeout=180):
         if start >= 0 and end > start:
             try:
                 return json.loads(raw[start:end])
-            except:
+            except Exception:
                 pass
     return None
 
@@ -237,7 +234,7 @@ def ingest_to_graph(graph, point_id, payload, entities):
 
 def show_status():
     state = load_state()
-    print(f"\n📊 Migration Status")
+    print("\n📊 Migration Status")
     print(f"  Processed: {state.get('processed', 0):,}")
     print(f"  Errors: {state.get('errors', 0)}")
     print(f"  Started: {state.get('started', 'N/A')}")
@@ -257,14 +254,14 @@ def show_status():
                 rate = state["processed"] / elapsed
                 remaining = (total - state["processed"]) / rate
                 print(f"  Est. remaining: {remaining/3600:.1f} hours")
-    except:
+    except Exception:
         pass
 
     # Graph stats
     try:
         from schema import stats
         stats()
-    except:
+    except Exception:
         pass
 
 
@@ -285,7 +282,7 @@ def run_migration(batch_size=1, dry_run=False):
         resp = requests.get(f"http://{QDRANT_HOST}:{QDRANT_PORT}/collections/{QDRANT_COLLECTION}", timeout=5)
         total = resp.json()["result"]["points_count"]
         log(f"Total memories in Qdrant: {total:,}")
-    except:
+    except Exception:
         total = 0
         log("Could not get total count from Qdrant")
 
@@ -335,7 +332,7 @@ def run_migration(batch_size=1, dry_run=False):
                                     if ent and not dry_run:
                                         ingest_to_graph(graph, pt["id"], pt.get("payload", {}), ent)
                                     processed += 1
-                                except:
+                                except Exception:
                                     errors += 1
                                     processed += 1
                     except Exception as e:

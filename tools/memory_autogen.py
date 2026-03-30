@@ -51,7 +51,7 @@ def load_hot_context() -> list[str]:
             if age < 86400:  # 24h
                 content = f.read_text(encoding='utf-8').strip()
                 # Strip the timestamp comment line
-                lines = [l for l in content.splitlines() if not l.startswith('<!--')]
+                lines = [line for line in content.splitlines() if not line.startswith('<!--')]
                 if lines:
                     entries.append(f"**{f.stem}:** {' '.join(lines[:3])[:300]}")
         except Exception:
@@ -61,7 +61,7 @@ def load_hot_context() -> list[str]:
 
 def build_autogen_block() -> str:
     now = datetime.now().strftime('%Y-%m-%d %H:%M MSK')
-    lines = [f"<!-- AUTO-GEN:START -->",
+    lines = ["<!-- AUTO-GEN:START -->",
              f"*Auto-generated {now} by memory-autogen.py*\n"]
 
     # 1. Hot context from recent cron outputs

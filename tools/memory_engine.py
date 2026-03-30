@@ -36,8 +36,7 @@ import sys
 import re
 import os
 import hashlib
-from datetime import datetime, timedelta
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
@@ -132,7 +131,7 @@ def batch_embed(texts, prefix=None):
         elif "embedding" in data:
             return [data["embedding"]]
         return []
-    except:
+    except Exception:
         return []
 
 def search_by_vector(vector, top_k=5, threshold=0.50, filter_dict=None):
@@ -143,7 +142,7 @@ def search_by_vector(vector, top_k=5, threshold=0.50, filter_dict=None):
     try:
         r = requests.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/search", json=payload, timeout=10)
         return r.json().get("result", [])
-    except:
+    except Exception:
         return []
 
 def rerank(query, results):
@@ -187,7 +186,7 @@ def rerank(query, results):
         
         return sorted(results, key=lambda x: x.get("rerank_score", 0), reverse=True)
     
-    except Exception as e:
+    except Exception:
         # Fallback: return original results if reranker fails
         return results
 
@@ -287,7 +286,7 @@ def lookup_entity_graph(name):
             if name_lower in company.lower():
                 return data.get("type", "") + " " + data.get("context", "")
         return ""
-    except:
+    except Exception:
         return ""
 
 
@@ -300,7 +299,7 @@ def graph_traverse(query, max_hops=2):
     try:
         with open(ENTITY_GRAPH) as f:
             graph = json.load(f)
-    except:
+    except Exception:
         return ""
     
     query_lower = query.lower()
@@ -592,7 +591,7 @@ def format_recall(results, original_query=""):
             sender = p.get("from", "unknown")
             body = p.get("body", "")[:400]
             to = p.get("to", "")
-            labels = p.get("labels", [])
+            _labels = p.get("labels", [])
             
             # Determine direction
             direction = "📨 From" if "user" not in sender.lower() else "📤 Sent by user to"
@@ -677,7 +676,7 @@ def commit(text, source="conversation", importance=60, metadata=None):
             timeout=10
         )
         return r.status_code == 200
-    except:
+    except Exception:
         return False
 
 # ═══════════════════════════════════════════════════════════════

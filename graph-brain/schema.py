@@ -60,7 +60,7 @@ def stats():
             result = g.query(f"MATCH (n:{label}) RETURN count(n) AS c")
             count = result.result_set[0][0]
             print(f"  {label}: {count:,}")
-        except:
+        except Exception:
             print(f"  {label}: 0")
 
     try:
@@ -69,7 +69,7 @@ def stats():
             print("\n  Relationships:")
             for row in result.result_set:
                 print(f"    {row[0]}: {row[1]:,}")
-    except:
+    except Exception:
         pass
 
 

@@ -11,8 +11,8 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
+from datetime import datetime
+from typing import List, Dict
 import math
 import hashlib
 
@@ -98,11 +98,11 @@ def parse_date(date_str: str) -> datetime:
     try:
         # Try ISO format first
         return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-    except:
+    except Exception:
         try:
             # Try YYYY-MM-DD
             return datetime.strptime(date_str[:10], '%Y-%m-%d')
-        except:
+        except Exception:
             return datetime(2000, 1, 1)
 
 def calculate_temporal_score(date_str: str, recency_weight: float = 0.3) -> float:

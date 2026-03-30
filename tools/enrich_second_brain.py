@@ -14,7 +14,6 @@ Usage: python3 enrich_second_brain.py [--batch-size 500] [--chunks-per-call 10] 
 import argparse
 import json
 import time
-import sys
 import os
 from datetime import datetime, timezone
 
@@ -166,7 +165,7 @@ def run_enrichment(batch_size=500, chunks_per_call=10, dry_run=False):
             "filter": {"must_not": [{"key": "enriched", "match": {"value": True}}]}
         }, timeout=10)
         remaining = count_r.json()["result"]["count"]
-    except:
+    except Exception:
         remaining = "unknown"
 
     print(f"[ENRICH v2] Starting. Batch: {batch_size}, Per-call: {chunks_per_call}. Remaining: {remaining}")

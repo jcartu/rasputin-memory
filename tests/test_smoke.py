@@ -18,7 +18,7 @@ def _try_import(module_path: str) -> None:
     assert path.exists(), f"{module_path} not found"
     spec = importlib.util.spec_from_file_location(path.stem, str(path))
     assert spec and spec.loader
-    mod = importlib.util.module_from_spec(spec)
+    _mod = importlib.util.module_from_spec(spec)
     # We just need to confirm it parses and top-level is valid
     # Full execution may need running services, so we compile only
     with open(path) as f:

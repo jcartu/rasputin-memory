@@ -38,8 +38,7 @@ import os
 import time
 import json
 import argparse
-from collections import defaultdict
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 DB_PATH = os.environ.get(
     "BRAINBOX_DB",
@@ -173,7 +172,6 @@ class BrainBox:
 
     def record_error_fix(self, error: str, fix: str, success: bool = True):
         """Record an error→fix association."""
-        now = time.time()
         self._hebbian_strengthen("error_fix", "error_pattern", "fix_command", error, fix)
         if success:
             self.conn.execute(

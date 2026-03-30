@@ -16,16 +16,14 @@ Usage:
 """
 
 import argparse
-import json
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from collections import defaultdict
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
-    PointStruct, PointIdsList, Filter, FieldCondition, 
-    MatchValue, Range, VectorParams, Distance
+    PointStruct, PointIdsList
 )
 
 QDRANT_URL = "http://localhost:6333"
@@ -370,7 +368,7 @@ def soft_delete_memories(candidates, execute=False):
 def run_decay(execute=False, stats_only=False, limit=None):
     """Main decay loop."""
     print(f"{'='*60}")
-    print(f"RASPUTIN Memory Decay Engine")
+    print("RASPUTIN Memory Decay Engine")
     print(f"{'='*60}")
     print(f"Mode: {'🔴 EXECUTE' if execute else '🟢 DRY RUN'}")
     print(f"Archive threshold: {ARCHIVE_DAYS} days + importance < {LOW_IMPORTANCE_THRESHOLD}")
@@ -385,7 +383,7 @@ def run_decay(execute=False, stats_only=False, limit=None):
         print(f"[FATAL] Cannot connect to Qdrant: {e}")
         sys.exit(1)
 
-    print(f"\nScanning memories...")
+    print("\nScanning memories...")
     t0 = time.time()
     stats, archive_cands, softdel_cands, age_dist = scan_memories(limit=limit)
     elapsed = time.time() - t0
@@ -399,7 +397,7 @@ def run_decay(execute=False, stats_only=False, limit=None):
     print(f"Soft-delete candidates (>{SOFT_DELETE_DAYS}d): {stats['soft_delete_candidates']:,}")
     print(f"No date (skipped): {stats['no_date']:,}")
 
-    print(f"\nAge Distribution:")
+    print("\nAge Distribution:")
     for bucket in ["<1 week", "1-4 weeks", "1-3 months", "3-6 months", "6-12 months", ">1 year"]:
         count = age_dist.get(bucket, 0)
         bar = "█" * min(count // 500, 50)
@@ -410,14 +408,14 @@ def run_decay(execute=False, stats_only=False, limit=None):
 
     # Show top archive candidates
     if archive_cands:
-        print(f"\nTop archive candidates (lowest importance):")
+        print("\nTop archive candidates (lowest importance):")
         top = sorted(archive_cands, key=lambda x: x["importance"])[:5]
         for c in top:
             print(f"  ID={c['id']} | {c['days_old']}d old | imp={c['importance']} | "
                   f"[{c['source']}] {c['text_preview']}...")
 
     if softdel_cands:
-        print(f"\nTop soft-delete candidates (oldest):")
+        print("\nTop soft-delete candidates (oldest):")
         top = sorted(softdel_cands, key=lambda x: x["days_old"], reverse=True)[:5]
         for c in top:
             print(f"  ID={c['id']} | {c['days_old']}d old | imp={c['importance']} | "
@@ -439,7 +437,7 @@ def run_decay(execute=False, stats_only=False, limit=None):
         if total_affected:
             print(f"\n🟢 DRY RUN: Would affect {total_affected} memories. Use --execute to proceed.")
         else:
-            print(f"\n✅ All memories are healthy. No action needed.")
+            print("\n✅ All memories are healthy. No action needed.")
 
 
 if __name__ == "__main__":

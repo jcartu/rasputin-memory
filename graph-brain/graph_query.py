@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import json
-import sys
 from falkordb import FalkorDB
 
 FALKOR_HOST = "localhost"
@@ -48,7 +47,7 @@ def entity_neighborhood(graph, entity_name, hops=1, limit=50):
                     "name": row[1] or (row[2][:100] if row[2] else "?"),
                     "distance": row[3]
                 })
-        except:
+        except Exception:
             continue
 
     if not results:
@@ -64,7 +63,7 @@ def entity_neighborhood(graph, entity_name, hops=1, limit=50):
                 result = graph.query(q)
                 for row in result.result_set:
                     results.append({"type": row[1], "name": row[0], "distance": 0, "note": "fuzzy match"})
-            except:
+            except Exception:
                 continue
 
     return results
@@ -123,7 +122,7 @@ def shortest_path(graph, from_entity, to_entity):
                 if result.result_set:
                     row = result.result_set[0]
                     return {"path": row[0], "relationships": row[1], "hops": row[2]}
-            except:
+            except Exception:
                 continue
     return None
 
@@ -140,7 +139,7 @@ def graph_stats(graph):
             count = result.result_set[0][0]
             total_nodes += count
             print(f"  {label:15s} {count:>8,}")
-        except:
+        except Exception:
             print(f"  {label:15s}        0")
 
     print(f"  {'TOTAL':15s} {total_nodes:>8,}")
@@ -155,7 +154,7 @@ def graph_stats(graph):
                 total_rels += row[1]
                 print(f"    {row[0]:15s} {row[1]:>8,}")
             print(f"    {'TOTAL':15s} {total_rels:>8,}")
-    except:
+    except Exception:
         pass
 
     # Top entities
@@ -170,7 +169,7 @@ def graph_stats(graph):
                 print(f"\n  Top {desc}:")
                 for row in result.result_set:
                     print(f"    {row[0]:30s} ({row[1]} mentions)")
-        except:
+        except Exception:
             pass
 
 

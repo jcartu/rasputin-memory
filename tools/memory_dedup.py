@@ -22,9 +22,7 @@ import os
 import sys
 import time
 from datetime import datetime
-from collections import defaultdict
 
-import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointIdsList
 
@@ -148,7 +146,7 @@ def find_duplicates_for_point(point_id, vector, threshold=0.92, limit=10):
 def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_size=100):
     """Main deduplication loop."""
     print(f"{'='*60}")
-    print(f"RASPUTIN Memory Deduplication Engine")
+    print("RASPUTIN Memory Deduplication Engine")
     print(f"{'='*60}")
     print(f"Mode: {'🔴 EXECUTE (will delete!)' if execute else '🟢 DRY RUN (safe)'}")
     print(f"Threshold: {threshold}")
@@ -280,13 +278,13 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
         save_checkpoint(state)
 
         if offset is None:
-            print(f"\n[INFO] Reached end of collection.")
+            print("\n[INFO] Reached end of collection.")
             break
 
     # Final report
     elapsed = time.time() - start_time
     print(f"\n{'='*60}")
-    print(f"DEDUP RESULTS")
+    print("DEDUP RESULTS")
     print(f"{'='*60}")
     print(f"Scanned: {state['scanned']:,} vectors")
     print(f"Duplicate clusters found: {state['clusters_found']}")
@@ -294,7 +292,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
     print(f"Time: {elapsed:.1f}s")
     
     if clusters:
-        print(f"\nTop 10 clusters (by size):")
+        print("\nTop 10 clusters (by size):")
         top = sorted(clusters, key=lambda x: x["removed"], reverse=True)[:10]
         for i, c in enumerate(top):
             print(f"  {i+1}. Keeper: {c['keeper_id']} (score={c['keeper_score']}) | "
@@ -324,7 +322,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
     elif to_delete:
         print(f"\n🟢 DRY RUN: Would delete {len(to_delete)} vectors. Use --execute to proceed.")
     else:
-        print(f"\n✅ No duplicates found.")
+        print("\n✅ No duplicates found.")
 
     # Clean up checkpoint on completion
     if not limit or state["scanned"] >= scan_limit:

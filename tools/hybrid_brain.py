@@ -18,7 +18,7 @@ import os
 import re
 import sys
 import time
-from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 import redis
@@ -27,7 +27,11 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 # BM25 hybrid reranking — core pipeline component
-from bm25_search import hybrid_rerank as bm25_rerank
+try:
+    from bm25_search import hybrid_rerank as bm25_rerank
+    BM25_AVAILABLE = True
+except ImportError:
+    BM25_AVAILABLE = False
 print("[HybridBrain] BM25 reranking: enabled", flush=True)
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
@@ -1358,14 +1362,14 @@ class HybridHandler(BaseHTTPRequestHandler):
             try:
                 info = qdrant.get_collection(COLLECTION)
                 qdrant_count = info.points_count
-            except:
+            except Exception:
                 qdrant_count = -1
 
             try:
                 r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
                 node_count = r.execute_command('GRAPH.QUERY', 'brain', 'MATCH (n) RETURN count(n)')[1][0][0]
                 edge_count = r.execute_command('GRAPH.QUERY', 'brain', 'MATCH ()-[e]->() RETURN count(e)')[1][0][0]
-            except:
+            except Exception:
                 node_count = -1
                 edge_count = -1
 
@@ -1445,7 +1449,7 @@ class HybridHandler(BaseHTTPRequestHandler):
 
         try:
             data = json.loads(body) if body else {}
-        except:
+        except Exception:
             self._send_json({"error": "Invalid JSON"}, 400)
             return
 
@@ -1528,7 +1532,7 @@ def serve(port=7777):
         nc = r.execute_command('GRAPH.QUERY', 'brain', 'MATCH (n) RETURN count(n)')[1][0][0]
         ec = r.execute_command('GRAPH.QUERY', 'brain', 'MATCH ()-[e]->() RETURN count(e)')[1][0][0]
         print(f"[HybridBrain] FalkorDB: {nc} nodes, {ec} edges", flush=True)
-    except:
+    except Exception:
         print("[HybridBrain] FalkorDB: unavailable (graph search disabled)", flush=True)
     server.serve_forever()
 

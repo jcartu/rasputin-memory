@@ -222,7 +222,7 @@ JSON (empty array if nothing specific):"""
                 facts = json.loads(text[start:end])
                 if isinstance(facts, list):
                     return facts
-            except:
+            except Exception:
                 pass
 
         return []
@@ -454,7 +454,7 @@ def purge_garbage_facts():
             except json.JSONDecodeError:
                 pass
 
-    original_count = len(all_facts)
+    _original_count = len(all_facts)
 
     # Vague/obvious patterns to remove
     vague_patterns = [
@@ -527,7 +527,7 @@ def main():
     state = load_state()
 
     print(f"🧠 Fact Extractor — {'ALL sessions' if process_all else f'last {hours}h'}")
-    print(f"  LLM proxy: qwen3.5-122b-a10b via localhost:11436")
+    print("  LLM proxy: qwen3.5-122b-a10b via localhost:11436")
     print(f"  Existing facts: {len(state.get('fact_hashes', []))}")
 
     # Extract messages
@@ -591,7 +591,7 @@ def main():
     state['last_run'] = datetime.now().isoformat()
     save_state(state)
 
-    print(f"\n📊 Results:")
+    print("\n📊 Results:")
     print(f"  Pass 2 removed (hallucinated): {total_verified}")
     print(f"  Pass 3 removed (duplicates/vague): {total_filtered}")
     print(f"  New facts stored: {total_new}")

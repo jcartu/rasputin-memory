@@ -129,11 +129,15 @@ def hybrid_rerank(query, dense_results):
     for r in dense_results:
         p = r.get('payload', {})
         parts = []
-        if p.get('subject'): parts.append(p['subject'])
-        if p.get('title'): parts.append(p['title'])
-        if p.get('question'): parts.append(p['question'])
+        if p.get('subject'):
+            parts.append(p['subject'])
+        if p.get('title'):
+            parts.append(p['title'])
+        if p.get('question'):
+            parts.append(p['question'])
         text = p.get('text', p.get('body', ''))
-        if text: parts.append(text[:1000])
+        if text:
+            parts.append(text[:1000])
         documents.append(' '.join(parts))
     
     # Score with BM25

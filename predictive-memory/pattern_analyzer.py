@@ -8,7 +8,7 @@ import json
 import math
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
@@ -166,9 +166,8 @@ def analyze_and_save():
         associations = {
             "family": {"household": 1.0, "planning": 0.9, "wellness": 0.8, "travel": 0.7, "documents": 0.6},
             "dad": {"transplant": 1.0, "ipf": 0.9, "toronto": 0.8, "medications": 0.7, "health": 0.6},
-            "business": {"revenue": 1.0, "deposits": 0.9, "platform_a": 0.8, "platform_b": 0.7, "licensing": 0.6},
+            "business": {"revenue": 1.0, "deposits": 0.9, "platform_a": 0.8, "platform_b": 0.7, "licensing": 0.6, "growth": 0.8, "curacao": 0.6},
             "health": {"testosterone": 1.0, "peptides": 0.9, "mounjaro": 0.8, "whoop": 0.7, "cgm": 0.6},
-            "business": {"revenue": 1.0, "business": 0.9, "deposits": 0.8, "growth": 0.7, "curacao": 0.6},
             "tech": {"server": 1.0, "gpu": 0.9, "ollama": 0.8, "qdrant": 0.7, "proxy": 0.6},
             "crypto": {"bitcoin": 1.0, "usdt": 0.9, "business": 0.5},
             "travel": {"passport": 1.0, "family": 0.8, "citizenship": 0.7},
