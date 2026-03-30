@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 contradiction = importlib.import_module("tools.pipeline.contradiction")
 importance_recalculator = importlib.import_module("tools.importance_recalculator")
+hybrid_brain = importlib.import_module("tools.hybrid_brain")
 
 
 class _FakePoint:
@@ -128,3 +129,42 @@ def test_importance_recalc_decays_stale():
     )
     assert out["updated"] == 1
     assert qdrant.payload_updates[0]["payload"]["importance"] == 40
+
+
+class _PointWithPayload:
+    def __init__(self, payload):
+        self.payload = payload
+
+
+def test_feedback_positive_boosts(monkeypatch):
+    state = {"payload": {"importance": 60}}
+
+    class _FeedbackQdrant:
+        def retrieve(self, **_kwargs):
+            return [_PointWithPayload(state["payload"])]
+
+        def set_payload(self, **kwargs):
+            state["update"] = kwargs
+
+    monkeypatch.setattr(hybrid_brain, "qdrant", _FeedbackQdrant())
+    result = hybrid_brain.apply_relevance_feedback(point_id="p1", helpful=True)
+    assert result["ok"] is True
+    assert result["importance_after"] == 65
+    assert "last_feedback" in state["update"]["payload"]
+
+
+def test_feedback_negative_decays(monkeypatch):
+    state = {"payload": {"importance": 60}}
+
+    class _FeedbackQdrant:
+        def retrieve(self, **_kwargs):
+            return [_PointWithPayload(state["payload"])]
+
+        def set_payload(self, **kwargs):
+            state["update"] = kwargs
+
+    monkeypatch.setattr(hybrid_brain, "qdrant", _FeedbackQdrant())
+    result = hybrid_brain.apply_relevance_feedback(point_id="p2", helpful=False)
+    assert result["ok"] is True
+    assert result["importance_after"] == 50
+    assert "last_feedback" in state["update"]["payload"]

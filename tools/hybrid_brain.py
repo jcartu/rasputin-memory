@@ -784,6 +784,43 @@ def list_contradictions(limit: int = 100) -> list[dict[str, Any]]:
     return entries
 
 
+def apply_relevance_feedback(point_id: Any, helpful: bool) -> dict[str, Any]:
+    from datetime import datetime
+
+    points = qdrant.retrieve(collection_name=COLLECTION, ids=[point_id], with_payload=True)
+    if not points:
+        return {"ok": False, "error": "point_not_found", "point_id": point_id}
+
+    payload = points[0].payload or {}
+    current_importance = payload.get("importance", 50)
+    try:
+        current_importance = int(current_importance)
+    except (TypeError, ValueError):
+        current_importance = 50
+
+    if helpful:
+        new_importance = min(100, current_importance + 5)
+    else:
+        new_importance = max(0, current_importance - 10)
+
+    qdrant.set_payload(
+        collection_name=COLLECTION,
+        points=[point_id],
+        payload={
+            "importance": new_importance,
+            "last_feedback": datetime.now().isoformat(),
+        },
+    )
+
+    return {
+        "ok": True,
+        "point_id": point_id,
+        "helpful": helpful,
+        "importance_before": current_importance,
+        "importance_after": new_importance,
+    }
+
+
 def _parse_date(date_str: str) -> Optional[Any]:
     """Parse various date formats, return datetime or None."""
     from datetime import datetime as _dt, timezone as _tz
@@ -1750,6 +1787,22 @@ class HybridHandler(BaseHTTPRequestHandler):
             if scores:
                 result["amac"] = {"reason": reason, "scores": scores}
             status = 200 if result.get("ok") else 500
+            self._send_json(result, status)
+
+        elif parsed.path == "/feedback":
+            point_id = data.get("point_id")
+            helpful = data.get("helpful", True)
+            if isinstance(helpful, str):
+                helpful = helpful.lower() not in ("false", "0", "no")
+            else:
+                helpful = bool(helpful)
+
+            if point_id is None:
+                self._send_json({"error": "Missing point_id"}, 400)
+                return
+
+            result = apply_relevance_feedback(point_id=point_id, helpful=helpful)
+            status = 200 if result.get("ok") else 404
             self._send_json(result, status)
 
         else:
