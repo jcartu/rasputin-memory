@@ -109,3 +109,10 @@ def test_task14_entity_matching_uses_word_boundaries():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "if name.lower() in text_lower" not in source
     assert 're.search(r"\\b" + re.escape(name.lower()) + r"\\b", text_lower)' in source
+
+
+def test_task15_dedup_uses_regex_tokenizer():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "set(text.lower().split())" not in source
+    assert 'set(re.findall(r"\\w+", text.lower()))' in source
+    assert 'set(re.findall(r"\\w+", existing_text.lower()))' in source

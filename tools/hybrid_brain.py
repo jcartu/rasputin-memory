@@ -358,8 +358,8 @@ def check_duplicate(vector, text, threshold=0.92):
             if point.score >= threshold:
                 existing_text = point.payload.get("text", "")
                 # Also check text overlap to avoid false positives on short generic texts
-                words_new = set(text.lower().split())
-                words_old = set(existing_text.lower().split())
+                words_new = set(re.findall(r"\w+", text.lower()))
+                words_old = set(re.findall(r"\w+", existing_text.lower()))
                 overlap = len(words_new & words_old) / max(len(words_new | words_old), 1)
                 if overlap > 0.5 or point.score >= 0.95:
                     return True, point.id, round(point.score, 4)
