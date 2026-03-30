@@ -735,7 +735,7 @@ def _parse_date(date_str: str) -> Optional[Any]:
     return None
 
 
-def apply_temporal_decay(results: list[dict[str, Any]], half_life_days: int = 30) -> list[dict[str, Any]]:
+def apply_temporal_decay(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Exponential decay (inspired by Ebbinghaus forgetting curve) with importance-scaled half-lives.
 
     Changes from linear decay:
