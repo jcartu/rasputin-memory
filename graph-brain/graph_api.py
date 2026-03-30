@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GraphRAG API — FalkorDB graph query service for RASPUTIN's Second Brain.
+GraphRAG API — FalkorDB graph query service.
 
 Endpoints:
   GET /health              — Health check

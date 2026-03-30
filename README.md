@@ -8,7 +8,7 @@
 
 # RASPUTIN Memory System
 
-**Production-grade long-term memory architecture for AI agents.**
+**Self-hosted long-term memory architecture for AI agents — published as a personal reference system.**
 
 > **Start here:** [`tools/hybrid_brain.py`](tools/hybrid_brain.py) is the main server. Everything else feeds into it.
 
@@ -21,9 +21,7 @@
 
 `<150ms search` · `$0/query` · `4-stage hybrid pipeline`
 
-*Performance measured on the author's production deployment. A fresh install starts at 0 and scales with your data.*
-
-*A production-grade open-source AI agent memory system. Achieves comparable or better retrieval quality through 4-stage hybrid pipeline — see Architecture for details.*
+*This is a personal system published for reference. The architecture is genuinely novel; no formal benchmarks have been run to validate claims against other systems. A fresh install starts at 0 and scales with your data.*
 
 ---
 
@@ -149,7 +147,7 @@ RASPUTIN is the only system that combines **all of these** in a single pipeline:
 | Self-hosted, $0/query | ✅ | ➖ | ➖ | ✅ | ✅ |
 | <150ms p95 latency | ✅ | 🟡 50-200ms | ➖ Hours for new | ✅ <50ms | ✅ <100ms |
 
-*Comparison based on publicly available documentation as of March 2026. See each project's docs for current capabilities and benchmarks.*
+*Comparison based on publicly available documentation as of March 2026. This table reflects capabilities, not validated benchmark results — formal BEIR evaluations have not been run. See each project's docs for current capabilities.*
 
 **The key architectural insight:** Every other system picks 1-2 retrieval strategies. RASPUTIN runs 4 in parallel and fuses them. Vector search finds semantically similar memories. BM25 catches exact terms that embedding models miss. The knowledge graph traverses entity relationships. Then a neural cross-encoder reranks everything for precision. This is why it doesn't miss things.
 
@@ -325,6 +323,18 @@ No. CPU inference works for embeddings (nomic-embed-text via Ollama). A GPU spee
 
 No. The memory system is standalone — it works with any AI agent, framework, or direct HTTP calls. The OpenClaw hook is an optional integration for automatic memory recall.
 
+## Roadmap
+
+This system is a personal deployment, not a maintained library. That said, these improvements would meaningfully validate and generalize it:
+
+- **BEIR benchmarks** — Run formal retrieval quality evaluation on BEIR benchmark datasets to validate the hybrid pipeline claims objectively
+- **Ablation studies** — Quantify the contribution of each retrieval stage (vector / BM25 / graph / reranker) to final recall quality
+- **Library-ification** — Package the core pipeline as an installable Python library with a stable API, removing the assumption of specific local service ports
+- **Config file support** — Replace hardcoded env vars with a single `config.yaml` per-deployment
+- **Async ingestion pipeline** — Non-blocking write path so query latency is not affected during batch imports
+
+PRs toward any of these are welcome.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR process.
@@ -335,7 +345,7 @@ MIT — See [LICENSE](LICENSE).
 
 <div align="center">
 
-*"Hard to kill, impossible to ignore." — RASPUTIN*
+*Self-hosted memory system — architecture published for reference.*
 
 </div>
 

@@ -741,7 +741,7 @@ def _build_entity_lookup():
     #   _persons = {"Alice Smith": ["alice", "alice smith"]}
     _persons = {}
     _orgs = {
-        "OpenClaw": ["openclaw"],
+        "MemorySystem": ["memory system", "second brain"],
         "FalkorDB": ["falkordb"],
         "Qdrant": ["qdrant"],
     }

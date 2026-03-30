@@ -23,7 +23,7 @@ QDRANT_URL = "http://localhost:6333"
 COLLECTION = "second_brain"
 PROXY_URL = "http://localhost:11438/v1/chat/completions"
 MODEL = "qwen3.5-122b-a10b"
-LOG_DIR = os.path.expanduser("~/.openclaw/workspace/memory/enrichment")
+LOG_DIR = os.path.expanduser(os.environ.get("LOG_DIR", "./data/memory/enrichment"))
 
 BATCH_PROMPT = """Score these text chunks on importance (1-10) and write a 1-sentence summary for each.
 

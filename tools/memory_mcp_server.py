@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Memory MCP Server — wraps RASPUTIN's Second Brain hybrid API (port 7777).
+Memory MCP Server — wraps the Second Brain hybrid API.
 Exposes: search, commit, proactive surfacing, graph queries, stats.
 
 Run: python3 tools/memory-mcp-server.py          (stdio for MCP clients)
@@ -45,7 +45,7 @@ def _redis_cmd(*args: str, timeout: int = 10) -> str:
 
 @mcp_server.tool()
 def memory_search(query: str, limit: int = 5) -> str:
-    """Search RASPUTIN's Second Brain using semantic search + knowledge graph + reranker.
+    """Search the Second Brain using semantic search + knowledge graph + reranker.
     Returns the most relevant memories from 761K+ stored entries."""
     from urllib.parse import quote
     results = _http_json(f"{BRAIN_URL}/search?q={quote(query)}&limit={limit}")
@@ -64,7 +64,7 @@ def memory_search(query: str, limit: int = 5) -> str:
 
 @mcp_server.tool()
 def memory_commit(text: str, source: str = "mcp") -> str:
-    """Store a new memory in RASPUTIN's Second Brain.
+    """Store a new memory in the Second Brain.
     Use for important facts, decisions, or context worth remembering."""
     result = _http_json(f"{BRAIN_URL}/commit", {"text": text, "source": source})
     return json.dumps(result, indent=2) if result else "Committed successfully."
@@ -92,7 +92,7 @@ def memory_proactive(context: list[str]) -> str:
 
 @mcp_server.tool()
 def memory_graph_query(cypher: str) -> str:
-    """Run a Cypher query against RASPUTIN's FalkorDB knowledge graph.
+    """Run a Cypher query against the FalkorDB knowledge graph.
     Example: MATCH (n:Entity) RETURN n.name LIMIT 10
     Note: Destructive operations (DELETE, DROP, REMOVE) are blocked."""
     if _DESTRUCTIVE_OPS.search(cypher):
@@ -105,7 +105,7 @@ def memory_graph_query(cypher: str) -> str:
 
 @mcp_server.tool()
 def memory_stats() -> str:
-    """Get stats about RASPUTIN's memory system: vector counts, collections, graph info."""
+    """Get stats about the memory system: vector counts, collections, graph info."""
     lines = []
     # Qdrant collections via the brain's /search as a proxy — get counts from Qdrant directly
     try:

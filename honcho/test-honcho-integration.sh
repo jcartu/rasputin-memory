@@ -7,7 +7,7 @@ set -e
 HONCHO_BASE="http://${HONCHO_URL:-localhost:7780}/v3"
 WORKSPACE="${WORKSPACE_NAME:-memory}"
 PEER="user"
-WORKSPACE_DIR="${HOME}/.openclaw/workspace"
+WORKSPACE_DIR="${WORKSPACE_DIR:-./data}"
 TEST_PROMPT="${1:-What are the user's preferences for managing his AI systems?}"
 
 echo "=== Honcho Integration Test ==="

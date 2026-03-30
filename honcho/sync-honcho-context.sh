@@ -7,7 +7,7 @@ set -euo pipefail
 HONCHO_URL="http://${HONCHO_URL:-localhost:7780}"
 WORKSPACE="${WORKSPACE_NAME:-memory}"
 PEER="user"
-OUTPUT_DIR="$HOME/.openclaw/workspace/memory/hot-context"
+OUTPUT_DIR="${OUTPUT_DIR:-./data/memory/hot-context}"
 OUTPUT_FILE="$OUTPUT_DIR/honcho-profile.md"
 
 mkdir -p "$OUTPUT_DIR"

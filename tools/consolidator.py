@@ -41,7 +41,7 @@ import requests
 
 WORKSPACE = os.environ.get(
     "WORKSPACE_PATH",
-    os.path.join(os.path.expanduser("~"), ".openclaw", "workspace"),
+    os.environ.get("WORKSPACE_PATH", "./data"),
 )
 MEMORY_DIR = os.path.join(WORKSPACE, "memory")
 MEMORY_MD = os.path.join(WORKSPACE, "MEMORY.md")
@@ -459,7 +459,7 @@ def run_memory_mode(args):
 # Session worker config — override via env vars or CLI
 SESSIONS_DIR = os.environ.get(
     "SESSIONS_DIR",
-    os.path.expanduser("~/.openclaw/agents/main/sessions"),
+    os.environ.get("SESSIONS_DIR", "./data/sessions"),
 )
 CONSOLIDATION_DIR = os.environ.get(
     "CONSOLIDATION_DIR",

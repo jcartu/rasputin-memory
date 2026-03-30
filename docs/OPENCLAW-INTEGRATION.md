@@ -258,7 +258,7 @@ curl -X POST http://localhost:7777/commit \
 python3 tools/memory_engine.py recall "What did we decide about the product affiliate deal?"
 
 # Deep dive on a topic
-python3 tools/memory_engine.py deep "CHRONOS hardware wallet"
+python3 tools/memory_engine.py deep "hardware wallet backup"
 
 # Who is this person?
 python3 tools/memory_engine.py whois "Bob"

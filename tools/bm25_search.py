@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BM25 Search Layer for Rasputin Memory Engine
+BM25 Search Layer for the Memory Engine
 Implements client-side BM25 scoring on top of Qdrant dense vector results.
 Used for hybrid search: dense (semantic) + sparse (keyword) with RRF fusion.
 """

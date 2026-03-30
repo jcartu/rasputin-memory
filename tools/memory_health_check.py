@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Memory System Health Check — called by OpenClaw cron.
+Memory System Health Check — scheduled health monitoring.
 Tests all components of the memory pipeline end-to-end.
 Returns a status report or raises alarms.
 """
@@ -84,7 +84,7 @@ def check_hybrid_brain():
         raise Exception(f"status={status}, components={components}")
     return f"v{data.get('version', '?')}, all components up"
 
-def check_openclaw_mem():
+def check_memory_hook():
     r = requests.get("http://localhost:18790/stats", timeout=5)
     r.raise_for_status()
     data = r.json()
@@ -115,7 +115,7 @@ def check_round_trip():
     time.sleep(0.5)
 
     # Search with semantic terms from the committed text
-    search_query = "RASPUTIN memory system self-diagnostic embedding pipeline verification"
+    search_query = "memory system self-diagnostic embedding pipeline verification"
     r = requests.get(f"http://localhost:7777/search?q={search_query}&limit=5", timeout=15)
     r.raise_for_status()
     data = r.json()
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     check("Ollama Embeddings", check_ollama_embed)
     check("Neural Reranker", check_reranker)
     check("Hybrid Brain API", check_hybrid_brain)
-    check("openclaw-mem", check_openclaw_mem)
+    check("memory-hook", check_memory_hook)
     check("Round-trip (commit→search)", check_round_trip)
 
     elapsed = time.time() - t_start

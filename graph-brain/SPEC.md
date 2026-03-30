@@ -41,7 +41,7 @@ Send each memory chunk with a structured prompt asking for JSON output:
   "organizations": ["ExampleOrg", "ExampleCo B.V."],
   "projects": ["Pipeline UI", "Grok Social Intel"],
   "topics": ["igaming", "proxy", "infrastructure"],
-  "locations": ["Moscow", "Brazil"]
+  "locations": ["city_A", "city_B"]
 }
 ```
 

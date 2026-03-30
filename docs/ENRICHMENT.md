@@ -172,8 +172,8 @@ def write_to_graph(point_id, text, entities, timestamp):
 ### Configuration
 
 ```python
-WORKSPACE = Path.home() / '.openclaw' / 'workspace'
-SESSIONS_DIR = Path.home() / '.openclaw/agents/main/sessions'
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", "./data"))
+SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", "./data/sessions"))
 FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
 STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
 QDRANT_URL = "http://localhost:6333"

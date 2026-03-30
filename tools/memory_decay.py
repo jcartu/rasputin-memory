@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Memory Decay Engine — Phase 3B of RASPUTIN Intelligence Layer.
+Memory Decay Engine — Phase 3B.
 
 Importance-based memory lifecycle management:
 - Memories not accessed in 90 days with low importance → archive
@@ -368,7 +368,7 @@ def soft_delete_memories(candidates, execute=False):
 def run_decay(execute=False, stats_only=False, limit=None):
     """Main decay loop."""
     print(f"{'='*60}")
-    print("RASPUTIN Memory Decay Engine")
+    print("Memory Decay Engine")
     print(f"{'='*60}")
     print(f"Mode: {'🔴 EXECUTE' if execute else '🟢 DRY RUN'}")
     print(f"Archive threshold: {ARCHIVE_DAYS} days + importance < {LOW_IMPORTANCE_THRESHOLD}")
@@ -441,7 +441,7 @@ def run_decay(execute=False, stats_only=False, limit=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="RASPUTIN Memory Decay Engine")
+    parser = argparse.ArgumentParser(description="Memory Decay Engine")
     parser.add_argument("--execute", action="store_true", help="Actually archive/delete (default: dry run)")
     parser.add_argument("--stats", action="store_true", help="Show age distribution only")
     parser.add_argument("--limit", type=int, default=None, help="Max memories to scan")

@@ -56,8 +56,8 @@ RERANKER_URL = "http://localhost:8006/rerank"
 COLLECTION = "second_brain"
 
 # Observational Memory
-ENTITY_GRAPH = "~/.openclaw/workspace/memory/entity_graph.json"
-OM_OBSERVATIONS = "~/.openclaw/workspace/memory/om_observations.md"
+ENTITY_GRAPH = os.environ.get("ENTITY_GRAPH_PATH", "./data/memory/entity_graph.json")
+OM_OBSERVATIONS = os.environ.get("OM_OBSERVATIONS_PATH", "./data/memory/om_observations.md")
 OM_MAX_AGE_HOURS = 24            # Refresh threshold for OM cache
 ```
 
@@ -66,8 +66,8 @@ OM_MAX_AGE_HOURS = 24            # Refresh threshold for OM cache
 ## fact_extractor.py Constants
 
 ```python
-WORKSPACE = Path.home() / '.openclaw' / 'workspace'
-SESSIONS_DIR = Path.home() / '.openclaw/agents/main/sessions'
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", "./data"))
+SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", "./data/sessions"))
 FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
 STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
 
@@ -196,7 +196,7 @@ redis-cli -p 6380 GRAPH.QUERY brain "MATCH (e:Entity {name: 'Acme Corp'})-[*1..2
 
 ## openclaw-mem Hook Configuration
 
-In `~/.openclaw/config.json`:
+In your agent framework config file:
 
 ```json
 {
@@ -216,7 +216,7 @@ In `~/.openclaw/config.json`:
     }
   },
   "workspace": {
-    "dir": "~/.openclaw/workspace"
+    "dir": "./data"
   }
 }
 ```
@@ -253,7 +253,7 @@ export RASPUTIN_AMAC_URL="http://localhost:11436/v1/chat/completions"
 export RASPUTIN_AMAC_MODEL="qwen3.5:35b"
 export RASPUTIN_AMAC_THRESHOLD="4.0"
 export RASPUTIN_PORT="7777"
-export RASPUTIN_WORKSPACE="~/.openclaw/workspace"
+export RASPUTIN_WORKSPACE="./data"
 ```
 
 Most tools now read from environment variables with sensible defaults. See `.env.example` for the full list.

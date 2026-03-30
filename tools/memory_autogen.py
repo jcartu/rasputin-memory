@@ -18,8 +18,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 import urllib.request
 import urllib.parse
+import os
 
-WORKSPACE = Path.home() / '.openclaw' / 'workspace'
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", "./data"))
 MEMORY_FILE = WORKSPACE / 'MEMORY.md'
 QDRANT_SEARCH = 'http://localhost:7777/search'
 HOT_DIR = WORKSPACE / 'memory' / 'hot-context'

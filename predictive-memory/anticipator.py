@@ -28,7 +28,7 @@ except ImportError:
         """Fallback topic extractor."""
         return []
 
-DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
+DATA_DIR = Path(os.environ.get("PREDICTIVE_DATA_DIR", "./data/memory/predictive"))
 ASSOCIATIONS_FILE = DATA_DIR / "associations.json"
 PATTERNS_FILE = DATA_DIR / "patterns.json"
 CACHE_FILE = DATA_DIR / "cache.json"
@@ -67,7 +67,7 @@ def anticipate(query: str, max_predictions: int = 5) -> dict:
     
     Returns:
         {
-            "predicted_topics": ["fertility", "ivf", ...],
+            "predicted_topics": ["medical", "appointments", ...],
             "cached_results": [{"query": "...", "results": [...]}],
             "confidence": 0.0-1.0,
             "reasoning": "Based on X pattern..."

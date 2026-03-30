@@ -13,7 +13,7 @@ import urllib.request
 HONCHO_BASE = "http://${HONCHO_URL:-localhost:7780}/v3"
 WORKSPACE = "${WORKSPACE_NAME:-memory}"
 PEER = "user"
-WORKSPACE_DIR = os.path.expanduser("~/.openclaw/workspace")
+WORKSPACE_DIR = os.environ.get("WORKSPACE_DIR", "./data")
 
 prompt = sys.argv[1] if len(sys.argv) > 1 else "How is the business business performing?"
 

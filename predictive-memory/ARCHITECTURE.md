@@ -1,13 +1,13 @@
 # Predictive Memory System — Architecture
 
 ## Overview
-A predictive caching layer that sits between the agent and the existing memory infrastructure (Qdrant Second Brain + openclaw-mem SQLite). Instead of reactive recall, it **anticipates** what information will be needed and pre-loads it into a fast-access cache.
+A predictive caching layer that sits between the agent and the existing memory infrastructure (Qdrant Second Brain + memory hook SQLite). Instead of reactive recall, it **anticipates** what information will be needed and pre-loads it into a fast-access cache.
 
 ## Components
 
 ### 1. Access Tracker (`access_tracker.py`)
 Logs every memory query with timestamp, topic, and result count. Builds the raw data for pattern analysis.
-- **Storage**: `~/.openclaw/workspace/memory/predictive/access_log.jsonl`
+- **Storage**: `./data/memory/predictive/access_log.jsonl`
 - **Fields**: timestamp, query, topics_extracted, results_count, session_context
 
 ### 2. Pattern Analyzer (`pattern_analyzer.py`)
@@ -29,7 +29,7 @@ Cron-driven (runs every 2 hours + special morning run at 8am MSK):
 - Checks what day/time it is → predicts likely queries
 - Pre-fetches from Qdrant and caches results
 - Morning run: heavier — pulls yesterday's topics + routine queries
-- **Cache**: `~/.openclaw/workspace/memory/predictive/cache.json`
+- **Cache**: `./data/memory/predictive/cache.json`
 - **TTL**: 4 hours default, 12 hours for stable facts
 
 ### 5. Heat Map (`heatmap.py`)
@@ -70,7 +70,7 @@ Add a `predictive_context(topic)` call at the start of `recall()` that:
 0 */2 * * * python3 ~/workspace/tools/predictive-memory/prefetch.py --refresh
 ```
 
-### With openclaw-mem
+### With memory hook
 Read session data to understand conversation flow patterns. The `sessions` and `observations` tables provide tool usage patterns.
 
 ## Key Design Decisions
@@ -87,7 +87,7 @@ Pre-built from entity_graph.json + learned from access patterns:
   "family": ["planning", "appointments", "supplements", "documents", "citizenship"],
   "business": ["revenue", "deposits", "platform_a", "platform_b", "licensing"],
   "dad": ["lung transplant", "ipf", "toronto general", "medications"],
-  "health": ["testosterone", "hgh", "peptides", "mounjaro", "cgm", "whoop"]
+  "health": ["medical", "wellness", "supplements", "fitness"]
 }
 ```
 These expand over time as new co-occurrences are observed.

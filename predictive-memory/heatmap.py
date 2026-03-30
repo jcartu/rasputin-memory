@@ -16,7 +16,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
+DATA_DIR = Path(os.environ.get("PREDICTIVE_DATA_DIR", "./data/memory/predictive"))
 HEATMAP_FILE = DATA_DIR / "heatmap.json"
 
 DECAY_RATE = 0.90  # 10% decay per day

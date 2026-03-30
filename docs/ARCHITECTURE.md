@@ -195,7 +195,7 @@ A lightweight in-memory entity graph at `memory/entity_graph.json`:
   },
   "topics": {
     "project planning": {"context": "project planning, Alice"},
-    "CHRONOS": {"context": "hardware wallet project"}
+    "HardwareWallet": {"context": "hardware wallet backup"}
   }
 }
 ```

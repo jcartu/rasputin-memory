@@ -1,10 +1,10 @@
 #!/bin/bash
-# RASPUTIN Memory System — Quick Start
+# Memory System — Quick Start
 # Gets you from zero to working memory in 15 minutes
 
 set -e
 
-echo "🧠 RASPUTIN Memory System — Quick Start"
+echo "🧠 Memory System — Quick Start"
 echo "========================================="
 echo ""
 

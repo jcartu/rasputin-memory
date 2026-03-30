@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues, fixes, and performance tuning for the RASPUTIN memory system.
+Common issues, fixes, and performance tuning for the memory system.
 
 ---
 
@@ -201,7 +201,7 @@ python3 tools/fact_extractor.py --hours 4
 cat memory/fact_extractor_state.json
 
 # Check sessions directory exists and has files
-ls ~/.openclaw/agents/main/sessions/ | head -5
+ls "$SESSIONS_DIR" | head -5
 
 # If state is corrupted, reset it
 echo '{"last_run": null, "processed_lines": {}, "fact_hashes": []}' > memory/fact_extractor_state.json
@@ -283,7 +283,7 @@ pm2 list
 
 | Log | Location | Contents |
 |-----|---------|---------|
-| hybrid_brain | `pm2 logs rasputin` | API requests, A-MAC decisions |
+| hybrid_brain | `pm2 logs memory-api` | API requests, A-MAC decisions |
 | A-MAC rejections | `/tmp/amac_rejected.log` | Rejected commits with scores |
 | Fact extractor | `/tmp/fact_extractor.log` | Cron runs, extracted facts |
 | Enrichment | `/tmp/enrichment.log` | Nightly enrichment runs |

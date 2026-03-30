@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Rasputin Memory Engine v3.0 — The Real Thing
+Memory Engine v3.0
 
 Design principles:
 1. SPEED: 8 embeddings in 55ms, search in 16ms. We can do 20+ searches per turn for <500ms total.
@@ -12,10 +12,10 @@ Design principles:
 
 Usage:
   # Before every response — get memory context
-  python3 memory_engine.py recall "What supplements is partner taking?"
+  python3 memory_engine.py recall "What did we discuss about the project?"
   
   # After important exchanges — commit to memory
-  python3 memory_engine.py commit "User decided to go with AcmeCorp for Brazil campaigns, PT-BR only"
+  python3 memory_engine.py commit "User decided to go with AcmeCorp for the new campaign"
   
   # Morning briefing — surface what the user should know
   python3 memory_engine.py briefing
@@ -24,10 +24,10 @@ Usage:
   python3 memory_engine.py challenge "I think we should spend $50K on Google Ads"
   
   # Deep dive on a topic — get everything we know
-  python3 memory_engine.py deep "CHRONOS hardware wallet"
+  python3 memory_engine.py deep "hardware wallet backup"
   
   # Who is this person?
-  python3 memory_engine.py whois "Oren"
+  python3 memory_engine.py whois "Alice"
 """
 
 import requests
@@ -55,8 +55,8 @@ try:
     HAS_BM25 = True
 except ImportError:
     HAS_BM25 = False
-ENTITY_GRAPH = os.path.expanduser("~/.openclaw/workspace/memory/entity_graph.json")
-OM_OBSERVATIONS = os.path.expanduser("~/.openclaw/workspace/memory/om_observations.md")
+ENTITY_GRAPH = os.path.expanduser(os.environ.get("ENTITY_GRAPH_PATH", "./data/memory/entity_graph.json"))
+OM_OBSERVATIONS = os.path.expanduser(os.environ.get("OM_OBSERVATIONS_PATH", "./data/memory/om_observations.md"))
 OM_MAX_AGE_HOURS = 24  # Refresh observations if older than this
 
 
@@ -250,24 +250,6 @@ def expand_queries(message):
     if any(w in msg_lower for w in ["last year", "months ago", "a while back", "back in"]):
         queries.append(f"older {topic}")
     
-    # 5. Semantic opposites / related concepts for better recall
-    # Maps known topic areas to related search terms
-    expansions = {
-        "ivf": ["fertility supplements embryo PGT genetic screening"],
-        "business": ["revenue deposits analytics marketing"],
-        "car": ["supercar sports-car tuning racing motorsport"],
-        "health": ["testosterone peptide HGH surgery recovery"],
-        "vpn": ["Russia censorship Astrill Amnezia proxy"],
-        "property": ["house apartment Moscow Sochi real estate"],
-        "crypto": ["Bitcoin CHRONOS wallet blockchain hardware"],
-        "doctor": ["medical appointment clinic surgery health"],
-        "ring": ["engagement proposal diamond wedding"],
-    }
-    
-    for keyword, expansion_terms in expansions.items():
-        if keyword in msg_lower:
-            queries.append(expansion_terms[0])
-    
     return queries[:12]  # Cap at 12 queries (still < 300ms total)
 
 def lookup_entity_graph(name):
@@ -423,16 +405,16 @@ def recall(message, max_results=10, force=False):
             # Specific domains the user cares about
             "appointment", "email", "searched", "looked into", "researched",
             "doctor", "car", "health", "brand", "platform", "revenue",
-            "partner", "family_member_1", "family_member_2", "contact_1", "contact_2", "contact_3",
-            "supercar", "sports-car", "motorsport", "medical", "health",
-            "property", "house", "apartment", "moscow", "sochi", "budapest",
-            "vpn", "astrill", "peptide", "testosterone", "surgery", "recovery",
+            "partner", "family", "contact",
+            "vehicle", "transportation", "medical", "health",
+            "property", "house", "apartment", "city",
+            "vpn", "proxy", "medication", "surgery", "recovery",
             "ring", "proposal", "engaged", "wedding",
             "racing", "performance",
-            "crypto", "bitcoin", "wallet", "ledger",
-            "supplement", "medication", "hgh", "bpc", "mots",
+            "crypto", "cryptocurrency", "wallet", "ledger",
+            "supplement", "medication",
             "revenue", "deposit", "affiliate", "streamer",
-            "genome", "genetic", "pgt", "embryo",
+            "genome", "genetic",
         ]
         
         # Check for proper nouns (capitalized words)

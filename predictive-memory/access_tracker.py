@@ -9,15 +9,15 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
+DATA_DIR = Path(os.environ.get("PREDICTIVE_DATA_DIR", "./data/memory/predictive"))
 ACCESS_LOG = DATA_DIR / "access_log.jsonl"
 
 # Common topic extraction patterns
 ENTITY_KEYWORDS = {
     "family": ["family", "spouse", "partner", "household", "relatives"],
-    "health": ["health", "medical", "doctor", "appointment", "wellness", "testosterone", "hgh", "peptides", "mounjaro", "cgm", "whoop", "supplements", "bpc-157", "tb-500"],
+    "health": ["health", "medical", "doctor", "appointment", "wellness", "supplements"],
     "business": ["business", "revenue", "deposits", "metrics", "growth", "performance", "analytics", "licensing", "platform", "operations"],
-    "crypto": ["bitcoin", "btc", "usdt", "crypto"],
+    "crypto": ["cryptocurrency", "btc", "crypto"],
     "tech": ["ollama", "qdrant", "${WORKSPACE_NAME:-memory}", "server", "gpu", "vllm", "proxy"],
     "travel": ["passport", "travel", "visa", "citizenship"],
     "cars": ["ferrari", "supercar", "gumball"],

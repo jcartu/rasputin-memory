@@ -20,8 +20,8 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
-WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / '.openclaw' / 'workspace'))
-SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / '.openclaw/agents/main/sessions'))
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", "./data"))
+SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", "./data/sessions"))
 FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
 STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
@@ -167,7 +167,7 @@ def pass1_extract_facts(chunk_text):
 - "User's father had a double lung transplant at a major hospital"
 - "The user got married on January 14, 2026"
 - "The user runs a SaaS company with growing monthly revenue across multiple products"
-- "The user takes testosterone propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6"
+- "The user has a medical appointment on Tuesday"
 - "User's brother got married in a ceremony in Feb 2026"
 
 ❌ BAD EXAMPLES (DO NOT include these):

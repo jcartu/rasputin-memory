@@ -16,19 +16,19 @@ import requests
 from datetime import datetime
 from pathlib import Path
 
-DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
+DATA_DIR = Path(os.environ.get("PREDICTIVE_DATA_DIR", "./data/memory/predictive"))
 CACHE_FILE = DATA_DIR / "cache.json"
 QDRANT_SEARCH = "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search"
 
 # Queries per topic for pre-fetching
 TOPIC_QUERIES = {
     "business": ["business revenue this month", "deposit numbers", "platform A performance", "platform B stats", "monthly revenue growth", "curacao license status", "platform performance"],
-    "health": ["testosterone protocol", "supplement stack", "peptide schedule", "mounjaro dosage", "health updates", "medical status", "treatment progress"],
+    "health": ["health updates", "medical status", "treatment progress", "wellness"],
     "family": ["family planning progress", "wellness supplements", "document status"],
     "tech": ["server status", "gpu utilization", "ollama performance", "qdrant stats"],
-    "crypto": ["bitcoin price", "usdt operations", "crypto holdings"],
+    "crypto": ["cryptocurrency price", "crypto operations", "crypto holdings"],
     "travel": ["passport application", "russian travel restrictions"],
-    "cars": ["supercar financing moscow", "ferrari maintenance"],
+    "cars": ["vehicle financing", "car maintenance"],
 }
 
 DEFAULT_TTL_HOURS = 4

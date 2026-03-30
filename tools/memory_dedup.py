@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Memory Deduplication Engine — Phase 3A of RASPUTIN Intelligence Layer.
+Memory Deduplication Engine — Phase 3A.
 
 Scans Qdrant second_brain collection in batches, finds near-duplicate clusters
 (cosine similarity > 0.92), keeps the best one per cluster, deletes the rest.
@@ -146,7 +146,7 @@ def find_duplicates_for_point(point_id, vector, threshold=0.92, limit=10):
 def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_size=100):
     """Main deduplication loop."""
     print(f"{'='*60}")
-    print("RASPUTIN Memory Deduplication Engine")
+    print("Memory Deduplication Engine")
     print(f"{'='*60}")
     print(f"Mode: {'🔴 EXECUTE (will delete!)' if execute else '🟢 DRY RUN (safe)'}")
     print(f"Threshold: {threshold}")
@@ -335,7 +335,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="RASPUTIN Memory Deduplication Engine")
+    parser = argparse.ArgumentParser(description="Memory Deduplication Engine")
     parser.add_argument("--threshold", type=float, default=0.92, help="Cosine similarity threshold (default: 0.92)")
     parser.add_argument("--limit", type=int, default=None, help="Max vectors to scan (default: all)")
     parser.add_argument("--execute", action="store_true", help="Actually delete duplicates (default: dry run)")

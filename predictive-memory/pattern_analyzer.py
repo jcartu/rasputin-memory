@@ -11,7 +11,7 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-DATA_DIR = Path(os.path.expanduser("~/.openclaw/workspace/memory/predictive"))
+DATA_DIR = Path(os.environ.get("PREDICTIVE_DATA_DIR", "./data/memory/predictive"))
 ACCESS_LOG = DATA_DIR / "access_log.jsonl"
 ASSOCIATIONS_FILE = DATA_DIR / "associations.json"
 PATTERNS_FILE = DATA_DIR / "patterns.json"
@@ -167,9 +167,9 @@ def analyze_and_save():
             "family": {"household": 1.0, "planning": 0.9, "wellness": 0.8, "travel": 0.7, "documents": 0.6},
             "dad": {"transplant": 1.0, "ipf": 0.9, "toronto": 0.8, "medications": 0.7, "health": 0.6},
             "business": {"revenue": 1.0, "deposits": 0.9, "platform_a": 0.8, "platform_b": 0.7, "licensing": 0.6, "growth": 0.8, "curacao": 0.6},
-            "health": {"testosterone": 1.0, "peptides": 0.9, "mounjaro": 0.8, "whoop": 0.7, "cgm": 0.6},
+            "health": {"medical": 1.0, "wellness": 0.9, "fitness": 0.8, "health": 0.7},
             "tech": {"server": 1.0, "gpu": 0.9, "ollama": 0.8, "qdrant": 0.7, "proxy": 0.6},
-            "crypto": {"bitcoin": 1.0, "usdt": 0.9, "business": 0.5},
+            "crypto": {"cryptocurrency": 1.0, "crypto": 0.9, "business": 0.5},
             "travel": {"passport": 1.0, "family": 0.8, "citizenship": 0.7},
             "cars": {"ferrari": 1.0, "supercar": 0.9, "gumball": 0.8},
         }
@@ -191,7 +191,7 @@ def analyze_and_save():
             "family": {"planning": 0.5, "medical": 0.4, "supplements": 0.3, "documents": 0.3},
             "dad": {"transplant": 0.5, "ipf": 0.4, "toronto": 0.3},
             "business": {"revenue": 0.5, "deposits": 0.4, "platform_a": 0.3},
-            "health": {"testosterone": 0.5, "peptides": 0.4, "mounjaro": 0.3},
+            "health": {"medical": 0.5, "wellness": 0.4, "fitness": 0.3},
         }
         for topic, related in seed.items():
             if topic not in associations:

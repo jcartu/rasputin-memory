@@ -3,7 +3,7 @@
 # Run this to verify all upgrades are working
 
 echo "════════════════════════════════════════════"
-echo "  RASPUTIN Memory System Health Check"
+echo "  Memory System Health Check"
 echo "════════════════════════════════════════════"
 echo ""
 
