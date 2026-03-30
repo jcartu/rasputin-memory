@@ -1,0 +1,5 @@
+{
+  "persons": ["Alice", "Bob"],
+  "organizations": ["Acme Corp"],
+  "projects": ["my-project"]
+}
