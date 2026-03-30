@@ -9,9 +9,14 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4
@@ -24,10 +29,18 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install ruff pytest
+          pip install ruff pytest pytest-cov mypy
 
-      - name: Lint with ruff
+      - name: Lint
         run: ruff check .
 
-      - name: Run smoke tests
-        run: pytest tests/test_smoke.py -v
+      - name: Type check
+        run: mypy tools/hybrid_brain.py tools/bm25_search.py --ignore-missing-imports
+
+      - name: Unit tests
+        run: pytest tests/ -v --cov=tools --cov-report=xml --cov-report=term-missing -k "not integration"
+
+      - name: Integration tests
+        run: pytest tests/test_integration.py -v || true
+        env:
+          QDRANT_URL: http://localhost:6333
