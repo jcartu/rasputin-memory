@@ -654,31 +654,21 @@ def format_recall(results, original_query=""):
 # ═══════════════════════════════════════════════════════════════
 
 def commit(text, source="conversation", importance=60, metadata=None):
-    """Commit a memory to Qdrant."""
-    embeddings = batch_embed([text], prefix=EMBED_DOC_PREFIX)
-    if not embeddings or not isinstance(embeddings[0], list):
-        return False
-    
-    point_id = abs(hash(text + str(datetime.now()))) % (2**63)
-    payload = {
-        "text": text[:4000],
-        "source": source,
-        "date": datetime.now().isoformat(),
-        "importance": importance,
-        "auto_committed": True,
-    }
-    if metadata:
-        payload.update(metadata)
-    
+    """Commit a memory through hybrid_brain /commit API."""
     try:
-        r = requests.put(
-            f"{QDRANT_URL}/collections/{COLLECTION}/points",
-            json={"points": [{"id": point_id, "vector": embeddings[0], "payload": payload}]},
-            timeout=10
+        resp = requests.post(
+            "http://localhost:7777/commit",
+            json={
+                "text": text,
+                "source": source,
+                "importance": importance,
+                "metadata": metadata,
+            },
+            timeout=30,
         )
-        return r.status_code == 200
-    except:
-        return False
+        return resp.json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 # ═══════════════════════════════════════════════════════════════
 # DEEP DIVE: Get EVERYTHING we know about a topic

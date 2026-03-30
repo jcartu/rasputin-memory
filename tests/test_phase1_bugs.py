@@ -83,3 +83,9 @@ def test_archive_atomicity():
     assert 'pending_archive' in source
     assert 'def recover_pending_archives' in source
     assert 'recover_pending_archives(execute=execute)' in source
+
+
+def test_memory_engine_commit_uses_api():
+    source = (ROOT / "tools" / "memory_engine.py").read_text()
+    assert 'requests.post(' in source
+    assert 'http://localhost:7777/commit' in source
