@@ -1,5 +1,7 @@
 {
-  "persons": ["Alice", "Bob"],
-  "organizations": ["Acme Corp"],
-  "projects": ["my-project"]
+  "people": ["John Smith", "Jane Doe", "Dr. Example"],
+  "persons": ["John Smith", "Jane Doe", "Dr. Example"],
+  "organizations": ["Acme Corp", "Example Inc"],
+  "projects": ["Project Alpha", "Project Beta"],
+  "locations": ["New York", "San Francisco"]
 }

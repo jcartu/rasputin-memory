@@ -12,11 +12,15 @@ Usage:
 
 import argparse
 import json
+import re
 from falkordb import FalkorDB
 
 FALKOR_HOST = "localhost"
 FALKOR_PORT = 6380
 GRAPH_NAME = "brain"
+
+# Destructive Cypher operations that require --force for raw --cypher input
+_DESTRUCTIVE_OPS = re.compile(r'\b(DELETE|DROP|REMOVE|DETACH)\b', re.IGNORECASE)
 
 
 def get_graph():
@@ -26,21 +30,21 @@ def get_graph():
 
 def entity_neighborhood(graph, entity_name, hops=1, limit=50):
     """Get all nodes within N hops of an entity."""
-    # Try to find the entity across all node types
+    hops = min(int(hops), 5)
     results = []
     for label in ["Person", "Organization", "Project", "Topic", "Location"]:
         try:
-            q = f"""
-                MATCH (start:{label} {{name: '{entity_name}'}})
-                MATCH path = (start)-[*1..{hops}]-(connected)
-                RETURN DISTINCT labels(connected)[0] AS type,
-                       connected.name AS name,
-                       connected.text AS text,
-                       length(path) AS distance
-                ORDER BY distance
-                LIMIT {limit}
-            """
-            result = graph.query(q)
+            q = (
+                f"MATCH (start:{label} {{name: $name}}) "
+                f"MATCH path = (start)-[*1..{hops}]-(connected) "
+                "RETURN DISTINCT labels(connected)[0] AS type, "
+                "       connected.name AS name, "
+                "       connected.text AS text, "
+                "       length(path) AS distance "
+                "ORDER BY distance "
+                "LIMIT $lim"
+            )
+            result = graph.query(q, params={"name": entity_name, "lim": limit})
             for row in result.result_set:
                 results.append({
                     "type": row[0],
@@ -54,13 +58,13 @@ def entity_neighborhood(graph, entity_name, hops=1, limit=50):
         # Fuzzy search
         for label in ["Person", "Organization", "Project", "Topic", "Location"]:
             try:
-                q = f"""
-                    MATCH (n:{label})
-                    WHERE toLower(n.name) CONTAINS toLower('{entity_name}')
-                    RETURN n.name AS name, '{label}' AS type
-                    LIMIT 5
-                """
-                result = graph.query(q)
+                q = (
+                    f"MATCH (n:{label}) "
+                    "WHERE toLower(n.name) CONTAINS toLower($name) "
+                    f"RETURN n.name AS name, '{label}' AS type "
+                    "LIMIT 5"
+                )
+                result = graph.query(q, params={"name": entity_name})
                 for row in result.result_set:
                     results.append({"type": row[1], "name": row[0], "distance": 0, "note": "fuzzy match"})
             except Exception:
@@ -71,21 +75,29 @@ def entity_neighborhood(graph, entity_name, hops=1, limit=50):
 
 def topic_memories(graph, topic, since=None, limit=20):
     """Get memories about a topic, optionally filtered by date."""
-    date_filter = f"AND m.date >= '{since}'" if since else ""
-    q = f"""
-        MATCH (m:Memory)-[:ABOUT]->(t:Topic {{name: '{topic.lower()}'}})
-        WHERE m.text IS NOT NULL {date_filter}
-        RETURN m.id, m.text, m.date, m.source
-        ORDER BY m.date DESC
-        LIMIT {limit}
-    """
-    result = graph.query(q)
+    if since:
+        q = (
+            "MATCH (m:Memory)-[:ABOUT]->(t:Topic {name: $topic}) "
+            "WHERE m.text IS NOT NULL AND m.date >= $since "
+            "RETURN m.id, m.text, m.date, m.source "
+            "ORDER BY m.date DESC "
+            "LIMIT $lim"
+        )
+        result = graph.query(q, params={"topic": topic.lower(), "since": since, "lim": limit})
+    else:
+        q = (
+            "MATCH (m:Memory)-[:ABOUT]->(t:Topic {name: $topic}) "
+            "WHERE m.text IS NOT NULL "
+            "RETURN m.id, m.text, m.date, m.source "
+            "ORDER BY m.date DESC "
+            "LIMIT $lim"
+        )
+        result = graph.query(q, params={"topic": topic.lower(), "lim": limit})
     return [{"id": r[0], "text": r[1], "date": r[2], "source": r[3]} for r in result.result_set]
 
 
 def natural_query(graph, question, limit=20):
     """Attempt a natural language query by extracting key terms and searching."""
-    # Simple keyword extraction — pull capitalized words and known patterns
     words = question.split()
     entities = [w.strip("?.,!\"'") for w in words if w[0:1].isupper() and len(w) > 2]
 
@@ -95,7 +107,6 @@ def natural_query(graph, question, limit=20):
         if neighborhood:
             results.append({"entity": entity, "connections": neighborhood})
 
-    # Also try topic search on lowercase words
     topics = [w.lower().strip("?.,!\"'") for w in words if len(w) > 3 and not w[0:1].isupper()]
     for topic in topics[:2]:
         memories = topic_memories(graph, topic, limit=5)
@@ -110,15 +121,15 @@ def shortest_path(graph, from_entity, to_entity):
     for label1 in ["Person", "Organization", "Project", "Topic", "Location"]:
         for label2 in ["Person", "Organization", "Project", "Topic", "Location"]:
             try:
-                q = f"""
-                    MATCH path = shortestPath(
-                        (a:{label1} {{name: '{from_entity}'}})-[*..5]-(b:{label2} {{name: '{to_entity}'}})
-                    )
-                    RETURN [n IN nodes(path) | coalesce(n.name, left(n.text, 80))] AS path,
-                           [r IN relationships(path) | type(r)] AS rels,
-                           length(path) AS hops
-                """
-                result = graph.query(q)
+                q = (
+                    f"MATCH path = shortestPath("
+                    f"    (a:{label1} {{name: $from_name}})-[*..5]-(b:{label2} {{name: $to_name}})"
+                    f") "
+                    "RETURN [n IN nodes(path) | coalesce(n.name, left(n.text, 80))] AS path, "
+                    "       [r IN relationships(path) | type(r)] AS rels, "
+                    "       length(path) AS hops"
+                )
+                result = graph.query(q, params={"from_name": from_entity, "to_name": to_entity})
                 if result.result_set:
                     row = result.result_set[0]
                     return {"path": row[0], "relationships": row[1], "hops": row[2]}
@@ -180,7 +191,8 @@ def main():
     parser.add_argument("--hops", type=int, default=2, help="Hops for neighborhood (default: 2)")
     parser.add_argument("--topic", "-t", help="Topic to search")
     parser.add_argument("--since", help="Date filter YYYY-MM-DD")
-    parser.add_argument("--cypher", "-c", help="Raw Cypher query")
+    parser.add_argument("--cypher", "-c", help="Raw Cypher query (use --force for destructive ops)")
+    parser.add_argument("--force", action="store_true", help="Allow destructive Cypher operations (DELETE, DROP, REMOVE)")
     parser.add_argument("--path", nargs=2, metavar=("FROM", "TO"), help="Shortest path between entities")
     parser.add_argument("--stats", action="store_true", help="Show graph statistics")
     parser.add_argument("--limit", type=int, default=20)
@@ -194,6 +206,10 @@ def main():
         return
 
     if args.cypher:
+        # WARNING: --cypher accepts raw Cypher input. Validate for destructive operations.
+        if _DESTRUCTIVE_OPS.search(args.cypher) and not args.force:
+            print("⚠️  Destructive Cypher detected (DELETE/DROP/REMOVE). Use --force to execute.")
+            return
         result = graph.query(args.cypher)
         if args.json:
             print(json.dumps(result.result_set, indent=2, default=str))

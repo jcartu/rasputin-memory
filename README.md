@@ -149,6 +149,8 @@ RASPUTIN is the only system that combines **all of these** in a single pipeline:
 | Self-hosted, $0/query | ✅ | ➖ | ➖ | ✅ | ✅ |
 | <150ms p95 latency | ✅ | 🟡 50-200ms | ➖ Hours for new | ✅ <50ms | ✅ <100ms |
 
+*Comparison based on publicly available documentation as of March 2026. See each project's docs for current capabilities and benchmarks.*
+
 **The key architectural insight:** Every other system picks 1-2 retrieval strategies. RASPUTIN runs 4 in parallel and fuses them. Vector search finds semantically similar memories. BM25 catches exact terms that embedding models miss. The knowledge graph traverses entity relationships. Then a neural cross-encoder reranks everything for precision. This is why it doesn't miss things.
 
 ---

@@ -23,7 +23,11 @@ import json
 import os
 import re
 import sys
+import math
+import threading
 import time
+import uuid
+from datetime import datetime
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -43,7 +47,7 @@ except ImportError:
         BM25_AVAILABLE = True
     except ImportError:
         pass
-print("[HybridBrain] BM25 reranking: enabled", flush=True)
+print(f"[HybridBrain] BM25 reranking: {'enabled' if BM25_AVAILABLE else 'disabled'}", flush=True)
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
@@ -183,18 +187,29 @@ def neural_rerank(query, results, top_k=None):
         print(f"[HybridBrain] Reranker error: {e}", flush=True)
         return results
 
+_known_entities_cache = None
+_known_entities_mtime = 0.0
+
 def _load_known_entities():
-    """Load known entities from config file. Returns (persons_set, orgs_set, projects_set)."""
+    """Load known entities from config file. Returns (persons_set, orgs_set, projects_set).
+    Cached by file mtime to avoid I/O on every commit."""
+    global _known_entities_cache, _known_entities_mtime
     entities_path = os.environ.get("KNOWN_ENTITIES_PATH",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "known_entities.json"))
     try:
+        current_mtime = os.path.getmtime(entities_path)
+        if _known_entities_cache is not None and current_mtime == _known_entities_mtime:
+            return _known_entities_cache
         with open(entities_path) as f:
             data = json.load(f)
-        return (
-            set(data.get("persons", [])),
+        result = (
+            set(data.get("persons", data.get("people", []))),
             set(data.get("organizations", [])),
             set(data.get("projects", [])),
         )
+        _known_entities_cache = result
+        _known_entities_mtime = current_mtime
+        return result
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"[HybridBrain] Known entities config not found or invalid ({e}), using empty lists", flush=True)
         return set(), set(), set()
@@ -307,6 +322,7 @@ AMAC_REJECT_LOG = os.environ.get("AMAC_REJECT_LOG", "./logs/amac_rejected.log")
 AMAC_TIMEOUT = 30  # seconds — 35B may be busy with swarm agents, give it time
 
 # In-memory metrics (reset on restart)
+_amac_metrics_lock = threading.Lock()
 _amac_metrics = {
     "accepted": 0,
     "rejected": 0,
@@ -408,7 +424,8 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
     global _amac_metrics
 
     if force:
-        _amac_metrics["bypassed"] += 1
+        with _amac_metrics_lock:
+            _amac_metrics["bypassed"] += 1
         return True, "bypassed", {}
 
     # Skip A-MAC for health check / diagnostic messages - they're system tests, not actual memories
@@ -420,8 +437,9 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
 
     if scores is None:
         # Fail-open: Ollama unavailable/timeout
-        _amac_metrics["accepted"] += 1
-        _amac_metrics["timeout_accepts"] += 1
+        with _amac_metrics_lock:
+            _amac_metrics["accepted"] += 1
+            _amac_metrics["timeout_accepts"] += 1
         return True, "timeout_failopen", {}
 
     relevance, novelty, specificity, composite = scores
@@ -433,19 +451,21 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
     }
 
     # Update metrics
-    _amac_metrics["score_sum"] += composite
-    _amac_metrics["score_count"] += 1
+    with _amac_metrics_lock:
+        _amac_metrics["score_sum"] += composite
+        _amac_metrics["score_count"] += 1
 
     if composite >= AMAC_THRESHOLD:
-        _amac_metrics["accepted"] += 1
+        with _amac_metrics_lock:
+            _amac_metrics["accepted"] += 1
         return True, "accepted", score_dict
     else:
-        _amac_metrics["rejected"] += 1
+        with _amac_metrics_lock:
+            _amac_metrics["rejected"] += 1
         # Log rejection
         try:
-            import datetime
             entry = {
-                "ts": datetime.datetime.now().isoformat(),
+                "ts": datetime.now().isoformat(),
                 "source": source,
                 "scores": score_dict,
                 "text": text[:200],
@@ -472,8 +492,6 @@ def commit_memory(text, source="conversation", importance=60, metadata=None, age
         print(f"[commit_memory] REJECTED: embedding magnitude {magnitude:.4f} too low (garbage vector)", flush=True)
         return {"ok": False, "error": f"Embedding magnitude too low: {magnitude:.4f}"}
 
-    import hashlib
-    from datetime import datetime
     
     # Inline dedup check
     is_dupe, existing_id, similarity = check_duplicate(vector, text)
@@ -485,7 +503,7 @@ def commit_memory(text, source="conversation", importance=60, metadata=None, age
         dedup_action = "updated"
         print(f"[Dedup] Near-duplicate found (sim={similarity}), updating point {point_id}", flush=True)
     else:
-        point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
+        point_id = str(uuid.uuid4())
     
     timestamp = datetime.now().isoformat()
 
@@ -549,12 +567,11 @@ def commit_memory(text, source="conversation", importance=60, metadata=None, age
 
 def _parse_date(date_str):
     """Parse various date formats, return datetime or None."""
-    from datetime import datetime as _dt
     if not date_str:
         return None
     for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
         try:
-            return _dt.strptime(date_str[:26], fmt)
+            return datetime.strptime(date_str[:26], fmt)
         except ValueError:
             continue
     return None
@@ -570,11 +587,8 @@ def apply_temporal_decay(results, half_life_days=30):
     - Retrieval count boosts stability (spaced repetition for AI)
     - Floor at 20% to never fully kill old critical memories
     """
-    import math
-    from datetime import datetime
-    
     now = datetime.now()
-    
+
     for r in results:
         dt = _parse_date(r.get("date", ""))
         if not dt:
@@ -703,6 +717,7 @@ def qdrant_search(query, limit=10, source_filter=None, agent_id=None):
             "importance": point.payload.get("importance", 50),
             "retrieval_count": point.payload.get("retrieval_count", 0),
             "agent_id": point.payload.get("agent_id"),
+            "_id": point.id,
             "origin": "qdrant",
         })
     
@@ -721,32 +736,12 @@ def _build_entity_lookup():
     global _KNOWN_ENTITY_LOOKUP
     lookup = {}
     
-    # Hardcoded high-value entities with aliases
-    _persons = {
-        "User": ["user", "user agent"],
-        "Partner": ["partner", "spouse"],
-        "Family1": ["family_member_1"],
-        "Family2": ["family_member_2"],
-        "Family3": ["family_member_3"],
-        "Contact4": ["contact_4"],
-        "Contact5": ["contact_5"],
-        "Contact6": ["contact_6"],
-        "Contact7": ["contact_7"],
-        "Contact8": ["contact_8"],
-        "Contact9": ["contact_9"],
-        "Contact10": ["contact_10"],
-        "Contact11": ["contact_11"],
-    }
+    # Add your own entity categories here.
+    # Map canonical names to lowercase aliases for fuzzy matching.
+    # Example:
+    #   _persons = {"Alice Smith": ["alice", "alice smith"]}
+    _persons = {}
     _orgs = {
-        "BrandA": ["brand_a"],
-        "BrandB": ["brand_b"],
-        "BrandC": ["brand_c"],
-        "BrandD": ["brand_d"],
-        "BrandE": ["brand_e"],
-        "HoldingCo": ["holding_co"],
-        "ParentCo": ["parent_co"],
-        "Platform": ["platform", "platform powered"],
-
         "OpenClaw": ["openclaw"],
         "FalkorDB": ["falkordb"],
         "Qdrant": ["qdrant"],
@@ -775,9 +770,10 @@ def _build_entity_lookup():
         for a in aliases:
             lookup[a] = (name, "Topic")
     
-    # Load entity_graph.json if available
+    # Load entity_graph.json if available (configurable via ENTITY_GRAPH_PATH env var)
     try:
-        eg_path = os.path.join(os.path.dirname(__file__), "..", "memory", "entity_graph.json")
+        eg_path = os.environ.get("ENTITY_GRAPH_PATH",
+            os.path.join(os.path.dirname(__file__), "..", "memory", "entity_graph.json"))
         with open(eg_path) as f:
             eg = json.load(f)
         for name in eg.get("people", {}):
@@ -798,6 +794,8 @@ def _build_entity_lookup():
             if name.lower() not in lookup:
                 lookup[name.lower()] = (name, "Topic")
         print(f"[HybridBrain] Loaded {len(lookup)} known entity mappings (incl. entity_graph.json)", flush=True)
+    except FileNotFoundError:
+        print("[HybridBrain] No entity_graph.json found — entity lookup will use known_entities.json only", flush=True)
     except Exception as e:
         print(f"[HybridBrain] entity_graph.json load failed (non-fatal): {e}", flush=True)
     
@@ -1136,8 +1134,7 @@ def hybrid_search(query, limit=10, graph_hops=2, source_filter=None, agent_id=No
 def _update_access_tracking(results):
     """Update last_accessed and access_count for returned search results.
     Non-blocking — failures are logged but don't affect search."""
-    from datetime import datetime as _dt
-    now = _dt.now().isoformat()
+    now = datetime.now().isoformat()
     
     for r in results:
         # We need the point ID — reconstruct from text hash if not available
@@ -1357,7 +1354,10 @@ class HybridHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/search":
             query = params.get("q", [""])[0]
-            limit = int(params.get("limit", ["10"])[0])
+            try:
+                limit = min(int(params.get("limit", ["10"])[0]), 1000)
+            except ValueError:
+                limit = 10
             source = params.get("source", [None])[0]
             agent_id = params.get("agent_id", [None])[0] if TENANT_MODE else None
 
@@ -1370,8 +1370,14 @@ class HybridHandler(BaseHTTPRequestHandler):
 
         elif parsed.path == "/graph":
             query = params.get("q", [""])[0]
-            limit = int(params.get("limit", ["10"])[0])
-            hops = int(params.get("hops", ["2"])[0])
+            try:
+                limit = min(int(params.get("limit", ["10"])[0]), 1000)
+            except ValueError:
+                limit = 10
+            try:
+                hops = min(int(params.get("hops", ["2"])[0]), 5)
+            except ValueError:
+                hops = 2
 
             if not query:
                 self._send_json({"error": "Missing q parameter"}, 400)
@@ -1466,7 +1472,11 @@ class HybridHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._check_auth():
             return
+        MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024))  # 10MB default
         content_length = int(self.headers.get("Content-Length", 0))
+        if content_length > MAX_CONTENT_LENGTH:
+            self._send_json({"error": f"Payload too large ({content_length} bytes, max {MAX_CONTENT_LENGTH})"}, 413)
+            return
         body = self.rfile.read(content_length)
 
         try:
@@ -1543,6 +1553,7 @@ class HybridHandler(BaseHTTPRequestHandler):
         else:
             self._send_json({"error": f"Unknown path: {parsed.path}"}, 404)
 
+# NOTE: For production, run behind a reverse proxy (nginx/caddy) with TLS and connection limits
 class ReusableHTTPServer(ThreadingHTTPServer):
     allow_reuse_address = True
     allow_reuse_port = True
@@ -1593,6 +1604,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hybrid Brain Search Server")
     parser.add_argument("--port", type=int, default=7777)
     parser.add_argument("--test", action="store_true")
+    parser.add_argument("--tenant-mode", action="store_true", default=False, help="Enable multi-tenant agent isolation")
     args = parser.parse_args()
 
     global TENANT_MODE

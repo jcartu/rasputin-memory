@@ -9,6 +9,7 @@ Run: python3 tools/memory-mcp-server.py --http    (HTTP/SSE on port 8101)
 import argparse
 import json
 import os
+import re
 import subprocess
 
 from mcp.server.fastmcp import FastMCP
@@ -16,6 +17,9 @@ from mcp.server.fastmcp import FastMCP
 BRAIN_URL = "http://localhost:7777"
 FALKORDB_HOST = "localhost"
 FALKORDB_PORT = 6380
+
+# Destructive Cypher operations blocked unless explicitly allowed
+_DESTRUCTIVE_OPS = re.compile(r'\b(DELETE|DROP|REMOVE|DETACH)\b', re.IGNORECASE)
 
 mcp_server = FastMCP(os.environ.get("MCP_SERVER_NAME", "memory-server"))
 
@@ -89,7 +93,10 @@ def memory_proactive(context: list[str]) -> str:
 @mcp_server.tool()
 def memory_graph_query(cypher: str) -> str:
     """Run a Cypher query against RASPUTIN's FalkorDB knowledge graph.
-    Example: MATCH (n:Entity) RETURN n.name LIMIT 10"""
+    Example: MATCH (n:Entity) RETURN n.name LIMIT 10
+    Note: Destructive operations (DELETE, DROP, REMOVE) are blocked."""
+    if _DESTRUCTIVE_OPS.search(cypher):
+        return "ERROR: Destructive Cypher operations (DELETE/DROP/REMOVE) are not allowed via MCP."
     raw = _redis_cmd("GRAPH.QUERY", "memory_graph", cypher)
     if not raw:
         return "Empty result or graph not found."
@@ -142,6 +149,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.http:
-        mcp_server.run(transport="sse", host="0.0.0.0", port=8101)
+        mcp_host = os.environ.get("MCP_HOST", "127.0.0.1")
+        mcp_server.run(transport="sse", host=mcp_host, port=8101)
     else:
         mcp_server.run(transport="stdio")

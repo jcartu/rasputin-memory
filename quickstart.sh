@@ -85,8 +85,12 @@ echo ""
 
 # ─── 5. Python dependencies ─────────────────────────────────────────────────
 
+echo "📦 Setting up Python virtual environment..."
+python3 -m venv .venv
+source .venv/bin/activate
 echo "📦 Installing Python dependencies..."
 pip install -q -r requirements.txt
+echo "  ✅ Installed in .venv/"
 
 echo ""
 
@@ -132,6 +136,7 @@ echo "========================================="
 echo "🎉 Setup complete!"
 echo ""
 echo "Start the memory server:"
+echo "  source .venv/bin/activate"
 echo "  python3 tools/hybrid_brain.py"
 echo "  → API at http://localhost:7777"
 echo ""
