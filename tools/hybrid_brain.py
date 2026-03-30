@@ -15,6 +15,7 @@ Usage:
 import argparse
 import importlib
 import json
+import logging
 import os
 import re
 import signal
@@ -51,7 +52,7 @@ except ModuleNotFoundError:
     _query_expansion = importlib.import_module("tools.pipeline.query_expansion")
 expand_queries = _query_expansion.expand_queries
 
-print("[HybridBrain] BM25 reranking: enabled", flush=True)
+logger.info("BM25 reranking enabled")
 BM25_AVAILABLE = True
 
 CONFIG = load_config()
@@ -75,7 +76,7 @@ KNOWN_ENTITIES_PATH = CONFIG["entities"]["known_entities_path"]
 # A/B test toggle: set DISABLE_FALKORDB=1 to skip all graph queries
 FALKORDB_DISABLED = bool(CONFIG["graph"]["disabled"])
 if FALKORDB_DISABLED:
-    print("[HybridBrain] ⚠ FalkorDB DISABLED via DISABLE_FALKORDB env var", flush=True)
+    logger.warning("FalkorDB disabled via config/env")
 
 qdrant = QdrantClient(url=QDRANT_URL)
 _commit_lock = threading.Lock()
@@ -93,7 +94,7 @@ def is_reranker_available() -> bool:
         return False
 
 
-print("[HybridBrain] Neural reranker: dynamic (checked per-request, port 8006)", flush=True)
+logger.info("Neural reranker configured for dynamic availability checks")
 
 STOP_WORDS = {
     "what",
@@ -194,19 +195,19 @@ def get_embedding(text: str, prefix: str = EMBED_PREFIX_QUERY) -> list[float]:
                 return data["embedding"]
             raise ValueError(f"Unexpected embedding response: {list(data.keys())}")
         except requests.exceptions.Timeout:
-            print(f"[Embedding] Timeout on attempt {attempt + 1}/{max_retries}", flush=True)
+            logger.warning("Embedding timeout on attempt %s/%s", attempt + 1, max_retries)
             if attempt < max_retries - 1:
                 time.sleep(2)
                 continue
             raise Exception("Embedding service timeout after retries")
         except requests.exceptions.ConnectionError as e:
-            print(f"[Embedding] Connection error: {e}", flush=True)
+            logger.error("Embedding connection error: %s", e)
             if attempt < max_retries - 1:
                 time.sleep(2)
                 continue
             raise Exception(f"Embedding service unavailable: {e}")
         except Exception as e:
-            print(f"[Embedding] Error: {e}", flush=True)
+            logger.error("Embedding error: %s", e)
             raise
 
     raise RuntimeError("Embedding generation failed")
@@ -227,7 +228,7 @@ def get_embedding_safe(
     try:
         return get_embedding(text, prefix=prefix)
     except Exception as e:
-        print(f"[Embedding] Failed ({default_action}): {e}", flush=True)
+        logger.error("Embedding failed (%s): %s", default_action, e)
 
         if default_action == "empty":
             # Return zero vector for graceful degradation
@@ -271,7 +272,7 @@ def neural_rerank(query: str, results: list[dict[str, Any]], top_k: Optional[int
         reranked = sorted(results, key=lambda x: x.get("rerank_score", 0), reverse=True)
         return reranked[:top_k] if top_k else reranked
     except Exception as e:
-        print(f"[HybridBrain] Reranker error: {e}", flush=True)
+        logger.error("Reranker error: %s", e)
         return results
 
 
@@ -302,7 +303,7 @@ def _load_known_entities():
         _known_entities_cache_ts = now
         return _known_entities_cache
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"[HybridBrain] Known entities config not found or invalid ({e}), using empty lists", flush=True)
+        logger.warning("Known entities config missing/invalid (%s), using empty sets", e)
         _known_entities_cache = (set(), set(), set())
         _known_entities_cache_ts = now
         return _known_entities_cache
@@ -353,7 +354,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
         r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
         r.ping()
     except Exception as e:
-        print(f"[Graph-Commit] FalkorDB connection error: {e}", flush=True)
+        logger.error("Graph commit FalkorDB connection error: %s", e)
         return False, []
 
     text_preview = text[:500].replace("\n", " ")
@@ -369,7 +370,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
             json.dumps({"id": str(point_id), "text": text_preview, "ts": ts}),
         )
     except Exception as e:
-        print(f"[Graph-Commit] Memory node error: {e}", flush=True)
+        logger.error("Graph commit memory node error: %s", e)
         return False, []
 
     # Create Entity nodes + relationships and collect connected entity names
@@ -389,7 +390,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
             )
             connected_entities.append(name)
         except Exception as e:
-            print(f"[Graph-Commit] Entity '{name}' error: {e}", flush=True)
+            logger.error("Graph commit entity error for '%s': %s", name, e)
 
     return True, connected_entities
 
@@ -415,7 +416,7 @@ def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> 
                     return True, point.id, round(point.score, 4)
         return False, None, 0
     except Exception as e:
-        print(f"[Dedup] Check error: {e}", flush=True)
+        logger.error("Dedup check error: %s", e)
         return False, None, 0
 
 
@@ -496,7 +497,7 @@ def amac_score(text: str, retry: int = 2) -> Optional[tuple[float, float, float,
                     if all(0 <= int(x) <= 10 for x in s):
                         r, n, s_val = float(s[0]), float(s[1]), float(s[2])
                         composite = round((r + n + s_val) / 3, 2)
-                        print(f"[A-MAC] Parsed sentinel scores: r={r}, n={n}, s={s_val}", flush=True)
+                        logger.info("A-MAC parsed sentinel scores r=%s n=%s s=%s", r, n, s_val)
                         return r, n, s_val, composite
 
             # Pattern 1: Look for explicit score output after thinking
@@ -517,7 +518,7 @@ def amac_score(text: str, retry: int = 2) -> Optional[tuple[float, float, float,
                         triplet_positions.append(idx)
 
             if not all_triplets:
-                print(f"[A-MAC] Could not find valid score triplets from: {repr(raw[:200])}", flush=True)
+                logger.warning("A-MAC could not parse score triplets from response fragment: %s", repr(raw[:200]))
                 return None
 
             # Strategy: Use the LAST valid triplet (should be the actual decision, not examples)
@@ -525,17 +526,17 @@ def amac_score(text: str, retry: int = 2) -> Optional[tuple[float, float, float,
             composite = round((r + n + s) / 3, 2)
 
             # Log what we found for debugging
-            print(f"[A-MAC] Parsed scores from triplet #{len(all_triplets)}: r={r}, n={n}, s={s}", flush=True)
+            logger.info("A-MAC parsed scores from triplet #%s: r=%s n=%s s=%s", len(all_triplets), r, n, s)
             return r, n, s, composite
 
         except requests.exceptions.Timeout:
-            print("[A-MAC] Ollama timeout — fail-open, accepting commit", flush=True)
+            logger.warning("A-MAC timeout; fail-open accepting commit")
             return None
         except Exception as e:
             if attempt < retry:
-                print(f"[A-MAC] Scoring error (attempt {attempt + 1}), retrying: {e}", flush=True)
+                logger.warning("A-MAC scoring error on attempt %s, retrying: %s", attempt + 1, e)
                 continue
-            print(f"[A-MAC] Scoring error — fail-open: {e}", flush=True)
+            logger.error("A-MAC scoring error; fail-open: %s", e)
             return None
 
     return None
@@ -596,7 +597,7 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False) -> tuple[
             with open(AMAC_REJECT_LOG, "a") as f:
                 f.write(json.dumps(entry) + "\n")
         except Exception as log_err:
-            print(f"[A-MAC] Failed to write reject log: {log_err}", flush=True)
+            logger.error("A-MAC failed to write reject log: %s", log_err)
         return False, "rejected", score_dict
 
 
@@ -613,7 +614,7 @@ def commit_memory(
         try:
             vector = get_embedding(text[:4000], prefix=EMBED_PREFIX_DOC)
         except Exception as e:
-            print(f"[commit_memory] Embedding failed, aborting commit: {e}", flush=True)
+            logger.error("commit_memory embedding failed: %s", e)
             return {"ok": False, "error": f"Embedding failed: {e}"}
 
         # Reject garbage embeddings (e.g. Ollama mid-model-swap returns near-zero vectors)
@@ -621,7 +622,7 @@ def commit_memory(
 
         magnitude = math.sqrt(sum(x * x for x in vector))
         if magnitude < 0.1:
-            print(f"[commit_memory] REJECTED: embedding magnitude {magnitude:.4f} too low (garbage vector)", flush=True)
+            logger.warning("commit_memory rejected embedding magnitude %.4f too low", magnitude)
             return {"ok": False, "error": f"Embedding magnitude too low: {magnitude:.4f}"}
 
         import hashlib
@@ -635,7 +636,7 @@ def commit_memory(
             # Update existing point instead of creating new one
             point_id = existing_id
             dedup_action = "updated"
-            print(f"[Dedup] Near-duplicate found (sim={similarity}), updating point {point_id}", flush=True)
+            logger.info("Dedup near-duplicate found (sim=%s), updating point %s", similarity, point_id)
         else:
             point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
 
@@ -689,7 +690,7 @@ def commit_memory(
             else:
                 graph_ok = True  # No entities to write is not a failure
         except Exception as e:
-            print(f"[Graph-Commit] Error (non-fatal): {e}", flush=True)
+            logger.error("Graph commit non-fatal error: %s", e)
 
         # Update Qdrant payload with connected_to field if we have connected entities
         if connected_to:
@@ -698,7 +699,7 @@ def commit_memory(
                     collection_name=COLLECTION, points=[point_id], payload={"connected_to": connected_to}
                 )
             except Exception as e:
-                print(f"[Graph-Commit] Failed to update connected_to in Qdrant: {e}", flush=True)
+                logger.error("Graph commit failed to update connected_to payload: %s", e)
 
         return {
             "ok": True,
@@ -841,7 +842,7 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
     try:
         vector = get_embedding(query)
     except Exception as e:
-        print(f"[Qdrant] Embedding error: {e}", file=sys.stderr)
+        logger.error("Qdrant embedding error: %s", e)
         return []
 
     search_filter = None
@@ -966,9 +967,9 @@ def _build_entity_lookup():
         for name in eg.get("topics", {}):
             if name.lower() not in lookup:
                 lookup[name.lower()] = (name, "Topic")
-        print(f"[HybridBrain] Loaded {len(lookup)} known entity mappings (incl. entity_graph.json)", flush=True)
+        logger.info("Loaded %s known entity mappings including entity_graph.json", len(lookup))
     except Exception as e:
-        print(f"[HybridBrain] entity_graph.json load failed (non-fatal): {e}", flush=True)
+        logger.warning("entity_graph.json load failed (non-fatal): %s", e)
 
     _KNOWN_ENTITY_LOOKUP = lookup
 
@@ -1041,7 +1042,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
         r.ping()
     except Exception as e:
-        print(f"[Graph] Connection error: {e}", file=sys.stderr)
+        logger.error("Graph connection error: %s", e)
         return []
 
     typed_entities = extract_entities(query)
@@ -1097,7 +1098,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                             }
                         )
             except Exception as e:
-                print(f"[Graph] 1-hop memory error for {label}/{entity_name}: {e}", file=sys.stderr)
+                logger.error("Graph 1-hop memory error for %s/%s: %s", label, entity_name, e)
 
         # --- 2-hop: Entity → co-mentioned entities → their Memory nodes ---
         if hops >= 2 and labels:
@@ -1136,7 +1137,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                                 }
                             )
                 except Exception as e:
-                    print(f"[Graph] 2-hop error for {label}/{entity_name}: {e}", file=sys.stderr)
+                    logger.error("Graph 2-hop error for %s/%s: %s", label, entity_name, e)
 
         # --- Fallback for keywords: search Memory.text directly ---
         if entity_type == "Keyword" and len(entity_name) > 3:
@@ -1166,7 +1167,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                             }
                         )
             except Exception as e:
-                print(f"[Graph] Keyword search error: {e}", file=sys.stderr)
+                logger.error("Graph keyword search error: %s", e)
 
         # --- Also collect entity relationship context (non-Memory neighbors) ---
         for label in labels:
@@ -1248,7 +1249,7 @@ def enrich_with_graph(results: list[dict[str, Any]], limit: int = 5) -> dict[str
 
         return enrichment
     except Exception as e:
-        print(f"[HybridBrain] Graph enrichment error (non-fatal): {e}", flush=True)
+        logger.error("Graph enrichment non-fatal error: %s", e)
         return {}
 
 
@@ -1293,7 +1294,7 @@ def hybrid_search(
             qdrant_results = bm25_rerank(query, qdrant_results)
             bm25_applied = True
         except Exception as e:
-            print(f"[HybridBrain] BM25 rerank error: {e}", flush=True)
+            logger.error("BM25 rerank error: %s", e)
 
     # Stage 2: Merge graph Memory results with Qdrant results BEFORE reranking
     # Graph results with actual .text content are first-class reranker candidates
@@ -1497,7 +1498,7 @@ def proactive_surface(context_messages: list[str], max_results: int = 3) -> list
                         "importance": importance,
                     }
         except Exception as e:
-            print(f"[Proactive] Search error for '{query}': {e}", flush=True)
+            logger.error("Proactive search error for '%s': %s", query, e)
 
     # Sort by proactive score, return top N
     sorted_results = sorted(all_results.values(), key=lambda x: x["proactive_score"], reverse=True)
@@ -1528,8 +1529,8 @@ def proactive_surface(context_messages: list[str], max_results: int = 3) -> list
             break
 
     elapsed = time.time() - t0
-    print(
-        f"[Proactive] {len(final)} suggestions from {len(search_queries)} queries ({elapsed * 1000:.0f}ms)", flush=True
+    logger.info(
+        "Proactive surfaced %s suggestions from %s queries (%sms)", len(final), len(search_queries), int(elapsed * 1000)
     )
 
     return final
@@ -1544,8 +1545,8 @@ MAX_BODY_SIZE = 1 * 1024 * 1024
 
 
 class HybridHandler(BaseHTTPRequestHandler):
-    def log_message(self, fmt, *args):
-        pass
+    def log_message(self, format, *args):
+        logger.debug("%s %s", self.client_address[0], format % args)
 
     def _check_auth(self):
         """Check bearer token if MEMORY_API_TOKEN is set. Returns True if authorized."""
@@ -1569,7 +1570,7 @@ class HybridHandler(BaseHTTPRequestHandler):
         try:
             self._handle_get()
         except Exception as e:
-            print(f"[HybridBrain] Unhandled GET error: {e}", flush=True)
+            logger.error("Unhandled GET error: %s", e)
             try:
                 self._send_json({"error": "Internal server error"}, 500)
             except Exception:
@@ -1698,7 +1699,7 @@ class HybridHandler(BaseHTTPRequestHandler):
         try:
             self._handle_post()
         except Exception as e:
-            print(f"[HybridBrain] Unhandled POST error: {e}", flush=True)
+            logger.error("Unhandled POST error: %s", e)
             try:
                 self._send_json({"error": "Internal server error"}, 500)
             except Exception:
@@ -1823,21 +1824,21 @@ def serve(port: int = SERVER_PORT) -> None:
     server = ReusableHTTPServer(("127.0.0.1", port), HybridHandler)
 
     def shutdown_handler(signum: int, _frame: Any) -> None:
-        print(f"[HybridBrain] Received signal {signum}, shutting down gracefully...", flush=True)
+        logger.info("Received signal %s, shutting down gracefully", signum)
         server.shutdown()
 
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)
 
-    print(f"[HybridBrain] Serving on http://127.0.0.1:{port}", flush=True)
-    print(f"[HybridBrain] Qdrant: {COLLECTION} ({qdrant.get_collection(COLLECTION).points_count} pts)", flush=True)
+    logger.info("Serving on http://127.0.0.1:%s", port)
+    logger.info("Qdrant: %s (%s pts)", COLLECTION, qdrant.get_collection(COLLECTION).points_count)
     try:
         r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
         nc = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
         ec = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
-        print(f"[HybridBrain] FalkorDB: {nc} nodes, {ec} edges", flush=True)
+        logger.info("FalkorDB: %s nodes, %s edges", nc, ec)
     except:
-        print("[HybridBrain] FalkorDB: unavailable (graph search disabled)", flush=True)
+        logger.warning("FalkorDB unavailable (graph search disabled)")
     server.serve_forever()
 
 
@@ -1846,3 +1847,5 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=SERVER_PORT)
     args = parser.parse_args()
     serve(args.port)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+logger = logging.getLogger("hybrid_brain")
