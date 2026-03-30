@@ -1,11 +1,12 @@
 import sys
+import importlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-import hybrid_brain
+hybrid_brain = importlib.import_module("tools.hybrid_brain")
 
 
 class FakeRedis:
