@@ -398,7 +398,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
     return True, connected_entities
 
 
-def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> tuple[bool, Optional[int], float]:
+def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> tuple[bool, Optional[Any], float]:
     """Check if a near-duplicate memory already exists.
     Returns (is_dupe, existing_point_id, similarity) or (False, None, 0)."""
     try:
@@ -410,7 +410,8 @@ def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> 
         )
         for point in results.points:
             if point.score >= threshold:
-                existing_text = point.payload.get("text", "")
+                payload = point.payload or {}
+                existing_text = payload.get("text", "")
                 # Also check text overlap to avoid false positives on short generic texts
                 words_new = set(re.findall(r"\w+", text.lower()))
                 words_old = set(re.findall(r"\w+", existing_text.lower()))
@@ -442,7 +443,7 @@ _amac_metrics = {
 }
 
 
-def _inc_metric(key, amount=1):
+def _inc_metric(key: str, amount: float = 1) -> None:
     with _amac_metrics_lock:
         _amac_metrics[key] += amount
 
@@ -862,17 +863,18 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
 
     out = []
     for point in results.points:
+        payload = point.payload or {}
         out.append(
             {
                 "score": round(point.score, 4),
-                "text": point.payload.get("text", ""),
-                "source": point.payload.get("source", ""),
-                "date": point.payload.get("date", ""),
-                "title": point.payload.get("title", ""),
-                "url": point.payload.get("url", ""),
-                "domain": point.payload.get("domain", ""),
-                "importance": point.payload.get("importance", 50),
-                "retrieval_count": point.payload.get("retrieval_count", 0),
+                "text": payload.get("text", ""),
+                "source": payload.get("source", ""),
+                "date": payload.get("date", ""),
+                "title": payload.get("title", ""),
+                "url": payload.get("url", ""),
+                "domain": payload.get("domain", ""),
+                "importance": payload.get("importance", 50),
+                "retrieval_count": payload.get("retrieval_count", 0),
                 "point_id": point.id,
                 "origin": "qdrant",
             }
@@ -883,147 +885,6 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
     # Stage 2: Multi-factor importance scoring
     out = apply_multifactor_scoring(out)
     return out
-
-
-# ─── Known Entity Dictionaries (loaded at startup for search-side extraction) ───
-# Maps lowercase name/alias → (canonical_name, label_type)
-_KNOWN_ENTITY_LOOKUP = {}
-
-
-def _build_entity_lookup():
-    """Build lookup from entity_graph.json + hardcoded known entities."""
-    global _KNOWN_ENTITY_LOOKUP
-    lookup = {}
-
-    # Hardcoded high-value entities with aliases
-    _persons = {
-        "User": ["user", "user agent"],
-        "Partner": ["partner", "spouse"],
-        "Family1": ["family_member_1"],
-        "Family2": ["family_member_2"],
-        "Family3": ["family_member_3"],
-        "Contact4": ["contact_4"],
-        "Contact5": ["contact_5"],
-        "Contact6": ["contact_6"],
-        "Contact7": ["contact_7"],
-        "Contact8": ["contact_8"],
-        "Contact9": ["contact_9"],
-        "Contact10": ["contact_10"],
-        "Contact11": ["contact_11"],
-    }
-    _orgs = {
-        "BrandA": ["brand_a"],
-        "BrandB": ["brand_b"],
-        "BrandC": ["brand_c"],
-        "BrandD": ["brand_d"],
-        "BrandE": ["brand_e"],
-        "HoldingCo": ["holding_co"],
-        "ParentCo": ["parent_co"],
-        "Platform": ["platform", "platform powered"],
-        "OpenClaw": ["openclaw"],
-        "FalkorDB": ["falkordb"],
-        "Qdrant": ["qdrant"],
-    }
-    _projects = {
-        "memory-system": ["memory system"],
-        "hybrid_brain": ["hybrid_brain", "hybrid brain", "second brain"],
-    }
-    _topics = {
-        "Medical": ["medical", "health", "treatment"],
-        "Business ops": ["revenue", "marketing", "operations"],
-        "GPU infrastructure": ["gpu", "inference server", "llama-swap"],
-        "Wellness": ["wellness", "supplements", "fitness"],
-    }
-
-    for name, aliases in _persons.items():
-        for a in aliases:
-            lookup[a] = (name, "Person")
-    for name, aliases in _orgs.items():
-        for a in aliases:
-            lookup[a] = (name, "Organization")
-    for name, aliases in _projects.items():
-        for a in aliases:
-            lookup[a] = (name, "Project")
-    for name, aliases in _topics.items():
-        for a in aliases:
-            lookup[a] = (name, "Topic")
-
-    # Load entity_graph.json if available
-    try:
-        eg_path = os.path.join(os.path.dirname(__file__), "..", "memory", "entity_graph.json")
-        with open(eg_path) as f:
-            eg = json.load(f)
-        for name in eg.get("people", {}):
-            # Handle "Name (alias)" style
-            clean = name.split("(")[0].strip()
-            for variant in [name.lower(), clean.lower()]:
-                if variant not in lookup:
-                    lookup[variant] = (clean, "Person")
-            # Also add parenthetical aliases
-            if "(" in name:
-                alias = name.split("(")[1].rstrip(")")
-                if alias.lower() not in lookup:
-                    lookup[alias.lower()] = (clean, "Person")
-        for name in eg.get("companies", {}):
-            if name.lower() not in lookup:
-                lookup[name.lower()] = (name, "Organization")
-        for name in eg.get("topics", {}):
-            if name.lower() not in lookup:
-                lookup[name.lower()] = (name, "Topic")
-        logger.info("Loaded %s known entity mappings including entity_graph.json", len(lookup))
-    except Exception as e:
-        logger.warning("entity_graph.json load failed (non-fatal): %s", e)
-
-    _KNOWN_ENTITY_LOOKUP = lookup
-
-
-_build_entity_lookup()
-
-
-def extract_entities(query: str) -> list[tuple[str, str]]:
-    """Smart entity extraction using known entity dictionaries + fallback regex.
-    Returns list of (entity_name, label_type) tuples."""
-    results = []
-    seen = set()
-    query_lower = query.lower()
-
-    # Phase 1: Match known entities (longest match first to handle multi-word names)
-    sorted_keys = sorted(_KNOWN_ENTITY_LOOKUP.keys(), key=len, reverse=True)
-    for key in sorted_keys:
-        if key in query_lower:
-            canonical, label = _KNOWN_ENTITY_LOOKUP[key]
-            if canonical not in seen:
-                seen.add(canonical)
-                results.append((canonical, label))
-
-    # Phase 2: Fallback — capitalized words not already matched
-    words = query.split()
-    i = 0
-    while i < len(words):
-        word = words[i]
-        clean = word.lower().strip(".,!?;:'\"()[]{}").rstrip("'s")
-        if clean in STOP_WORDS:
-            i += 1
-            continue
-        if word[0:1].isupper() or word.startswith("@"):
-            entity_parts = [word.strip('"@')]
-            j = i + 1
-            while j < len(words) and words[j][0:1].isupper():
-                entity_parts.append(words[j])
-                j += 1
-            name = " ".join(entity_parts)
-            if name not in seen:
-                seen.add(name)
-                results.append((name, "Unknown"))
-            i = j
-        else:
-            # Non-capitalized content words as keyword fallback (no type)
-            if len(clean) > 3 and clean not in STOP_WORDS and clean not in seen:
-                seen.add(clean)
-                results.append((clean, "Keyword"))
-            i += 1
-
-    return results
 
 
 def _decode(val):
@@ -1048,7 +909,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         logger.error("Graph connection error: %s", e)
         return []
 
-    typed_entities = extract_entities(query)
+    typed_entities = extract_entities_fast(query)
     if not typed_entities:
         typed_entities = [(query, "Unknown")]
 
@@ -1427,7 +1288,7 @@ def proactive_surface(context_messages: list[str], max_results: int = 3) -> list
     context_lower = full_context.lower()
 
     # Extract entities and topics from context
-    entities = extract_entities(full_context)
+    entities = extract_entities_fast(full_context)
 
     # Build diverse search queries from entities
     search_queries = []
@@ -1565,7 +1426,7 @@ class HybridHandler(BaseHTTPRequestHandler):
         body = json.dumps(data, ensure_ascii=False).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", len(body))
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
