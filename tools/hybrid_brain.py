@@ -795,7 +795,7 @@ def _build_entity_lookup():
                 lookup[name.lower()] = (name, "Topic")
         print(f"[HybridBrain] Loaded {len(lookup)} known entity mappings (incl. entity_graph.json)", flush=True)
     except FileNotFoundError:
-        print("[HybridBrain] No entity_graph.json found — entity lookup will use known_entities.json only", flush=True)
+        pass  # entity_graph.json is optional — silently fall back to known_entities.json
     except Exception as e:
         print(f"[HybridBrain] entity_graph.json load failed (non-fatal): {e}", flush=True)
     
@@ -1149,33 +1149,20 @@ def _update_access_tracking(results):
     
     def _do_update():
         for r in results[:10]:  # Cap at 10 to avoid slow updates
-            text = r.get("text", "")
-            if not text or len(text) < 10:
+            pid = r.get("_id")
+            if not pid:
                 continue
             try:
-                # Find the point by searching with its own embedding
-                # More efficient: use the text to find the exact point
-                search_results = qdrant.scroll(
+                current_count = r.get("retrieval_count", 0) or 0
+                qdrant.set_payload(
                     collection_name=COLLECTION,
-                    scroll_filter=Filter(must=[
-                        FieldCondition(key="text", match=MatchValue(value=text[:200]))
-                    ]),
-                    limit=1,
-                    with_payload=False,
+                    points=[pid],
+                    payload={
+                        "last_accessed": now,
+                        "access_count": current_count + 1,
+                        "retrieval_count": current_count + 1,
+                    }
                 )
-                points, _ = search_results
-                if points:
-                    pid = points[0].id
-                    current_count = r.get("retrieval_count", 0) or 0
-                    qdrant.set_payload(
-                        collection_name=COLLECTION,
-                        points=[pid],
-                        payload={
-                            "last_accessed": now,
-                            "access_count": current_count + 1,
-                            "retrieval_count": current_count + 1,
-                        }
-                    )
             except Exception:
                 pass  # Non-fatal
     
@@ -1449,17 +1436,19 @@ class HybridHandler(BaseHTTPRequestHandler):
             self._send_json(health)
 
         elif parsed.path == "/amac/metrics":
-            total = _amac_metrics["accepted"] + _amac_metrics["rejected"]
+            with _amac_metrics_lock:
+                snapshot = dict(_amac_metrics)
+            total = snapshot["accepted"] + snapshot["rejected"]
             avg_score = (
-                round(_amac_metrics["score_sum"] / _amac_metrics["score_count"], 2)
-                if _amac_metrics["score_count"] > 0 else None
+                round(snapshot["score_sum"] / snapshot["score_count"], 2)
+                if snapshot["score_count"] > 0 else None
             )
-            rejection_rate = round(_amac_metrics["rejected"] / total * 100, 1) if total > 0 else 0
+            rejection_rate = round(snapshot["rejected"] / total * 100, 1) if total > 0 else 0
             self._send_json({
-                "accepted": _amac_metrics["accepted"],
-                "rejected": _amac_metrics["rejected"],
-                "bypassed": _amac_metrics["bypassed"],
-                "timeout_accepts": _amac_metrics["timeout_accepts"],
+                "accepted": snapshot["accepted"],
+                "rejected": snapshot["rejected"],
+                "bypassed": snapshot["bypassed"],
+                "timeout_accepts": snapshot["timeout_accepts"],
                 "total": total,
                 "avg_composite_score": avg_score,
                 "rejection_rate_pct": rejection_rate,

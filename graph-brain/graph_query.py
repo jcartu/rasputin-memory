@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 Query the FalkorDB graph brain.
@@ -15,8 +16,8 @@ import json
 import re
 from falkordb import FalkorDB
 
-FALKOR_HOST = "localhost"
-FALKOR_PORT = 6380
+FALKOR_HOST = os.environ.get("FALKOR_HOST", "localhost")
+FALKOR_PORT = int(os.environ.get("FALKOR_PORT", 6380))
 GRAPH_NAME = "brain"
 
 # Destructive Cypher operations that require --force for raw --cypher input
