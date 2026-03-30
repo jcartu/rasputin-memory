@@ -1,0 +1,37 @@
+[server]
+port = 7777
+host = "127.0.0.1"
+
+[qdrant]
+url = "http://localhost:6333"
+collection = "second_brain"
+
+[graph]
+host = "localhost"
+port = 6380
+graph_name = "brain"
+disabled = false
+
+[embeddings]
+url = "http://localhost:11434/api/embed"
+model = "nomic-embed-text"
+prefix_query = "search_query: "
+prefix_doc = "search_document: "
+
+[reranker]
+url = "http://localhost:8006/rerank"
+timeout = 15
+enabled = true
+
+[amac]
+threshold = 4.0
+timeout = 30
+model = "qwen2.5:14b"
+
+[scoring]
+decay_half_life_low = 14
+decay_half_life_medium = 60
+decay_half_life_high = 365
+
+[entities]
+known_entities_path = "config/known_entities.json"

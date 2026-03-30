@@ -28,6 +28,8 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
+from config import load_config
+
 # BM25 hybrid reranking — core pipeline component
 from bm25_search import hybrid_rerank as bm25_rerank
 
@@ -46,17 +48,26 @@ expand_queries = _query_expansion.expand_queries
 print("[HybridBrain] BM25 reranking: enabled", flush=True)
 BM25_AVAILABLE = True
 
-QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
-COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
-EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
-RERANKER_URL = os.environ.get("RERANKER_URL", "http://localhost:8006/rerank")
-FALKOR_HOST = os.environ.get("FALKORDB_HOST", "localhost")
-FALKOR_PORT = int(os.environ.get("FALKORDB_PORT", "6380"))
-GRAPH_NAME = "brain"
+CONFIG = load_config()
+
+SERVER_HOST = CONFIG["server"]["host"]
+SERVER_PORT = int(CONFIG["server"]["port"])
+QDRANT_URL = CONFIG["qdrant"]["url"]
+COLLECTION = CONFIG["qdrant"]["collection"]
+EMBED_MODEL = CONFIG["embeddings"]["model"]
+EMBED_URL = CONFIG["embeddings"]["url"]
+EMBED_PREFIX_QUERY = CONFIG["embeddings"]["prefix_query"]
+EMBED_PREFIX_DOC = CONFIG["embeddings"]["prefix_doc"]
+RERANKER_URL = CONFIG["reranker"]["url"]
+RERANKER_TIMEOUT = int(CONFIG["reranker"]["timeout"])
+RERANKER_ENABLED = bool(CONFIG["reranker"]["enabled"])
+FALKOR_HOST = CONFIG["graph"]["host"]
+FALKOR_PORT = int(CONFIG["graph"]["port"])
+GRAPH_NAME = CONFIG["graph"]["graph_name"]
+KNOWN_ENTITIES_PATH = CONFIG["entities"]["known_entities_path"]
 
 # A/B test toggle: set DISABLE_FALKORDB=1 to skip all graph queries
-FALKORDB_DISABLED = os.environ.get("DISABLE_FALKORDB", "0") == "1"
+FALKORDB_DISABLED = bool(CONFIG["graph"]["disabled"])
 if FALKORDB_DISABLED:
     print("[HybridBrain] ⚠ FalkorDB DISABLED via DISABLE_FALKORDB env var", flush=True)
 
@@ -67,6 +78,8 @@ _commit_lock = threading.Lock()
 # Neural reranker — checked dynamically per-request, not cached at startup
 # This avoids the race condition where reranker is still loading when hybrid_brain starts
 def is_reranker_available():
+    if not RERANKER_ENABLED:
+        return False
     try:
         _r = requests.post(RERANKER_URL, json={"query": "ping", "passages": ["ping"]}, timeout=2)
         return _r.status_code == 200
@@ -157,7 +170,7 @@ STOP_WORDS = {
 }
 
 
-def get_embedding(text, prefix="search_query: "):
+def get_embedding(text, prefix=EMBED_PREFIX_QUERY):
     """Get embedding from local Ollama nomic-embed-text.
     Task prefixes improve quality: 'search_query: ' for queries, 'search_document: ' for docs.
     Retries on timeout/failure with graceful degradation."""
@@ -191,7 +204,7 @@ def get_embedding(text, prefix="search_query: "):
             raise
 
 
-def get_embedding_safe(text, default_action="fail", prefix="search_query: "):
+def get_embedding_safe(text, default_action="fail", prefix=EMBED_PREFIX_QUERY):
     """Get embedding with graceful degradation.
 
     Args:
@@ -235,7 +248,7 @@ def neural_rerank(query, results, top_k=None):
         passages.append(" | ".join(parts))
 
     try:
-        resp = requests.post(RERANKER_URL, json={"query": query, "passages": passages}, timeout=15)
+        resp = requests.post(RERANKER_URL, json={"query": query, "passages": passages}, timeout=RERANKER_TIMEOUT)
         resp.raise_for_status()
         scores = resp.json().get("scores", [])
 
@@ -265,10 +278,9 @@ def _load_known_entities():
     if _known_entities_cache and (now - _known_entities_cache_ts) < KNOWN_ENTITIES_CACHE_TTL_SECONDS:
         return _known_entities_cache
 
-    entities_path = os.environ.get(
-        "KNOWN_ENTITIES_PATH",
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "known_entities.json"),
-    )
+    entities_path = KNOWN_ENTITIES_PATH
+    if not os.path.isabs(entities_path):
+        entities_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", entities_path)
     try:
         with open(entities_path) as f:
             data = json.load(f)
@@ -399,10 +411,10 @@ def check_duplicate(vector, text, threshold=0.92):
 
 # ─── A-MAC Admission Control ─────────────────────────────────────────────────
 
-AMAC_THRESHOLD = 4.0
-AMAC_OLLAMA_MODEL = os.environ.get("AMAC_MODEL", "qwen3.5:35b")
+AMAC_THRESHOLD = float(CONFIG["amac"]["threshold"])
+AMAC_OLLAMA_MODEL = CONFIG["amac"]["model"]
 AMAC_REJECT_LOG = os.environ.get("AMAC_REJECT_LOG", "/tmp/amac_rejected.log")
-AMAC_TIMEOUT = 30  # seconds — 35B may be busy with swarm agents, give it time
+AMAC_TIMEOUT = int(CONFIG["amac"]["timeout"])
 
 # In-memory metrics (reset on restart)
 _amac_metrics_lock = threading.Lock()
@@ -583,7 +595,7 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
     If a near-duplicate exists (cosine > 0.92 + text overlap > 0.5), updates instead of creating."""
     with _commit_lock:
         try:
-            vector = get_embedding(text[:4000], prefix="search_document: ")
+            vector = get_embedding(text[:4000], prefix=EMBED_PREFIX_DOC)
         except Exception as e:
             print(f"[commit_memory] Embedding failed, aborting commit: {e}", flush=True)
             return {"ok": False, "error": f"Embedding failed: {e}"}
@@ -1033,7 +1045,7 @@ def graph_search(query, hops=2, limit=10):
             try:
                 mem_result = r.execute_command(
                     "GRAPH.QUERY",
-                    "brain",
+                    GRAPH_NAME,
                     f"MATCH (n:{label})-[:MENTIONED_IN]->(m:Memory) "
                     f"WHERE toLower(n.name) CONTAINS toLower($name) "
                     f"RETURN m.id, m.text, m.created_at, n.name LIMIT {limit}",
@@ -1066,7 +1078,7 @@ def graph_search(query, hops=2, limit=10):
                 try:
                     twohop = r.execute_command(
                         "GRAPH.QUERY",
-                        "brain",
+                        GRAPH_NAME,
                         f"MATCH (n:{label})-[:MENTIONED_IN]->(m1:Memory)<-[:MENTIONED_IN]-(co) "
                         f"WHERE toLower(n.name) CONTAINS toLower($name) AND n <> co "
                         f"WITH DISTINCT co, count(m1) AS shared ORDER BY shared DESC LIMIT 5 "
@@ -1104,7 +1116,7 @@ def graph_search(query, hops=2, limit=10):
             try:
                 keyword_result = r.execute_command(
                     "GRAPH.QUERY",
-                    "brain",
+                    GRAPH_NAME,
                     "MATCH (m:Memory) WHERE toLower(m.text) CONTAINS toLower($name) "
                     "RETURN m.id, m.text, m.created_at LIMIT 5",
                     "--params",
@@ -1134,7 +1146,7 @@ def graph_search(query, hops=2, limit=10):
             try:
                 ctx = r.execute_command(
                     "GRAPH.QUERY",
-                    "brain",
+                    GRAPH_NAME,
                     f"MATCH (n:{label})-[rel]-(connected) "
                     f"WHERE toLower(n.name) CONTAINS toLower($name) "
                     f"AND NOT labels(connected)[0] = 'Memory' "
@@ -1560,8 +1572,8 @@ class HybridHandler(BaseHTTPRequestHandler):
 
             try:
                 r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
-                node_count = r.execute_command("GRAPH.QUERY", "brain", "MATCH (n) RETURN count(n)")[1][0][0]
-                edge_count = r.execute_command("GRAPH.QUERY", "brain", "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
+                node_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
+                edge_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
             except:
                 node_count = -1
                 edge_count = -1
@@ -1760,8 +1772,8 @@ def serve(port=7777):
     print(f"[HybridBrain] Qdrant: {COLLECTION} ({qdrant.get_collection(COLLECTION).points_count} pts)", flush=True)
     try:
         r = redis.Redis(host=FALKOR_HOST, port=FALKOR_PORT)
-        nc = r.execute_command("GRAPH.QUERY", "brain", "MATCH (n) RETURN count(n)")[1][0][0]
-        ec = r.execute_command("GRAPH.QUERY", "brain", "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
+        nc = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
+        ec = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
         print(f"[HybridBrain] FalkorDB: {nc} nodes, {ec} edges", flush=True)
     except:
         print("[HybridBrain] FalkorDB: unavailable (graph search disabled)", flush=True)
