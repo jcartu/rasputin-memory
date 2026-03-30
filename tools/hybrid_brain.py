@@ -1660,6 +1660,12 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Text too long (maximum 8000 characters)"}, 400)
                 return
 
+            try:
+                importance = int(importance)
+            except (ValueError, TypeError):
+                importance = 60
+            importance = max(0, min(100, importance))
+
             # ── A-MAC admission gate ──
             allowed, reason, scores = amac_gate(text, source=source, force=force)
             if not allowed:

@@ -129,3 +129,8 @@ def test_task17_commit_text_length_validation():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "Text too short (minimum 20 characters)" in source
     assert "Text too long (maximum 8000 characters)" in source
+
+
+def test_task18_importance_is_clamped_to_0_100():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "importance = max(0, min(100, importance))" in source
