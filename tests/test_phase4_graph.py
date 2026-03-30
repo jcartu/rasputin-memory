@@ -60,3 +60,24 @@ def test_graph_write_and_read_consistent(monkeypatch):
     assert any("MATCH (m:Memory)-[:MENTIONS]->(n:Person)" in q for q in fake_redis.queries)
     assert len(results) == 1
     assert results[0]["origin"] == "graph"
+
+
+def test_graph_results_scored_by_hop(monkeypatch):
+    monkeypatch.setattr(hybrid_brain, "BM25_AVAILABLE", False)
+    monkeypatch.setattr(hybrid_brain, "qdrant_search", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(
+        hybrid_brain,
+        "graph_search",
+        lambda *_args, **_kwargs: [
+            {"text": "1-hop graph hit", "origin": "graph", "graph_hop": 1, "source": "graph_memory"},
+            {"text": "2-hop graph hit", "origin": "graph", "graph_hop": 2, "source": "graph_memory"},
+        ],
+    )
+    monkeypatch.setattr(hybrid_brain, "is_reranker_available", lambda: False)
+    monkeypatch.setattr(hybrid_brain, "enrich_with_graph", lambda *_args, **_kwargs: {})
+
+    result = hybrid_brain.hybrid_search("John Doe", limit=2, expand=False)
+
+    scores_by_text = {item["text"]: item["score"] for item in result["results"]}
+    assert scores_by_text["1-hop graph hit"] == 0.8
+    assert scores_by_text["2-hop graph hit"] == 0.5

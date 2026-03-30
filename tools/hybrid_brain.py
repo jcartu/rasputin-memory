@@ -1168,7 +1168,8 @@ def hybrid_search(
 
     # Give graph memory results a base score so they can participate in reranking
     for gr in graph_memory_results:
-        gr["score"] = 0.5  # Neutral starting score — reranker will determine real rank
+        hop_count = gr.get("graph_hop", 1)
+        gr["score"] = 0.8 if hop_count == 1 else 0.5
 
     # Combine Qdrant + graph memory candidates for unified reranking
     all_candidates = list(qdrant_results[: limit * 2]) + graph_memory_results
