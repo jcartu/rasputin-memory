@@ -17,6 +17,7 @@ import importlib
 import json
 import os
 import re
+import signal
 import sys
 import time
 import threading
@@ -1800,6 +1801,14 @@ class ReusableHTTPServer(ThreadingHTTPServer):
 
 def serve(port: int = SERVER_PORT) -> None:
     server = ReusableHTTPServer(("127.0.0.1", port), HybridHandler)
+
+    def shutdown_handler(signum: int, _frame: Any) -> None:
+        print(f"[HybridBrain] Received signal {signum}, shutting down gracefully...", flush=True)
+        server.shutdown()
+
+    signal.signal(signal.SIGTERM, shutdown_handler)
+    signal.signal(signal.SIGINT, shutdown_handler)
+
     print(f"[HybridBrain] Serving on http://127.0.0.1:{port}", flush=True)
     print(f"[HybridBrain] Qdrant: {COLLECTION} ({qdrant.get_collection(COLLECTION).points_count} pts)", flush=True)
     try:
