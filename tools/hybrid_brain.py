@@ -21,6 +21,7 @@ import sys
 import time
 import threading
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
+from typing import Any, Optional
 from urllib.parse import urlparse, parse_qs
 
 import redis
@@ -28,7 +29,11 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
-from config import load_config
+try:
+    _config_module = importlib.import_module("config")
+except ModuleNotFoundError:
+    _config_module = importlib.import_module("tools.config")
+load_config = _config_module.load_config
 
 # BM25 hybrid reranking — core pipeline component
 from bm25_search import hybrid_rerank as bm25_rerank
@@ -77,7 +82,7 @@ _commit_lock = threading.Lock()
 
 # Neural reranker — checked dynamically per-request, not cached at startup
 # This avoids the race condition where reranker is still loading when hybrid_brain starts
-def is_reranker_available():
+def is_reranker_available() -> bool:
     if not RERANKER_ENABLED:
         return False
     try:
@@ -170,7 +175,7 @@ STOP_WORDS = {
 }
 
 
-def get_embedding(text, prefix=EMBED_PREFIX_QUERY):
+def get_embedding(text: str, prefix: str = EMBED_PREFIX_QUERY) -> list[float]:
     """Get embedding from local Ollama nomic-embed-text.
     Task prefixes improve quality: 'search_query: ' for queries, 'search_document: ' for docs.
     Retries on timeout/failure with graceful degradation."""
@@ -203,8 +208,12 @@ def get_embedding(text, prefix=EMBED_PREFIX_QUERY):
             print(f"[Embedding] Error: {e}", flush=True)
             raise
 
+    raise RuntimeError("Embedding generation failed")
 
-def get_embedding_safe(text, default_action="fail", prefix=EMBED_PREFIX_QUERY):
+
+def get_embedding_safe(
+    text: str, default_action: str = "fail", prefix: str = EMBED_PREFIX_QUERY
+) -> Optional[list[float]]:
     """Get embedding with graceful degradation.
 
     Args:
@@ -228,7 +237,7 @@ def get_embedding_safe(text, default_action="fail", prefix=EMBED_PREFIX_QUERY):
             raise
 
 
-def neural_rerank(query, results, top_k=None):
+def neural_rerank(query: str, results: list[dict[str, Any]], top_k: Optional[int] = None) -> list[dict[str, Any]]:
     """Rerank results using bge-reranker-v2-m3 on GPU1.
     Falls back to original ordering if reranker is unavailable."""
     if not results:
@@ -298,7 +307,7 @@ def _load_known_entities():
         return _known_entities_cache
 
 
-def extract_entities_fast(text):
+def extract_entities_fast(text: str) -> list[tuple[str, str]]:
     """Fast regex-based entity extraction for real-time commit pipeline.
     Returns list of (name, type) tuples."""
     entities = []
@@ -334,7 +343,7 @@ def extract_entities_fast(text):
     return entities
 
 
-def write_to_graph(point_id, text, entities, timestamp):
+def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], timestamp: str) -> tuple[bool, list[str]]:
     """Write entities + memory node to FalkorDB graph 'brain'.
     Returns (success, connected_entities_list) where connected_entities is a list of entity names that were linked."""
     if FALKORDB_DISABLED:
@@ -384,7 +393,7 @@ def write_to_graph(point_id, text, entities, timestamp):
     return True, connected_entities
 
 
-def check_duplicate(vector, text, threshold=0.92):
+def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> tuple[bool, Optional[int], float]:
     """Check if a near-duplicate memory already exists.
     Returns (is_dupe, existing_point_id, similarity) or (False, None, 0)."""
     try:
@@ -452,7 +461,7 @@ Output format: SCORES: R,N,S (three integers separated by commas, nothing else)
 """
 
 
-def amac_score(text: str, retry: int = 2):
+def amac_score(text: str, retry: int = 2) -> Optional[tuple[float, float, float, float]]:
     """Score text on Relevance, Novelty, Specificity using local llama-swap (OpenAI-compatible).
     Returns (relevance, novelty, specificity, composite) or None on failure/timeout."""
     prompt = AMAC_PROMPT_TEMPLATE.format(text=text[:800])
@@ -531,7 +540,7 @@ def amac_score(text: str, retry: int = 2):
     return None
 
 
-def amac_gate(text: str, source: str = "unknown", force: bool = False):
+def amac_gate(text: str, source: str = "unknown", force: bool = False) -> tuple[bool, str, dict[str, Any]]:
     """A-MAC admission control gate.
     Returns (allowed: bool, reason: str, scores: dict).
     If force=True, bypasses the gate."""
@@ -590,7 +599,13 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False):
         return False, "rejected", score_dict
 
 
-def commit_memory(text, source="conversation", importance=60, metadata=None):
+def commit_memory(
+    text: str,
+    source: str = "conversation",
+    importance: int = 60,
+    metadata: Optional[dict[str, Any]] = None,
+    force: bool = False,
+) -> dict[str, Any]:
     """Commit a memory to Qdrant + FalkorDB graph with inline deduplication.
     If a near-duplicate exists (cosine > 0.92 + text overlap > 0.5), updates instead of creating."""
     with _commit_lock:
@@ -693,7 +708,7 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
         }
 
 
-def _parse_date(date_str):
+def _parse_date(date_str: str) -> Optional[Any]:
     """Parse various date formats, return datetime or None."""
     from datetime import datetime as _dt, timezone as _tz
 
@@ -719,7 +734,7 @@ def _parse_date(date_str):
     return None
 
 
-def apply_temporal_decay(results, half_life_days=30):
+def apply_temporal_decay(results: list[dict[str, Any]], half_life_days: int = 30) -> list[dict[str, Any]]:
     """Ebbinghaus power-law decay with importance-scaled half-lives.
 
     Changes from linear decay:
@@ -774,7 +789,7 @@ def apply_temporal_decay(results, half_life_days=30):
     return sorted(results, key=lambda x: x["score"], reverse=True)
 
 
-def apply_multifactor_scoring(results):
+def apply_multifactor_scoring(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Multi-factor importance scoring: combines vector similarity, importance,
     recency, source reliability, and retrieval frequency into a composite score.
 
@@ -820,7 +835,7 @@ def apply_multifactor_scoring(results):
     return sorted(results, key=lambda x: x["score"], reverse=True)
 
 
-def qdrant_search(query, limit=10, source_filter=None):
+def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = None) -> list[dict[str, Any]]:
     """Vector similarity search via Qdrant with temporal decay + multi-factor scoring."""
     try:
         vector = get_embedding(query)
@@ -960,7 +975,7 @@ def _build_entity_lookup():
 _build_entity_lookup()
 
 
-def extract_entities(query):
+def extract_entities(query: str) -> list[tuple[str, str]]:
     """Smart entity extraction using known entity dictionaries + fallback regex.
     Returns list of (entity_name, label_type) tuples."""
     results = []
@@ -1013,7 +1028,7 @@ def _decode(val):
     return str(val) if val is not None else ""
 
 
-def graph_search(query, hops=2, limit=10):
+def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, Any]]:
     """Graph traversal search via FalkorDB with type-aware entity targeting + 2-hop.
 
     Returns Memory nodes with .text property (first-class reranker candidates)
@@ -1194,7 +1209,7 @@ def graph_search(query, hops=2, limit=10):
 GRAPH_API_URL = "http://127.0.0.1:7778"
 
 
-def enrich_with_graph(results, limit=5):
+def enrich_with_graph(results: list[dict[str, Any]], limit: int = 5) -> dict[str, Any]:
     """Call graph_api /expand for entities mentioned in top results.
     Non-fatal: returns empty dict if graph_api is down."""
     try:
@@ -1236,7 +1251,13 @@ def enrich_with_graph(results, limit=5):
         return {}
 
 
-def hybrid_search(query, limit=10, graph_hops=2, source_filter=None, expand=True):
+def hybrid_search(
+    query: str,
+    limit: int = 10,
+    graph_hops: int = 2,
+    source_filter: Optional[str] = None,
+    expand: bool = True,
+) -> dict[str, Any]:
     """Combined Qdrant vector + FalkorDB graph + BM25 + Neural reranking search.
 
     Pipeline: Qdrant vector → BM25 rerank → Neural rerank → merge graph → graph_api enrich → return
@@ -1377,7 +1398,7 @@ def _update_access_tracking(results):
 # ─── Proactive Surfacing ─────────────────────────────────────────────────
 
 
-def proactive_surface(context_messages, max_results=3):
+def proactive_surface(context_messages: list[str], max_results: int = 3) -> list[dict[str, Any]]:
     """Surface relevant memories the user might want to know about.
 
     Takes recent conversation context, extracts entities/topics,
@@ -1777,7 +1798,7 @@ class ReusableHTTPServer(ThreadingHTTPServer):
     allow_reuse_port = True
 
 
-def serve(port=7777):
+def serve(port: int = SERVER_PORT) -> None:
     server = ReusableHTTPServer(("127.0.0.1", port), HybridHandler)
     print(f"[HybridBrain] Serving on http://127.0.0.1:{port}", flush=True)
     print(f"[HybridBrain] Qdrant: {COLLECTION} ({qdrant.get_collection(COLLECTION).points_count} pts)", flush=True)
