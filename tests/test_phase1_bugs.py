@@ -44,3 +44,9 @@ def test_fact_extractor_single_commit():
     source = (ROOT / "tools" / "fact_extractor.py").read_text()
     assert '/collections/second_brain/points' not in source
     assert 'http://localhost:7777/commit' in source
+
+
+def test_embed_url_consistency():
+    source = (ROOT / "tools" / "fact_extractor.py").read_text()
+    assert 'http://localhost:11434/api/embed' in source
+    assert '/api/embeddings' not in source

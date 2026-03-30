@@ -24,7 +24,7 @@ SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / '.openclaw/agen
 FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
 STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
-EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embeddings")
+EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 
 # LLM proxy endpoint (OpenAI-compatible or Anthropic-compatible)
 LLM_PROXY_URL = os.environ.get("LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11436/v1/chat/completions"))
