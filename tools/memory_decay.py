@@ -23,6 +23,7 @@ import sys
 import time
 from datetime import datetime, timedelta
 from collections import defaultdict
+from typing import Any, cast
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -305,7 +306,7 @@ def recover_pending_archives(execute=False):
             payload = dict(p.payload) if p.payload else {}
             payload["archived_at"] = datetime.now().isoformat()
             payload.setdefault("archive_reason", "pending_recovery")
-            archive_points.append(PointStruct(id=p.id, vector=p.vector, payload=payload))
+            archive_points.append(PointStruct(id=p.id, vector=cast(Any, p.vector), payload=payload))
             ids.append(p.id)
 
         qdrant.upsert(collection_name=ARCHIVE_COLLECTION, points=archive_points)
@@ -361,7 +362,7 @@ def archive_memories(candidates, execute=False):
                     archive_points.append(
                         PointStruct(
                             id=p.id,
-                            vector=p.vector,
+                            vector=cast(Any, p.vector),
                             payload=payload,
                         )
                     )
@@ -428,7 +429,7 @@ def soft_delete_memories(candidates, execute=False):
                     archive_points.append(
                         PointStruct(
                             id=p.id,
-                            vector=p.vector,
+                            vector=cast(Any, p.vector),
                             payload=payload,
                         )
                     )
