@@ -1425,6 +1425,31 @@ MEMORY_API_TOKEN = os.environ.get("MEMORY_API_TOKEN", "")
 MAX_BODY_SIZE = 1 * 1024 * 1024
 
 
+class SimpleRateLimiter:
+    def __init__(self, calls_per_minute: int = 60):
+        self.calls_per_minute = calls_per_minute
+        self.history: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def allow(self, key: str = "default") -> bool:
+        now = time.time()
+        with self._lock:
+            entries = self.history.get(key, [])
+            entries = [t for t in entries if now - t < 60]
+            if len(entries) >= self.calls_per_minute:
+                self.history[key] = entries
+                return False
+            entries.append(now)
+            self.history[key] = entries
+            return True
+
+
+_rate_limiters = {
+    "/commit": SimpleRateLimiter(calls_per_minute=30),
+    "/search": SimpleRateLimiter(calls_per_minute=120),
+}
+
+
 class HybridHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logger.debug("%s %s", self.client_address[0], format % args)
@@ -1447,6 +1472,19 @@ class HybridHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _rate_limit_key(self) -> str:
+        client_ip = self.client_address[0] if getattr(self, "client_address", None) else "unknown"
+        return f"{self.path.split('?')[0]}:{client_ip}"
+
+    def _enforce_rate_limit(self, endpoint: str) -> bool:
+        limiter = _rate_limiters.get(endpoint)
+        if not limiter:
+            return True
+        if limiter.allow(self._rate_limit_key()):
+            return True
+        self._send_json({"error": "Too Many Requests"}, 429)
+        return False
+
     def do_GET(self):
         try:
             self._handle_get()
@@ -1464,6 +1502,8 @@ class HybridHandler(BaseHTTPRequestHandler):
         params = parse_qs(parsed.query)
 
         if parsed.path == "/search":
+            if not self._enforce_rate_limit("/search"):
+                return
             query = params.get("q", [""])[0]
             limit = int(params.get("limit", ["10"])[0])
             source = params.get("source", [None])[0]
@@ -1609,6 +1649,8 @@ class HybridHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
 
         if parsed.path == "/search":
+            if not self._enforce_rate_limit("/search"):
+                return
             query = data.get("q", data.get("query", ""))
             limit = data.get("limit", 10)
             source = data.get("source", None)
@@ -1654,6 +1696,8 @@ class HybridHandler(BaseHTTPRequestHandler):
             )
 
         elif parsed.path == "/commit":
+            if not self._enforce_rate_limit("/commit"):
+                return
             text = data.get("text", "")
             source = data.get("source", "conversation")
             importance = data.get("importance", 60)

@@ -84,6 +84,7 @@ def test_importance_clamped(monkeypatch):
         headers={"Content-Length": str(len(body))},
         rfile=io.BytesIO(body),
         _check_auth=lambda: True,
+        _enforce_rate_limit=lambda _endpoint: True,
     )
     sent = {}
     handler._send_json = lambda payload, status=200: sent.update({"payload": payload, "status": status})
@@ -118,3 +119,16 @@ def test_protected_fields_not_overwritten(monkeypatch, mock_qdrant):
     assert payload["importance"] == 61
     assert payload["schema_version"] == "3.0"
     assert payload["custom_tag"] == "ok"
+
+
+def test_rate_limiter_blocks_excess(monkeypatch):
+    now = {"t": 1000.0}
+    monkeypatch.setattr(hybrid_brain.time, "time", lambda: now["t"])
+
+    limiter = hybrid_brain.SimpleRateLimiter(calls_per_minute=2)
+    assert limiter.allow("/search:127.0.0.1") is True
+    assert limiter.allow("/search:127.0.0.1") is True
+    assert limiter.allow("/search:127.0.0.1") is False
+
+    now["t"] += 61
+    assert limiter.allow("/search:127.0.0.1") is True
