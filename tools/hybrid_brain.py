@@ -55,6 +55,12 @@ except ModuleNotFoundError:
     _query_expansion = importlib.import_module("tools.pipeline.query_expansion")
 expand_queries = _query_expansion.expand_queries
 
+try:
+    _contradiction = importlib.import_module("pipeline.contradiction")
+except ModuleNotFoundError:
+    _contradiction = importlib.import_module("tools.pipeline.contradiction")
+check_contradictions = _contradiction.check_contradictions
+
 logger.info("BM25 reranking enabled")
 BM25_AVAILABLE = True
 
@@ -649,6 +655,26 @@ def commit_memory(
         else:
             point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
 
+        contradiction_hits: list[dict[str, Any]] = []
+        contradiction_ids: list[Any] = []
+        supersedes_ids: list[Any] = []
+        if not is_dupe:
+            contradiction_hits = check_contradictions(
+                text=text,
+                embedding=vector,
+                qdrant_client=qdrant,
+                collection=COLLECTION,
+                top_k=5,
+            )
+            contradiction_ids = [
+                hit.get("existing_id") for hit in contradiction_hits if hit.get("existing_id") is not None
+            ]
+            lowers = text.lower()
+            if contradiction_ids and any(
+                token in lowers for token in ("now", "currently", "no longer", "stopped", "moved to", "updated")
+            ):
+                supersedes_ids = list(contradiction_ids)
+
         timestamp = datetime.now().isoformat()
 
         payload = {
@@ -660,6 +686,8 @@ def commit_memory(
             "retrieval_count": 0,
             "embedding_model": EMBED_MODEL,
             "schema_version": "3.0",
+            "contradicts": contradiction_ids,
+            "supersedes": supersedes_ids,
         }
         if metadata and isinstance(metadata, dict):
             protected_fields = {
@@ -715,8 +743,45 @@ def commit_memory(
             "id": point_id,
             "source": source,
             "dedup": {"action": dedup_action, "similarity": similarity if is_dupe else None},
+            "contradictions": contradiction_hits,
             "graph": {"written": graph_ok, "entities": graph_entities, "connected_to": connected_to},
         }
+
+
+def list_contradictions(limit: int = 100) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    offset = None
+    try:
+        while len(entries) < limit:
+            points, offset = qdrant.scroll(
+                collection_name=COLLECTION,
+                limit=min(100, max(limit - len(entries), 1)),
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for point in points or []:
+                payload = point.payload or {}
+                contradicts = payload.get("contradicts") or []
+                if contradicts:
+                    entries.append(
+                        {
+                            "point_id": point.id,
+                            "text": payload.get("text", "")[:200],
+                            "source": payload.get("source", ""),
+                            "date": payload.get("date", ""),
+                            "contradicts": contradicts,
+                            "supersedes": payload.get("supersedes", []),
+                        }
+                    )
+                    if len(entries) >= limit:
+                        break
+            if offset is None:
+                break
+    except Exception as e:
+        logger.error("Failed to list contradictions: %s", e)
+        return []
+    return entries
 
 
 def _parse_date(date_str: str) -> Optional[Any]:
@@ -1562,6 +1627,11 @@ class HybridHandler(BaseHTTPRequestHandler):
                     "threshold": AMAC_THRESHOLD,
                 }
             )
+
+        elif parsed.path == "/contradictions":
+            limit = int(params.get("limit", ["50"])[0])
+            rows = list_contradictions(limit=max(1, min(limit, 500)))
+            self._send_json({"count": len(rows), "results": rows})
 
         else:
             self._send_json({"error": f"Unknown path: {parsed.path}"}, 404)
