@@ -736,7 +736,7 @@ def _parse_date(date_str: str) -> Optional[Any]:
 
 
 def apply_temporal_decay(results: list[dict[str, Any]], half_life_days: int = 30) -> list[dict[str, Any]]:
-    """Ebbinghaus power-law decay with importance-scaled half-lives.
+    """Exponential decay (inspired by Ebbinghaus forgetting curve) with importance-scaled half-lives.
 
     Changes from linear decay:
     - Power-law: R = e^(-t/S) where S = stability (scales with importance)
@@ -874,7 +874,7 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
             }
         )
 
-    # Stage 1: Ebbinghaus temporal decay
+    # Stage 1: Exponential temporal decay (Ebbinghaus-inspired)
     out = apply_temporal_decay(out)
     # Stage 2: Multi-factor importance scoring
     out = apply_multifactor_scoring(out)
