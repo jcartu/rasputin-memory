@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 import config
+import bm25_search
 import backfill_schema
 import hybrid_brain
 
@@ -219,3 +220,17 @@ def test_all_files_use_config_collection():
         text = py_file.read_text(encoding="utf-8")
         assert collection_assignment.search(text) is None, f"Hardcoded collection assignment in {py_file}"
         assert hardcoded_collection_url.search(text) is None, f"Hardcoded collection URL in {py_file}"
+
+
+def test_rrf_handles_length_mismatch():
+    dense = [
+        {"score": 0.9, "payload": {}},
+        {"score": 0.8, "payload": {}},
+        {"score": 0.7, "payload": {}},
+    ]
+    bm25 = [2.0]
+
+    fused = bm25_search.reciprocal_rank_fusion(dense, bm25)
+
+    assert len(fused) == 3
+    assert all("bm25_score" in item for item in fused)

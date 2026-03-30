@@ -31,6 +31,9 @@ import requests
 from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+logger = logging.getLogger("hybrid_brain")
+
 try:
     _config_module = importlib.import_module("config")
 except ModuleNotFoundError:

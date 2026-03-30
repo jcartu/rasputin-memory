@@ -85,6 +85,12 @@ def reciprocal_rank_fusion(
     if not dense_results:
         return []
 
+    if len(dense_results) != len(bm25_scores):
+        if len(bm25_scores) < len(dense_results):
+            bm25_scores = [*bm25_scores, *([0.0] * (len(dense_results) - len(bm25_scores)))]
+        else:
+            bm25_scores = bm25_scores[: len(dense_results)]
+
     # Get dense ranking
     dense_ranked = sorted(range(len(dense_results)), key=lambda i: dense_results[i].get("score", 0), reverse=True)
 
@@ -108,7 +114,7 @@ def reciprocal_rank_fusion(
     for idx in fused_order:
         result = dense_results[idx].copy()
         result["rrf_score"] = rrf_scores[idx]
-        result["bm25_score"] = bm25_scores[idx] if idx < len(bm25_scores) else 0
+        result["bm25_score"] = bm25_scores[idx]
         fused_results.append(result)
 
     return fused_results
