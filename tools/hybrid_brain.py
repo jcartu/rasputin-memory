@@ -486,7 +486,7 @@ def commit_memory(text, source="conversation", importance=60, metadata=None, age
         return {"ok": False, "error": f"Embedding failed: {e}"}
 
     # Reject garbage embeddings (e.g. Ollama mid-model-swap returns near-zero vectors)
-    import math
+
     magnitude = math.sqrt(sum(x * x for x in vector))
     if magnitude < 0.1:
         print(f"[commit_memory] REJECTED: embedding magnitude {magnitude:.4f} too low (garbage vector)", flush=True)
@@ -1145,7 +1145,7 @@ def _update_access_tracking(results):
 
     # Batch approach: search for the texts and update payloads
     # This is intentionally lightweight — we update in a background thread
-    import threading
+
     
     def _do_update():
         for r in results[:10]:  # Cap at 10 to avoid slow updates
@@ -1607,7 +1607,6 @@ if __name__ == "__main__":
     parser.add_argument("--tenant-mode", action="store_true", default=False, help="Enable multi-tenant agent isolation")
     args = parser.parse_args()
 
-    global TENANT_MODE
     if args.tenant_mode:
         TENANT_MODE = True
 
