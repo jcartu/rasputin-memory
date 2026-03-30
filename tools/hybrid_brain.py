@@ -34,7 +34,7 @@ from urllib.parse import urlparse, parse_qs
 import redis
 import requests
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct
 
 # BM25 hybrid reranking — core pipeline component
 BM25_AVAILABLE = False
@@ -521,7 +521,6 @@ def commit_memory(text, source="conversation", importance=60, metadata=None, age
         payload.update(metadata)
 
     try:
-        from qdrant_client.models import PointStruct
         qdrant.upsert(
             collection_name=COLLECTION,
             points=[PointStruct(id=point_id, vector=vector, payload=payload)]

@@ -30,4 +30,4 @@ jobs:
         run: ruff check .
 
       - name: Run smoke tests
-        run: pytest tests/test_smoke.py -v
+        run: pytest tests/ -v
