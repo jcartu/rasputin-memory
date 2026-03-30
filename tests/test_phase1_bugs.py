@@ -152,3 +152,10 @@ def test_task21_amac_scores_sentinel_prompt_and_parser():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "Output format: SCORES: R,N,S" in source
     assert 're.search(r"SCORES:\\s*(.*)", raw, re.IGNORECASE | re.DOTALL)' in source
+
+
+def test_task22_known_entities_ttl_cache_present():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "KNOWN_ENTITIES_CACHE_TTL_SECONDS = 5 * 60" in source
+    assert "_known_entities_cache" in source
+    assert "if _known_entities_cache and (now - _known_entities_cache_ts) < KNOWN_ENTITIES_CACHE_TTL_SECONDS:" in source

@@ -239,8 +239,19 @@ def neural_rerank(query, results, top_k=None):
         return results
 
 
+_known_entities_cache = None
+_known_entities_cache_ts = 0.0
+KNOWN_ENTITIES_CACHE_TTL_SECONDS = 5 * 60
+
+
 def _load_known_entities():
     """Load known entities from config file. Returns (persons_set, orgs_set, projects_set)."""
+    global _known_entities_cache, _known_entities_cache_ts
+
+    now = time.time()
+    if _known_entities_cache and (now - _known_entities_cache_ts) < KNOWN_ENTITIES_CACHE_TTL_SECONDS:
+        return _known_entities_cache
+
     entities_path = os.environ.get(
         "KNOWN_ENTITIES_PATH",
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "known_entities.json"),
@@ -248,14 +259,18 @@ def _load_known_entities():
     try:
         with open(entities_path) as f:
             data = json.load(f)
-        return (
+        _known_entities_cache = (
             set(data.get("persons", [])),
             set(data.get("organizations", [])),
             set(data.get("projects", [])),
         )
+        _known_entities_cache_ts = now
+        return _known_entities_cache
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"[HybridBrain] Known entities config not found or invalid ({e}), using empty lists", flush=True)
-        return set(), set(), set()
+        _known_entities_cache = (set(), set(), set())
+        _known_entities_cache_ts = now
+        return _known_entities_cache
 
 
 def extract_entities_fast(text):
