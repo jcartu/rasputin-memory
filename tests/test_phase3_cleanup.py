@@ -191,3 +191,20 @@ def test_no_dead_imports():
     ]
     for relative in removed_paths:
         assert not (ROOT / relative).exists()
+
+
+def test_server_handles_unexpected_error(monkeypatch):
+    sent = {}
+
+    class DummyHandler:
+        def _handle_get(self):
+            raise RuntimeError("boom")
+
+        def _send_json(self, payload, status=200):
+            sent["payload"] = payload
+            sent["status"] = status
+
+    hybrid_brain.HybridHandler.do_GET(DummyHandler())
+
+    assert sent["status"] == 500
+    assert sent["payload"] == {"error": "Internal server error"}

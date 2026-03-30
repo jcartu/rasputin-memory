@@ -1566,6 +1566,16 @@ class HybridHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        try:
+            self._handle_get()
+        except Exception as e:
+            print(f"[HybridBrain] Unhandled GET error: {e}", flush=True)
+            try:
+                self._send_json({"error": "Internal server error"}, 500)
+            except Exception:
+                pass
+
+    def _handle_get(self):
         if not self._check_auth():
             return
         parsed = urlparse(self.path)
@@ -1685,6 +1695,16 @@ class HybridHandler(BaseHTTPRequestHandler):
             self._send_json({"error": f"Unknown path: {parsed.path}"}, 404)
 
     def do_POST(self):
+        try:
+            self._handle_post()
+        except Exception as e:
+            print(f"[HybridBrain] Unhandled POST error: {e}", flush=True)
+            try:
+                self._send_json({"error": "Internal server error"}, 500)
+            except Exception:
+                pass
+
+    def _handle_post(self):
         if not self._check_auth():
             return
         content_length = int(self.headers.get("Content-Length", 0))
