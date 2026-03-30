@@ -1652,6 +1652,14 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Missing text"}, 400)
                 return
 
+            if len(text) < 20:
+                self._send_json({"error": "Text too short (minimum 20 characters)"}, 400)
+                return
+
+            if len(text) > 8000:
+                self._send_json({"error": "Text too long (maximum 8000 characters)"}, 400)
+                return
+
             # ── A-MAC admission gate ──
             allowed, reason, scores = amac_gate(text, source=source, force=force)
             if not allowed:

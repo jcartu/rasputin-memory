@@ -123,3 +123,9 @@ def test_task16_timezone_aware_decay_and_parsing():
     assert "datetime.now(timezone.utc)" in source
     assert "date_str[:26]" not in source
     assert "fromisoformat(normalized)" in source
+
+
+def test_task17_commit_text_length_validation():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "Text too short (minimum 20 characters)" in source
+    assert "Text too long (maximum 8000 characters)" in source
