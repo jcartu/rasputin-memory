@@ -1791,47 +1791,8 @@ def serve(port=7777):
     server.serve_forever()
 
 
-def run_tests():
-    print("🧪 Hybrid Brain Test Suite")
-    print("=" * 50)
-
-    test_queries = [
-        "Brand withdrawal complaint",
-        "user business operations",
-        "inference server GPU",
-        "partner wedding",
-        "proxy model routing",
-        "follistatin gene therapy",
-        "Brazil gambling regulation",
-    ]
-
-    for q in test_queries:
-        result = hybrid_search(q, limit=3)
-        print(f'\nQuery: "{q}"')
-        print(
-            f"  Qdrant: {result['stats']['qdrant_hits']} hits | Graph: {result['stats']['graph_hits']} hits | {result['elapsed_ms']}ms"
-        )
-        if result["results"]:
-            top = result["results"][0]
-            txt = top["text"][:100].replace("\n", " ")
-            print(f"  Top Qdrant: [{top['source']}] score={top['score']} | {txt}...")
-        if result["graph_context"]:
-            top_g = result["graph_context"][0]
-            print(
-                f"  Top Graph: {top_g.get('entity', '')} --{top_g.get('relationship', '')}-- {top_g.get('connected_to', '')}"
-            )
-
-    print("\n" + "=" * 50)
-    print("✅ Tests complete")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Hybrid Brain Search Server")
-    parser.add_argument("--port", type=int, default=7777)
-    parser.add_argument("--test", action="store_true")
+    parser.add_argument("--port", type=int, default=SERVER_PORT)
     args = parser.parse_args()
-
-    if args.test:
-        run_tests()
-    else:
-        serve(args.port)
+    serve(args.port)

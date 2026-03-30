@@ -175,3 +175,19 @@ def test_backfill_schema_sets_payload(monkeypatch):
     assert updated == 3
     assert len(fake.payload_calls) == 2
     assert fake.payload_calls[0]["payload"]["schema_version"] == "2.0"
+
+
+def test_no_dead_imports():
+    removed_paths = [
+        "tools/hybrid_brain_v2_tenant.py",
+        "tools/memory_consolidate.py",
+        "tools/smart_memory_query.py",
+        "graph-brain/graph_query.py",
+        "graph-brain/migrate_to_graph.py",
+        "brainbox/brainbox.py",
+        "predictive-memory/access_tracker.py",
+        "storm-wiki/generate.py",
+        "honcho/honcho-query.sh",
+    ]
+    for relative in removed_paths:
+        assert not (ROOT / relative).exists()

@@ -8,8 +8,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
-sys.path.insert(0, str(ROOT / "brainbox"))
-sys.path.insert(0, str(ROOT / "storm-wiki"))
 
 
 def _try_import(module_path: str) -> None:
@@ -41,10 +39,6 @@ def test_import_reranker_server():
     _try_import("tools/reranker_server.py")
 
 
-def test_import_memory_consolidate():
-    _try_import("tools/memory_consolidate.py")
-
-
 def test_import_memory_dedup():
     _try_import("tools/memory_dedup.py")
 
@@ -61,10 +55,6 @@ def test_import_memory_health_check():
     _try_import("tools/memory_health_check.py")
 
 
-def test_import_brainbox():
-    _try_import("brainbox/brainbox.py")
-
-
 def test_import_memory_mcp_server():
     _try_import("tools/memory_mcp_server.py")
 
@@ -75,11 +65,3 @@ def test_import_embed_server():
 
 def test_import_enrich():
     _try_import("tools/enrich_second_brain.py")
-
-
-def test_import_smart_query():
-    _try_import("tools/smart_memory_query.py")
-
-
-def test_import_storm_generate():
-    _try_import("storm-wiki/generate.py")
