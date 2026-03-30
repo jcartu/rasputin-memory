@@ -1452,6 +1452,7 @@ def proactive_surface(context_messages, max_results=3):
 # ─────────────────────────────────────────────
 # Optional bearer token auth
 MEMORY_API_TOKEN = os.environ.get("MEMORY_API_TOKEN", "")
+MAX_BODY_SIZE = 1 * 1024 * 1024
 
 
 class HybridHandler(BaseHTTPRequestHandler):
@@ -1598,6 +1599,9 @@ class HybridHandler(BaseHTTPRequestHandler):
         if not self._check_auth():
             return
         content_length = int(self.headers.get("Content-Length", 0))
+        if content_length > MAX_BODY_SIZE:
+            self._send_json({"error": "Request body too large (max 1MB)"}, 413)
+            return
         body = self.rfile.read(content_length)
 
         try:

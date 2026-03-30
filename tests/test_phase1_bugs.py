@@ -134,3 +134,9 @@ def test_task17_commit_text_length_validation():
 def test_task18_importance_is_clamped_to_0_100():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "importance = max(0, min(100, importance))" in source
+
+
+def test_task19_request_body_size_limit():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "MAX_BODY_SIZE = 1 * 1024 * 1024" in source
+    assert "Request body too large (max 1MB)" in source
