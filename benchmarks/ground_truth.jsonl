@@ -1,0 +1,56 @@
+{"query":"dad health transplant surgery", "expected_keywords":["transplant","Toronto","lung"]}
+{"query":"father post-op medication schedule", "expected_keywords":["medication","recovery","hospital"]}
+{"query":"ivf supplement protocol", "expected_keywords":["IVF","fertility","supplements"]}
+{"query":"clinic bloodwork hormone panel", "expected_keywords":["bloodwork","hormone","clinic"]}
+{"query":"doctor follow-up appointment date", "expected_keywords":["doctor","follow-up","appointment"]}
+{"query":"nutrition plan after procedure", "expected_keywords":["nutrition","recovery","procedure"]}
+{"query":"sleep quality and stress metrics", "expected_keywords":["sleep","stress","metrics"]}
+{"query":"medical insurance reimbursement", "expected_keywords":["insurance","reimbursement","claim"]}
+{"query":"rehab exercises week 3", "expected_keywords":["rehab","exercise","week"]}
+{"query":"pharmacy refill reminders", "expected_keywords":["pharmacy","refill","reminder"]}
+{"query":"casino revenue DACH", "expected_keywords":["revenue","DACH","German"]}
+{"query":"monthly pnl by brand", "expected_keywords":["P&L","brand","monthly"]}
+{"query":"q1 budget variance", "expected_keywords":["Q1","budget","variance"]}
+{"query":"affiliate cpa trend", "expected_keywords":["affiliate","CPA","trend"]}
+{"query":"crm retention campaign outcomes", "expected_keywords":["CRM","retention","campaign"]}
+{"query":"sales pipeline enterprise deals", "expected_keywords":["sales","pipeline","enterprise"]}
+{"query":"payment processor chargeback rate", "expected_keywords":["payment","chargeback","rate"]}
+{"query":"licensing timeline curacao", "expected_keywords":["license","Curacao","timeline"]}
+{"query":"board meeting action items", "expected_keywords":["board","action","items"]}
+{"query":"okr progress operations", "expected_keywords":["OKR","operations","progress"]}
+{"query":"mom birthday planning", "expected_keywords":["mom","birthday","plan"]}
+{"query":"family travel summer itinerary", "expected_keywords":["family","travel","itinerary"]}
+{"query":"kids school enrollment deadline", "expected_keywords":["kids","school","deadline"]}
+{"query":"brother visa paperwork", "expected_keywords":["brother","visa","documents"]}
+{"query":"grandma medication list", "expected_keywords":["grandma","medication","list"]}
+{"query":"household budget groceries", "expected_keywords":["household","budget","groceries"]}
+{"query":"weekend family dinner notes", "expected_keywords":["family","dinner","weekend"]}
+{"query":"child piano lesson schedule", "expected_keywords":["child","piano","schedule"]}
+{"query":"parent teacher conference summary", "expected_keywords":["parent","teacher","conference"]}
+{"query":"pet vaccination reminder", "expected_keywords":["pet","vaccination","reminder"]}
+{"query":"gpu memory tuning 5090", "expected_keywords":["GPU","5090","VRAM"]}
+{"query":"qdrant collection migration", "expected_keywords":["Qdrant","collection","migration"]}
+{"query":"reranker latency optimization", "expected_keywords":["reranker","latency","optimization"]}
+{"query":"ollama embedding drift check", "expected_keywords":["Ollama","embedding","drift"]}
+{"query":"falkordb graph query performance", "expected_keywords":["FalkorDB","graph","performance"]}
+{"query":"python service health endpoint", "expected_keywords":["Python","health","endpoint"]}
+{"query":"docker compose memory stack", "expected_keywords":["Docker","compose","stack"]}
+{"query":"ci pytest coverage report", "expected_keywords":["CI","pytest","coverage"]}
+{"query":"api auth bearer token", "expected_keywords":["API","auth","bearer"]}
+{"query":"backup strategy for vectors", "expected_keywords":["backup","vectors","restore"]}
+{"query":"morning routine productivity", "expected_keywords":["morning","routine","productivity"]}
+{"query":"journal reflection this week", "expected_keywords":["journal","reflection","week"]}
+{"query":"goal tracking personal habits", "expected_keywords":["goal","habit","tracking"]}
+{"query":"books to read this quarter", "expected_keywords":["books","reading","quarter"]}
+{"query":"fitness plan consistency", "expected_keywords":["fitness","plan","consistency"]}
+{"query":"deep work block schedule", "expected_keywords":["deep work","schedule","focus"]}
+{"query":"stress triggers log", "expected_keywords":["stress","triggers","log"]}
+{"query":"language learning milestones", "expected_keywords":["language","learning","milestones"]}
+{"query":"personal finance net worth", "expected_keywords":["personal finance","net worth","assets"]}
+{"query":"habit streak review", "expected_keywords":["habit","streak","review"]}
+{"query":"toronto hospital district", "expected_keywords":["Toronto","hospital","district"]}
+{"query":"berlin office relocation", "expected_keywords":["Berlin","office","relocation"]}
+{"query":"zurich meeting venue", "expected_keywords":["Zurich","meeting","venue"]}
+{"query":"lisbon conference logistics", "expected_keywords":["Lisbon","conference","logistics"]}
+{"query":"moscow travel restrictions", "expected_keywords":["Moscow","travel","restrictions"]}
+{"query":"dubai tax residency notes", "expected_keywords":["Dubai","tax","residency"]}
