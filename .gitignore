@@ -19,3 +19,4 @@ brainbox/brainbox.db
 .dedup_checkpoint.json
 .dedup_log.jsonl
 *.bak
+.coverage
