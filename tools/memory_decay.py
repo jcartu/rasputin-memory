@@ -165,6 +165,7 @@ def scan_memories(limit=None):
         "active": 0,
         "archive_candidates": 0,
         "soft_delete_candidates": 0,
+        "protected_high_importance": 0,
         "no_date": 0,
     }
 
@@ -219,6 +220,9 @@ def scan_memories(limit=None):
 
             # Categorize
             if days_since_access >= SOFT_DELETE_DAYS:
+                if isinstance(importance, (int, float)) and importance >= 80:
+                    stats["protected_high_importance"] += 1
+                    continue
                 stats["soft_delete_candidates"] += 1
                 soft_delete_candidates.append(
                     {

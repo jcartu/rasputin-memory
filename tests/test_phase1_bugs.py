@@ -70,3 +70,9 @@ def test_access_tracking_increments():
     assert '"point_id": point.id' in source
     assert 'qdrant.retrieve(' in source
     assert 'for r in results[:10]' not in source
+
+
+def test_high_importance_not_soft_deleted():
+    source = (ROOT / "tools" / "memory_decay.py").read_text()
+    assert '"protected_high_importance"' in source
+    assert 'importance >= 80' in source
