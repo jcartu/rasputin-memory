@@ -22,9 +22,9 @@ import requests
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
-PROXY_URL = "http://localhost:11438/v1/chat/completions"
-MODEL = "qwen3.5-122b-a10b"
-LOG_DIR = os.path.expanduser("~/.openclaw/workspace/memory/enrichment")
+PROXY_URL = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
+MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
+LOG_DIR = os.environ.get("ENRICHMENT_LOG_DIR", os.path.join(os.path.dirname(__file__), "..", "logs", "enrichment"))
 
 BATCH_PROMPT = """Score these text chunks on importance (1-10) and write a 1-sentence summary for each.
 

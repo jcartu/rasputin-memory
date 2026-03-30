@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 
+import importlib
 import sys
+from typing import Any, cast
 
 from qdrant_client import QdrantClient
+from qdrant_client.models import PointIdsList
 
-from config import load_config
+try:
+    _config_module = importlib.import_module("config")
+except ModuleNotFoundError:
+    _config_module = importlib.import_module("tools.config")
+load_config = _config_module.load_config
 
 
 def backfill_schema(batch_size: int = 100) -> int:
@@ -30,8 +37,8 @@ def backfill_schema(batch_size: int = 100) -> int:
         ids = [point.id for point in points]
         qdrant.set_payload(
             collection_name=collection,
-            points=ids,
-            payload={"embedding_model": embedding_model, "schema_version": "2.0"},
+            points=PointIdsList(points=cast(list[Any], ids)),
+            payload={"embedding_model": embedding_model, "schema_version": "3.0"},
         )
         total += len(ids)
         print(f"Backfilled {total} points", flush=True)

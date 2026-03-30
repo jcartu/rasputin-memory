@@ -8,7 +8,7 @@ Common issues, fixes, and performance tuning for the RASPUTIN memory system.
 
 **Symptom:** Searches return nothing (or cosine ~0.63) even though you know matching memories exist.
 
-**Cause:** You embedded new content with a different model than the stored vectors. The 134K+ vectors in `second_brain` were all embedded with `nomic-embed-text` **v1** via Ollama on port 11434. If you accidentally embed with `nomic-embed-text` v1.5 (the GPU embed service on port 8003), the vectors are geometrically incomparable.
+**Cause:** You embedded new content with a different model than the stored vectors. If your collection was built with one embedding model and you query with another, vectors become geometrically incomparable.
 
 **Fix:**
 ```bash
@@ -32,24 +32,22 @@ curl -s http://localhost:11434/api/embed \
 
 **Possible causes:**
 
-1. **Qwen 35B is overloaded** — other agents are using the LLM
+1. **Configured LLM endpoint is overloaded**
    ```bash
-   # Check if the model endpoint is responding
-   curl -s http://localhost:11436/v1/chat/completions \
-     -d '{"model": "qwen3.5:35b", "messages": [{"role":"user","content":"hi"}], "max_tokens": 10}'
+   # Check if the configured endpoint/model are responding
+   # (read [amac].url and [amac].model from config/rasputin.toml)
+   curl -s http://localhost:11434/v1/chat/completions \
+     -d '{"model": "qwen2.5:14b", "messages": [{"role":"user","content":"hi"}], "max_tokens": 10}'
    ```
    If it's timing out (30s), A-MAC should fail-open. Check logs.
 
-2. **Model not loaded** — llama-swap hasn't loaded Qwen 35B
+2. **Model not available** at the configured endpoint
    ```bash
-   # Check what models are loaded
-   curl -s http://localhost:11436/v1/models
+   # Check model listing if your provider supports it
+   curl -s http://localhost:11434/v1/models
    ```
 
-3. **Threshold too high** — default 4.0 is appropriate; if you raised it too high, lower it:
-   ```python
-   AMAC_THRESHOLD = 3.5  # In hybrid_brain.py
-   ```
+3. **Threshold too high** — tune `[amac].threshold` in `config/rasputin.toml`
 
 4. **Bypass for testing:**
    ```bash
@@ -122,8 +120,6 @@ curl -s http://localhost:8006/rerank \
 # If not running, restart it
 python3 tools/reranker_server.py &
 
-# Or with PM2
-pm2 restart reranker-gpu1
 ```
 
 **GPU memory issues:**
@@ -201,7 +197,7 @@ python3 tools/fact_extractor.py --hours 4
 cat memory/fact_extractor_state.json
 
 # Check sessions directory exists and has files
-ls ~/.openclaw/agents/main/sessions/ | head -5
+ls ./sessions/ | head -5
 
 # If state is corrupted, reset it
 echo '{"last_run": null, "processed_lines": {}, "fact_hashes": []}' > memory/fact_extractor_state.json
@@ -273,8 +269,6 @@ python3 tools/memory_engine.py recall "test query" 2>&1 | tail -5
 # Check all Docker containers
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-# PM2 process list
-pm2 list
 ```
 
 ---
@@ -283,7 +277,7 @@ pm2 list
 
 | Log | Location | Contents |
 |-----|---------|---------|
-| hybrid_brain | `pm2 logs rasputin` | API requests, A-MAC decisions |
+| hybrid_brain | service stdout/stderr logs | API requests, A-MAC decisions |
 | A-MAC rejections | `/tmp/amac_rejected.log` | Rejected commits with scores |
 | Fact extractor | `/tmp/fact_extractor.log` | Cron runs, extracted facts |
 | Enrichment | `/tmp/enrichment.log` | Nightly enrichment runs |

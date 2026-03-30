@@ -23,7 +23,7 @@ Every `POST /commit` passes through `amac_gate()` before any storage happens:
 
 ```python
 AMAC_THRESHOLD = 4.0
-AMAC_OLLAMA_MODEL = "qwen3.5:35b"   # local, zero cost
+# model from config/rasputin.toml [amac] section
 AMAC_TIMEOUT = 30                    # fail-open on timeout
 ```
 
@@ -171,16 +171,11 @@ def write_to_graph(point_id, text, entities, timestamp):
 
 ### Configuration
 
-```python
-WORKSPACE = Path.home() / '.openclaw' / 'workspace'
-SESSIONS_DIR = Path.home() / '.openclaw/agents/main/sessions'
-FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
-STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
-QDRANT_URL = "http://localhost:6333"
-EMBED_URL = "http://localhost:11434/api/embeddings"
-LLM_PROXY_URL = "http://localhost:11436/v1/chat/completions"  # LLM endpoint
-LLM_MODEL = "qwen3.5-122b-a10b"  # local model, zero cost
-```
+Use `config/rasputin.toml` for default model/endpoint settings and env vars for overrides.
+
+- `LLM_API_URL` (or config endpoint)
+- `LLM_MODEL` (or config model)
+- `SESSIONS_DIR`, `WORKSPACE_PATH`, and `QDRANT_URL` as needed per environment
 
 ### Running manually
 
@@ -198,8 +193,8 @@ python3 tools/fact_extractor.py --all
 ### Output format (facts.jsonl)
 
 ```json
-{"fact": "the user lives in locally", "confidence": 0.95, "source": "session_2026-03-15", "date": "2026-03-15T10:22:00", "hash": "abc123"}
-{"fact": "Alice is the user's wife, married January 14 2026", "confidence": 0.98, "source": "session_2026-02-20", "date": "2026-02-20T09:10:00", "hash": "def456"}
+{"fact": "Team decided to move launch to April after dependency review", "confidence": 0.95, "source": "session_2026-03-15", "date": "2026-03-15T10:22:00", "hash": "abc123"}
+{"fact": "Client requested weekly status updates and approved revised timeline", "confidence": 0.98, "source": "session_2026-02-20", "date": "2026-02-20T09:10:00", "hash": "def456"}
 ```
 
 Facts are also committed to Qdrant with `source: "fact"` for retrieval in the main search pipeline.
@@ -241,7 +236,7 @@ python3 tools/enrich_second_brain.py --batch 100
 
 ## Auto-Tagging Pipeline
 
-During enrichment, Qwen 35B generates structured tags for each memory:
+During enrichment, the configured local model generates structured tags for each memory:
 
 **Prompt:**
 ```

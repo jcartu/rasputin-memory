@@ -32,9 +32,9 @@ Session end (command:new or agent:stop)
 ## Installing the openclaw-mem Hook
 
 ```bash
-# The hook lives at ~/.openclaw/hooks/openclaw-mem/
+# The hook lives at <openclaw-home>/hooks/openclaw-mem/
 # If installing from scratch:
-cd ~/.openclaw/hooks/
+cd <openclaw-home>/hooks/
 git clone https://github.com/phenomenoner/openclaw-mem
 
 # Install dependencies
@@ -61,7 +61,7 @@ The hook registers for these OpenClaw events:
 
 The hook automatically searches memory on every user message and writes results to `memory/last-recall.md`.
 
-**Hook configuration** (`~/.openclaw/config.json`):
+**Hook configuration** (`<openclaw-home>/config.json`):
 ```json
 {
   "hooks": {
@@ -94,10 +94,10 @@ At the start of every response:
 curl -s "http://localhost:7777/search?q=the user+health+supplements&limit=5"
 
 # Python CLI
-python3 tools/memory_engine.py recall "What supplements is Alice taking?"
+python3 tools/memory_engine.py recall "What did we decide for the release timeline?"
 
 # Shell helper (mem-search.sh)
-~/.openclaw/hooks/openclaw-mem/mem-search.sh "LATAM product"
+<openclaw-home>/hooks/openclaw-mem/mem-search.sh "regional rollout"
 ```
 
 ---
@@ -164,17 +164,17 @@ The hook writes search results to `memory/last-recall.md` in a structured format
 ```markdown
 # Memory Recall — 2026-03-15T14:22:01
 
-Query: "Alice project project planning"
+Query: "release planning status"
 Results: 5 memories found
 
-## 💬 ChatGPT conversation: project project planning session (2026-02-10)
-the user and Alice planning project planning. Starting PGT-A genetic screening. 
-Timeline: retrieval in April 2026.
+## 💬 Project strategy discussion (2026-02-10)
+Team aligned on scope reduction before launch.
+Timeline moved from March to April 2026.
 [rerank: 0.923 | vector: 0.81]
 
-## 📨 From planning@clinic.ru (2026-01-15)
-Subject: project planning Protocol - Initial Consultation
-Body: Protocol details, medication schedule, monitoring appointments...
+## 📨 From vendor@example.com (2026-01-15)
+Subject: Rollout milestone checklist
+Body: Environment readiness, QA sign-off, and handoff schedule...
 [rerank: 0.887 | vector: 0.76]
 ```
 
@@ -197,10 +197,7 @@ fi
 
 ```bash
 # Start the session watcher
-node ~/.openclaw/hooks/openclaw-mem/session-watcher.js
-
-# Or monitor via PM2
-pm2 start ~/.openclaw/hooks/openclaw-mem/session-watcher.js --name session-watcher
+node <openclaw-home>/hooks/openclaw-mem/session-watcher.js
 ```
 
 ---
@@ -214,7 +211,7 @@ The hook also exposes an MCP (Model Context Protocol) server at port 18790:
 curl http://localhost:18790/health
 
 # MCP config (MCP.json)
-cat ~/.openclaw/hooks/openclaw-mem/MCP.json
+cat <openclaw-home>/hooks/openclaw-mem/MCP.json
 ```
 
 This allows external MCP clients to query the memory system using the standardized MCP protocol.
@@ -223,10 +220,10 @@ This allows external MCP clients to query the memory system using the standardiz
 
 ## Storage: SQLite Database
 
-Session conversations are stored in SQLite at `~/.openclaw-mem/memory.db`:
+Session conversations are stored in SQLite at `<openclaw-home>-mem/memory.db`:
 
 ```bash
-sqlite3 ~/.openclaw-mem/memory.db
+sqlite3 <openclaw-home>-mem/memory.db
 
 # Check tables
 .tables
@@ -236,7 +233,7 @@ sqlite3 ~/.openclaw-mem/memory.db
 SELECT id, created_at, message_count FROM sessions ORDER BY created_at DESC LIMIT 10;
 
 # Search observations
-SELECT * FROM observations WHERE content LIKE '%project planning%' ORDER BY timestamp DESC LIMIT 5;
+SELECT * FROM observations WHERE content LIKE '%release planning%' ORDER BY timestamp DESC LIMIT 5;
 ```
 
 **Tables:**
@@ -258,10 +255,10 @@ curl -X POST http://localhost:7777/commit \
 python3 tools/memory_engine.py recall "What did we decide about the product affiliate deal?"
 
 # Deep dive on a topic
-python3 tools/memory_engine.py deep "CHRONOS hardware wallet"
+python3 tools/memory_engine.py deep "billing migration"
 
 # Who is this person?
-python3 tools/memory_engine.py whois "Bob"
+python3 tools/memory_engine.py whois "Jordan Lee"
 
 # Morning briefing — surface urgent/upcoming items
 python3 tools/memory_engine.py briefing

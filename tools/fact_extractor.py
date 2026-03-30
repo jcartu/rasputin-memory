@@ -31,9 +31,9 @@ LOCK_FILE = "/tmp/rasputin_fact_extractor.lock"
 
 # LLM proxy endpoint (OpenAI-compatible or Anthropic-compatible)
 LLM_PROXY_URL = os.environ.get(
-    "LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11436/v1/chat/completions")
+    "LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
 )
-LLM_MODEL = os.environ.get("LLM_MODEL", "qwen3.5-122b-a10b")
+LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
 
 
 def acquire_lock():

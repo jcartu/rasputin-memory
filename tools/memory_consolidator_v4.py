@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # === CONFIG ===
-SESSIONS_DIR = os.environ.get("SESSIONS_DIR", os.path.expanduser("~/.openclaw/agents/main/sessions"))
+SESSIONS_DIR = os.environ.get("SESSIONS_DIR", os.path.join(os.path.dirname(__file__), "..", "sessions"))
 OUT_DIR = os.environ.get("CONSOLIDATION_DIR", os.path.expanduser("./memory/consolidation"))
 FACTS_FILE = os.environ.get("FACTS_FILE", os.path.expanduser("./memory/facts.jsonl"))
 BRAIN_URL = os.environ.get("MEMORY_API_URL", "http://localhost:7777")
@@ -22,38 +22,9 @@ SUMMARY_FILE = os.path.join(OUT_DIR, "CONSOLIDATION-REPORT-v4.md")
 LOG_FILE = os.path.join(OUT_DIR, "consolidator-v4.log")
 LOCK_FILE = "/tmp/rasputin_memory_consolidator_v4.lock"
 
-# 8 workers total (4x 122B + 4x 35B) — leave headroom for main session
-LLM_ENDPOINTS = []
-# 2x 122B direct GPU0 (port 11435) + 2x 122B direct GPU2 (port 11437)
-# Direct connections bypass llama-swap 502 errors
-for i in range(2):
-    LLM_ENDPOINTS.append(
-        {
-            "url": "http://localhost:11435/v1/chat/completions",
-            "model": "qwen3.5:122b",
-            "name": f"122B-gpu0-s{i}",
-            "max_tokens": 8192,
-        }
-    )
-for i in range(2):
-    LLM_ENDPOINTS.append(
-        {
-            "url": "http://localhost:11437/v1/chat/completions",
-            "model": "qwen3.5:122b",
-            "name": f"122B-gpu2-s{i}",
-            "max_tokens": 8192,
-        }
-    )
-# 4x 35B on local 5090
-for i in range(4):
-    LLM_ENDPOINTS.append(
-        {
-            "url": "http://localhost:5800/v1/chat/completions",
-            "model": "qwen3.5:35b",
-            "name": f"5090-35B-s{i}",
-            "max_tokens": 4096,
-        }
-    )
+_default_endpoint = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
+_default_model = os.environ.get("LLM_MODEL", "qwen2.5:14b")
+LLM_ENDPOINTS = [{"url": _default_endpoint, "model": _default_model}]
 
 MAX_WORKERS = 8
 MAX_CHARS_PER_SESSION = 30000  # Much bigger than v3's 6K
@@ -201,18 +172,17 @@ CONVERSATION:
 
 
 def call_llm(endpoint, session_text, worker_id):
+    endpoint_name = endpoint.get("name", "default")
+    max_tokens = endpoint.get("max_tokens", 4096)
     prompt = EXTRACTION_PROMPT + session_text
     try:
         payload = {
             "model": endpoint["model"],
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.15,
-            "max_tokens": endpoint["max_tokens"],
+            "max_tokens": max_tokens,
             "stream": False,
         }
-        # Add thinking disable for 122B
-        if "122B" in endpoint["name"]:
-            payload["chat_template_kwargs"] = {"enable_thinking": False}
 
         resp = requests.post(endpoint["url"], json=payload, timeout=300)
         resp.raise_for_status()
@@ -233,11 +203,11 @@ def call_llm(endpoint, session_text, worker_id):
                 continue
         return facts
     except requests.exceptions.Timeout:
-        log(f"  [W{worker_id}:{endpoint['name']}] ⏰ TIMEOUT (300s)")
+        log(f"  [W{worker_id}:{endpoint_name}] ⏰ TIMEOUT (300s)")
         return []
     except Exception as e:
         err = str(e)[:120]
-        log(f"  [W{worker_id}:{endpoint['name']}] ⚠️ {err}")
+        log(f"  [W{worker_id}:{endpoint_name}] ⚠️ {err}")
         return []
 
 
@@ -269,8 +239,8 @@ def process_session(fpath, endpoint, worker_id):
     fname = os.path.basename(fpath)
     fsize = os.path.getsize(fpath)
 
-    # 35B has 32K context — cap at 8K chars; 122B gets full 30K
-    char_limit = 8000 if "35B" in endpoint["name"] else MAX_CHARS_PER_SESSION
+    endpoint_name = endpoint.get("name", "default")
+    char_limit = MAX_CHARS_PER_SESSION
     text = read_session(fpath, max_chars=char_limit)
     if not text:
         with progress_lock:
@@ -279,7 +249,7 @@ def process_session(fpath, endpoint, worker_id):
             stats["skipped"] += 1
         return 0
 
-    log(f"  [W{worker_id}:{endpoint['name']}] {fname[:12]}… ({fsize // 1024}KB, {len(text) // 1000}k chars)")
+    log(f"  [W{worker_id}:{endpoint_name}] {fname[:12]}… ({fsize // 1024}KB, {len(text) // 1000}k chars)")
 
     facts = call_llm(endpoint, text, worker_id)
 

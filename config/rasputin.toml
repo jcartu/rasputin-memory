@@ -27,6 +27,7 @@ enabled = true
 threshold = 4.0
 timeout = 30
 model = "qwen2.5:14b"
+url = "http://localhost:11434/v1/chat/completions"
 
 [scoring]
 decay_half_life_low = 14

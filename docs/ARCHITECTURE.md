@@ -89,7 +89,7 @@ When you call `POST /commit {"text": "...", "source": "conversation"}`:
 
 5. FalkorDB graph write:
    - MERGE Person/Entity nodes
-   - CREATE MENTIONED_IN relationships
+   - CREATE MENTIONS relationships
    - Link entities to memory point
 
 6. Return: {point_id, entities, graph_written, amac_scores}
@@ -177,16 +177,16 @@ A lightweight in-memory entity graph at `memory/entity_graph.json`:
 ```json
 {
   "people": {
-    "Bob": {"role": "business contact", "context": "product affiliate"},
-    "Alice": {"role": "wife", "context": "project planning, locally"}
+    "Jordan Lee": {"role": "stakeholder", "context": "launch approvals"},
+    "Sam Patel": {"role": "engineering lead", "context": "delivery planning"}
   },
   "companies": {
-    "Acme Corp": {"type": "SaaS brand", "context": "Rival platform"},
-    "WidgetCo": {"type": "SaaS brand", "context": "EMEA market"}
+    "Northwind Labs": {"type": "customer", "context": "pilot rollout"},
+    "Contoso": {"type": "vendor", "context": "service integration"}
   },
   "topics": {
-    "project planning": {"context": "project planning, Alice"},
-    "CHRONOS": {"context": "hardware wallet project"}
+    "release planning": {"context": "Q2 milestone decisions"},
+    "billing migration": {"context": "subscription platform update"}
   }
 }
 ```
@@ -201,14 +201,14 @@ FalkorDB is a Redis-compatible graph database using the Cypher query language.
 
 **Schema:**
 - `(:Entity {name: "...", type: "person|org|concept|location|money|date"})` — nodes
-- `[:MENTIONED_IN {memory_id: "...", timestamp: "..."}]` — memory links
+- `[:MENTIONS {memory_id: "...", timestamp: "..."}]` — memory links
 - `[:RELATED_TO {strength: 0.8}]` — entity-to-entity relationships
 
 **Graph search logic:**
 1. Extract candidate entity names from query (NER)
 2. `MATCH (e:Entity) WHERE toLower(e.name) CONTAINS toLower($term)` 
 3. Traverse 2 hops: `MATCH (e)-[*1..2]-(related)`
-4. Collect memory IDs from `MENTIONED_IN` edges
+4. Collect memory IDs from `MENTIONS` edges
 5. Fetch those points from Qdrant
 
 ---

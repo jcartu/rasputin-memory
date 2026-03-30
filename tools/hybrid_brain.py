@@ -13,15 +13,19 @@ Usage:
 """
 
 import argparse
+import datetime as _dt_mod
 import importlib
 import json
 import logging
+import math
 import os
 import re
 import signal
 import sys
 import time
 import threading
+import uuid
+from datetime import datetime
 from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
 from typing import Any, Optional
 from urllib.parse import urlparse, parse_qs
@@ -439,6 +443,7 @@ def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> 
 
 AMAC_THRESHOLD = float(CONFIG["amac"]["threshold"])
 AMAC_OLLAMA_MODEL = CONFIG["amac"]["model"]
+AMAC_LLM_URL = str(CONFIG.get("amac", {}).get("url") or "http://localhost:11434/v1/chat/completions")
 AMAC_REJECT_LOG = os.environ.get("AMAC_REJECT_LOG", "/tmp/amac_rejected.log")
 AMAC_TIMEOUT = int(CONFIG["amac"]["timeout"])
 
@@ -486,7 +491,7 @@ def amac_score(text: str, retry: int = 2) -> Optional[tuple[float, float, float,
     for attempt in range(retry + 1):
         try:
             resp = requests.post(
-                os.environ.get("AMAC_LLM_URL", "http://localhost:11436/v1/chat/completions"),
+                os.environ.get("AMAC_LLM_URL", AMAC_LLM_URL),
                 json={
                     "model": AMAC_OLLAMA_MODEL,
                     "messages": [{"role": "user", "content": prompt}],
@@ -601,10 +606,8 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False) -> tuple[
         _inc_metric("rejected")
         # Log rejection
         try:
-            import datetime
-
             entry = {
-                "ts": datetime.datetime.now().isoformat(),
+                "ts": _dt_mod.datetime.now().isoformat(),
                 "source": source,
                 "scores": score_dict,
                 "text": text[:200],
@@ -633,15 +636,10 @@ def commit_memory(
             return {"ok": False, "error": f"Embedding failed: {e}"}
 
         # Reject garbage embeddings (e.g. Ollama mid-model-swap returns near-zero vectors)
-        import math
-
         magnitude = math.sqrt(sum(x * x for x in vector))
         if magnitude < 0.1:
             logger.warning("commit_memory rejected embedding magnitude %.4f too low", magnitude)
             return {"ok": False, "error": f"Embedding magnitude too low: {magnitude:.4f}"}
-
-        import hashlib
-        from datetime import datetime
 
         # Inline dedup check
         is_dupe, existing_id, similarity = check_duplicate(vector, text)
@@ -653,7 +651,7 @@ def commit_memory(
             dedup_action = "updated"
             logger.info("Dedup near-duplicate found (sim=%s), updating point %s", similarity, point_id)
         else:
-            point_id = abs(int(hashlib.md5((text + str(time.time())).encode()).hexdigest()[:15], 16))
+            point_id = uuid.uuid4().int >> 65
 
         contradiction_hits: list[dict[str, Any]] = []
         contradiction_ids: list[Any] = []
@@ -688,6 +686,7 @@ def commit_memory(
             "schema_version": "3.0",
             "contradicts": contradiction_ids,
             "supersedes": supersedes_ids,
+            "has_contradictions": bool(contradiction_ids),
         }
         if metadata and isinstance(metadata, dict):
             protected_fields = {
@@ -755,6 +754,7 @@ def list_contradictions(limit: int = 100) -> list[dict[str, Any]]:
         while len(entries) < limit:
             points, offset = qdrant.scroll(
                 collection_name=COLLECTION,
+                scroll_filter=Filter(must=[FieldCondition(key="has_contradictions", match=MatchValue(value=True))]),
                 limit=min(100, max(limit - len(entries), 1)),
                 offset=offset,
                 with_payload=True,
@@ -785,8 +785,6 @@ def list_contradictions(limit: int = 100) -> list[dict[str, Any]]:
 
 
 def apply_relevance_feedback(point_id: Any, helpful: bool) -> dict[str, Any]:
-    from datetime import datetime
-
     points = qdrant.retrieve(collection_name=COLLECTION, ids=[point_id], with_payload=True)
     if not points:
         return {"ok": False, "error": "point_not_found", "point_id": point_id}
