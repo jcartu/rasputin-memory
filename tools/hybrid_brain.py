@@ -632,9 +632,20 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
             "importance": importance,
             "auto_committed": True,
             "retrieval_count": 0,
+            "embedding_model": EMBED_MODEL,
+            "schema_version": "3.0",
         }
         if metadata and isinstance(metadata, dict):
-            protected_fields = {"text", "source", "date", "importance", "auto_committed", "retrieval_count"}
+            protected_fields = {
+                "text",
+                "source",
+                "date",
+                "importance",
+                "auto_committed",
+                "retrieval_count",
+                "embedding_model",
+                "schema_version",
+            }
             safe_metadata = {k: v for k, v in metadata.items() if k not in protected_fields}
             payload.update(safe_metadata)
 

@@ -1,12 +1,14 @@
 import sys
 from pathlib import Path
 from typing import Any
+from unittest.mock import Mock
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
 import config
+import hybrid_brain
 
 load_config: Any = getattr(config, "load_config")
 
@@ -117,3 +119,19 @@ known_entities_path = "config/known_entities.json"
     assert cfg["qdrant"]["collection"] == "memories_v2"
     assert cfg["graph"]["graph_name"] == "brain_prod"
     assert cfg["embeddings"]["model"] == "nomic-embed-text-v2"
+
+
+def test_commit_includes_schema_version(monkeypatch):
+    mock_qdrant = Mock()
+    monkeypatch.setattr(hybrid_brain, "qdrant", mock_qdrant)
+    monkeypatch.setattr(hybrid_brain, "check_duplicate", lambda *_args, **_kwargs: (False, None, 0))
+    monkeypatch.setattr(hybrid_brain, "get_embedding", lambda *_args, **_kwargs: [0.1] * 768)
+    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [])
+
+    result = hybrid_brain.commit_memory("A" * 64, source="conversation", importance=60)
+
+    assert result["ok"] is True
+    upsert_kwargs = mock_qdrant.upsert.call_args.kwargs
+    payload = upsert_kwargs["points"][0].payload
+    assert payload["embedding_model"] == hybrid_brain.EMBED_MODEL
+    assert payload["schema_version"] == "3.0"
