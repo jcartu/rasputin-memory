@@ -5,11 +5,9 @@ Tests all components of the memory pipeline end-to-end.
 Returns a status report or raises alarms.
 """
 
-import json
 import os
 import sys
 import time
-import hashlib
 import requests
 
 CHECKS = []
@@ -106,7 +104,6 @@ def check_openclaw_mem():
 def check_round_trip():
     """The critical test: commit → search → find. Proves the pipeline works end-to-end.
     Uses semantically rich text so vector search can find it, then verifies by point_id."""
-    import hashlib
 
     ts = int(time.time())
     # Semantically meaningful text so vector search works
@@ -133,9 +130,8 @@ def check_round_trip():
 
     # Search with semantic terms from the committed text
     search_query = "RASPUTIN memory system self-diagnostic embedding pipeline verification"
-    r = requests.get(
-        f"${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q={search_query}&limit=5", timeout=15
-    )
+    memory_api_url = os.environ.get("MEMORY_API_URL", f"http://{os.environ.get('MEMORY_API_HOST', 'localhost')}:7777")
+    r = requests.get(f"{memory_api_url}/search?q={search_query}&limit=5", timeout=15)
     r.raise_for_status()
     data = r.json()
 
@@ -151,7 +147,7 @@ def check_round_trip():
     # Cleanup
     try:
         requests.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/delete", json={"points": [point_id]}, timeout=5)
-    except:
+    except Exception:
         pass
 
     if not found:

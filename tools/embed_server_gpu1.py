@@ -3,13 +3,14 @@
 Replaces the GPU0 server to free PRO 6000 for inference"""
 import os
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1")  # GPU index or UUID. Set via env var. MUST be before torch import.
-import torch
-import numpy as np
 from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Union
-import uvicorn, logging, time, os
+import uvicorn
+import logging
+import time
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ logger.info("Loading nomic-ai/nomic-embed-text-v1.5 on GPU1 (RTX 5090) with FP16
 device = "cuda:0"  # cuda:0 because CUDA_VISIBLE_DEVICES=1 remaps it
 model = SentenceTransformer('nomic-ai/nomic-embed-text-v1.5', device=device, trust_remote_code=True)
 model.half()
-logger.info(f"Model loaded on RTX 5090 (FP16)")
+logger.info("Model loaded on RTX 5090 (FP16)")
 
 _ = model.encode(["warmup"] * 32, convert_to_numpy=True, show_progress_bar=False, batch_size=32)
 logger.info("Warmup complete")

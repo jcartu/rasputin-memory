@@ -1,12 +1,8 @@
 """Phase 1 bug fix tests — verify critical fixes without requiring live services."""
 
 import importlib
-import os
-import re
 import sys
-import textwrap
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
@@ -31,7 +27,7 @@ def test_bm25_available_defined():
 
 def test_bm25_tokenizer_cyrillic():
     bm25_source = (ROOT / "tools" / "bm25_search.py").read_text()
-    engine_source = (ROOT / "tools" / "memory_engine.py").read_text()
+    (ROOT / "tools" / "memory_engine.py").read_text()
     assert "\\w+" in bm25_source
     assert "findall" in bm25_source
 

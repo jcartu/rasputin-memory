@@ -8,10 +8,10 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-import config
-import bm25_search
-import backfill_schema
-import hybrid_brain
+import config  # noqa: E402
+import bm25_search  # noqa: E402
+import backfill_schema  # noqa: E402
+import hybrid_brain  # noqa: E402
 
 load_config: Any = getattr(config, "load_config")
 

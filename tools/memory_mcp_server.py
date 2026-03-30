@@ -6,11 +6,11 @@ Exposes: search, commit, proactive surfacing, graph queries, stats.
 Run: python3 tools/memory-mcp-server.py          (stdio for MCP clients)
 Run: python3 tools/memory-mcp-server.py --http    (HTTP/SSE on port 8101)
 """
+
 import json
+import os
 import subprocess
-import sys
 import argparse
-from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -45,6 +45,7 @@ def memory_search(query: str, limit: int = 5) -> str:
     """Search RASPUTIN's Second Brain using semantic search + knowledge graph + reranker.
     Returns the most relevant memories from 761K+ stored entries."""
     from urllib.parse import quote
+
     results = _http_json(f"{BRAIN_URL}/search?q={quote(query)}&limit={limit}")
     if not results:
         return "No results found."
@@ -104,15 +105,13 @@ def memory_stats() -> str:
     # Qdrant collections via the brain's /search as a proxy — get counts from Qdrant directly
     try:
         collections_raw = subprocess.run(
-            ["curl", "-sf", "http://localhost:6333/collections"],
-            capture_output=True, text=True, timeout=10
+            ["curl", "-sf", "http://localhost:6333/collections"], capture_output=True, text=True, timeout=10
         )
         cols = json.loads(collections_raw.stdout)
         for c in cols.get("result", {}).get("collections", []):
             name = c["name"]
             info = subprocess.run(
-                ["curl", "-sf", f"http://localhost:6333/collections/{name}"],
-                capture_output=True, text=True, timeout=10
+                ["curl", "-sf", f"http://localhost:6333/collections/{name}"], capture_output=True, text=True, timeout=10
             )
             cdata = json.loads(info.stdout).get("result", {})
             count = cdata.get("points_count", cdata.get("vectors_count", "?"))

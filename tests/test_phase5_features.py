@@ -244,7 +244,8 @@ def test_embedding_health_no_drift():
         "alpha": [1.0, 0.0, 0.0],
         "beta": [0.0, 1.0, 0.0],
     }
-    embed_fn = lambda text: expected[text]
+    def embed_fn(text):
+        return expected[text]
 
     out = embedding_health.check_embedding_consistency(
         qdrant_client=_Qdrant(),

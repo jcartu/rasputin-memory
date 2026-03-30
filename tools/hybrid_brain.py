@@ -21,12 +21,11 @@ import math
 import os
 import re
 import signal
-import sys
 import time
 import threading
 import uuid
 from datetime import datetime
-from http.server import HTTPServer, ThreadingHTTPServer, BaseHTTPRequestHandler
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from typing import Any, Optional
 from urllib.parse import urlparse, parse_qs
 
@@ -45,7 +44,7 @@ except ModuleNotFoundError:
 load_config = _config_module.load_config
 
 # BM25 hybrid reranking — core pipeline component
-from bm25_search import hybrid_rerank as bm25_rerank
+from bm25_search import hybrid_rerank as bm25_rerank  # noqa: E402
 
 try:
     _source_tiering = importlib.import_module("pipeline.source_tiering")
