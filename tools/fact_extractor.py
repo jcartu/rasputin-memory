@@ -11,24 +11,39 @@ Usage:
   python3 fact_extractor.py --all            # Process ALL sessions (first run)
   python3 fact_extractor.py --hours 24       # Process last 24 hours
 """
+
 import json
 import os
 import sys
+import fcntl
 import hashlib
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
-WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / '.openclaw' / 'workspace'))
-SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / '.openclaw/agents/main/sessions'))
-FACTS_FILE = WORKSPACE / 'memory' / 'facts.jsonl'
-STATE_FILE = WORKSPACE / 'memory' / 'fact_extractor_state.json'
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / ".openclaw" / "workspace"))
+SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / ".openclaw/agents/main/sessions"))
+FACTS_FILE = WORKSPACE / "memory" / "facts.jsonl"
+STATE_FILE = WORKSPACE / "memory" / "fact_extractor_state.json"
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
+LOCK_FILE = "/tmp/rasputin_fact_extractor.lock"
 
 # LLM proxy endpoint (OpenAI-compatible or Anthropic-compatible)
-LLM_PROXY_URL = os.environ.get("LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11436/v1/chat/completions"))
+LLM_PROXY_URL = os.environ.get(
+    "LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11436/v1/chat/completions")
+)
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen3.5-122b-a10b")
+
+
+def acquire_lock():
+    lock_fd = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock_fd
+    except OSError:
+        print("[INFO] Another fact_extractor instance is running. Exiting.")
+        sys.exit(0)
 
 
 def load_state():
@@ -60,17 +75,14 @@ def llm_call(prompt, max_tokens=2000, temp=0.1):
     """Call llm-proxy with Anthropic message format"""
     resp = requests.post(
         LLM_PROXY_URL,
-        headers={
-            "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01"
-        },
+        headers={"Content-Type": "application/json", "anthropic-version": "2023-06-01"},
         json={
             "model": LLM_MODEL,
             "messages": [{"role": "user", "content": prompt}],
             "max_tokens": max_tokens,
-            "temperature": temp
+            "temperature": temp,
         },
-        timeout=180
+        timeout=180,
     )
     resp.raise_for_status()
     data = resp.json()
@@ -82,50 +94,53 @@ def extract_user_messages(hours=4, process_all=False):
     cutoff = None if process_all else (datetime.utcnow() - timedelta(hours=hours)).isoformat()
 
     messages = []
-    for jf in sorted(SESSIONS_DIR.glob('*.jsonl')):
-        if jf.name == 'sessions.json':
+    for jf in sorted(SESSIONS_DIR.glob("*.jsonl")):
+        if jf.name == "sessions.json":
             continue
         try:
             with open(jf) as f:
                 for i, line in enumerate(f):
                     try:
                         d = json.loads(line.strip())
-                        if d.get('type') != 'message':
+                        if d.get("type") != "message":
                             continue
 
-                        ts = d.get('timestamp', '')
+                        ts = d.get("timestamp", "")
                         if cutoff and ts and ts < cutoff:
                             continue
 
-                        msg = d.get('message', {})
-                        role = msg.get('role', '')
+                        msg = d.get("message", {})
+                        role = msg.get("role", "")
 
                         # We want user messages AND assistant messages (facts come from both)
-                        if role not in ('user', 'assistant'):
+                        if role not in ("user", "assistant"):
                             continue
 
-                        content = msg.get('content', '')
+                        content = msg.get("content", "")
                         if isinstance(content, list):
-                            text_parts = [c.get('text', '') for c in content
-                                        if isinstance(c, dict) and c.get('type') == 'text']
-                            content = '\n'.join(text_parts)
+                            text_parts = [
+                                c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text"
+                            ]
+                            content = "\n".join(text_parts)
 
                         if not isinstance(content, str) or len(content) < 30:
                             continue
 
                         # Skip system noise, cron outputs, tool results
-                        if content.startswith('[System') or content.startswith('[cron:'):
+                        if content.startswith("[System") or content.startswith("[cron:"):
                             continue
-                        if 'Exec completed' in content[:50] or 'Exec failed' in content[:50]:
+                        if "Exec completed" in content[:50] or "Exec failed" in content[:50]:
                             continue
 
-                        messages.append({
-                            'role': role,
-                            'text': content[:2000],  # Truncate long messages
-                            'ts': ts,
-                            'file': jf.name,
-                            'line': i
-                        })
+                        messages.append(
+                            {
+                                "role": role,
+                                "text": content[:2000],  # Truncate long messages
+                                "ts": ts,
+                                "file": jf.name,
+                                "line": i,
+                            }
+                        )
                     except json.JSONDecodeError:
                         pass
         except Exception as e:
@@ -138,14 +153,16 @@ def chunk_messages(messages, chunk_size=20):
     """Group messages into conversation chunks for analysis"""
     chunks = []
     for i in range(0, len(messages), chunk_size):
-        chunk = messages[i:i+chunk_size]
+        chunk = messages[i : i + chunk_size]
         text = "\n".join([f"[{m['role']}] {m['text']}" for m in chunk])
-        chunks.append({
-            'text': text[:8000],  # Keep under model context
-            'ts_start': chunk[0]['ts'],
-            'ts_end': chunk[-1]['ts'],
-            'count': len(chunk)
-        })
+        chunks.append(
+            {
+                "text": text[:8000],  # Keep under model context
+                "ts_start": chunk[0]["ts"],
+                "ts_end": chunk[-1]["ts"],
+                "count": len(chunk),
+            }
+        )
     return chunks
 
 
@@ -200,9 +217,9 @@ JSON (empty array if nothing specific):"""
 
         # Parse JSON from response
         text = response.strip()
-        if text.startswith('```'):
-            text = text.split('```')[1]
-            if text.startswith('json'):
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
                 text = text[4:]
 
         # Try direct parsing first
@@ -214,8 +231,8 @@ JSON (empty array if nothing specific):"""
             pass
 
         # Try to extract JSON array
-        start = text.find('[')
-        end = text.rfind(']') + 1
+        start = text.find("[")
+        end = text.rfind("]") + 1
         if start >= 0 and end > start:
             try:
                 facts = json.loads(text[start:end])
@@ -264,9 +281,9 @@ Only return the JSON array, nothing else."""
         response = llm_call(prompt, max_tokens=2000, temp=0.1)
 
         text = response.strip()
-        if text.startswith('```'):
-            text = text.split('```')[1]
-            if text.startswith('json'):
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
                 text = text[4:]
 
         verified = json.loads(text)
@@ -274,13 +291,13 @@ Only return the JSON array, nothing else."""
         # Keep only CONFIRMED and INFERRED facts
         confirmed_facts = []
         for v in verified:
-            status = v.get('status', '').upper()
-            if status in ('CONFIRMED', 'INFERRED'):
+            status = v.get("status", "").upper()
+            if status in ("CONFIRMED", "INFERRED"):
                 # Find original fact and keep it
-                original = next((f for f in facts if f.get('fact') == v.get('fact')), None)
+                original = next((f for f in facts if f.get("fact") == v.get("fact")), None)
                 if original:
                     confirmed_facts.append(original)
-            elif status == 'HALLUCINATED':
+            elif status == "HALLUCINATED":
                 print(f"    ⚠️ Hallucinated (removed): {v.get('fact', '')[:80]}")
 
         return confirmed_facts
@@ -299,9 +316,9 @@ def pass3_filter_existing(new_facts, existing_facts):
     if not new_facts:
         return []
 
-    new_facts_json = json.dumps([f.get('fact', '') for f in new_facts], indent=2)
+    new_facts_json = json.dumps([f.get("fact", "") for f in new_facts], indent=2)
 
-    existing_facts_list = [f.get('fact', '') for f in existing_facts]
+    existing_facts_list = [f.get("fact", "") for f in existing_facts]
     existing_json = json.dumps(existing_facts_list[:100], indent=2)  # Limit to avoid overflow
 
     prompt = f"""You are filtering newly extracted facts against an existing knowledge base.
@@ -334,9 +351,9 @@ Just return the JSON array:"""
         response = llm_call(prompt, max_tokens=1500, temp=0.1)
 
         text = response.strip()
-        if text.startswith('```'):
-            text = text.split('```')[1]
-            if text.startswith('json'):
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
                 text = text[4:]
 
         filtered = json.loads(text)
@@ -346,7 +363,7 @@ Just return the JSON array:"""
         kept_texts = set(filtered) if isinstance(filtered, list) else set()
 
         for fact in new_facts:
-            fact_text = fact.get('fact', '')
+            fact_text = fact.get("fact", "")
             if fact_text in kept_texts:
                 kept_facts.append(fact)
 
@@ -370,37 +387,35 @@ def dedup_fact(fact_text, existing_hashes):
 
 def store_fact(fact, state):
     """Store fact to JSONL file and Qdrant"""
-    fact_text = fact.get('fact', '')
-    category = fact.get('category', 'unknown')
+    fact_text = fact.get("fact", "")
+    category = fact.get("category", "unknown")
 
-    is_dup, fact_hash = dedup_fact(fact_text, set(state.get('fact_hashes', [])))
+    is_dup, fact_hash = dedup_fact(fact_text, set(state.get("fact_hashes", [])))
     if is_dup:
         return False
 
     # Append to JSONL
-    entry = {
-        'ts': datetime.now().isoformat(),
-        'category': category,
-        'fact': fact_text,
-        'hash': fact_hash
-    }
-    with open(FACTS_FILE, 'a') as f:
-        f.write(json.dumps(entry) + '\n')
+    entry = {"ts": datetime.now().isoformat(), "category": category, "fact": fact_text, "hash": fact_hash}
+    with open(FACTS_FILE, "a") as f:
+        f.write(json.dumps(entry) + "\n")
 
     # Also commit to Second Brain API for A-MAC scoring + graph extraction
     try:
-        brain_resp = requests.post("http://localhost:7777/commit", json={
-            "text": f"[{category}] {fact_text}",
-            "source": "fact-extractor"
-        }, timeout=30)
+        brain_resp = requests.post(
+            "http://localhost:7777/commit",
+            json={"text": f"[{category}] {fact_text}", "source": "fact-extractor"},
+            timeout=30,
+        )
         if brain_resp.status_code == 200:
             brain_data = brain_resp.json()
-            if brain_data.get('ok'):
-                print(f"    → Second Brain: accepted (score={brain_data.get('amac',{}).get('scores',{}).get('composite','?')})")
+            if brain_data.get("ok"):
+                print(
+                    f"    → Second Brain: accepted (score={brain_data.get('amac', {}).get('scores', {}).get('composite', '?')})"
+                )
     except Exception:
         pass
 
-    state.setdefault('fact_hashes', []).append(fact_hash)
+    state.setdefault("fact_hashes", []).append(fact_hash)
     return True
 
 
@@ -413,8 +428,9 @@ def purge_garbage_facts():
         return 0
 
     # Back up first
-    backup_path = FACTS_FILE.with_suffix('.jsonl.bak')
+    backup_path = FACTS_FILE.with_suffix(".jsonl.bak")
     import shutil
+
     shutil.copy2(FACTS_FILE, backup_path)
     print(f"  Backed up facts to {backup_path.name}")
 
@@ -449,30 +465,24 @@ def purge_garbage_facts():
     purged_count = 0
 
     for fact in all_facts:
-        fact_text = fact.get('fact', '').lower()
+        fact_text = fact.get("fact", "").lower()
 
         # Check for vague patterns
         is_vague = False
         for pattern in vague_patterns:
-            if pattern in fact_text and len(fact.get('fact', '')) < 60:
+            if pattern in fact_text and len(fact.get("fact", "")) < 60:
                 # Short facts matching vague pattern are likely garbage
                 is_vague = True
                 break
 
         # Keep facts with specific names, numbers, dates
-        has_specifics = any([
-            any(c.isupper() for c in fact.get('fact', '')),  # Has capital letters (names)
-            any(c.isdigit() for c in fact.get('fact', '')),   # Has numbers
-            '.' in fact.get('fact', ''),                       # Has decimals (dosages, prices)
-            
-            
-            
-            
-            
-            
-            
-            
-        ])
+        has_specifics = any(
+            [
+                any(c.isupper() for c in fact.get("fact", "")),  # Has capital letters (names)
+                any(c.isdigit() for c in fact.get("fact", "")),  # Has numbers
+                "." in fact.get("fact", ""),  # Has decimals (dosages, prices)
+            ]
+        )
 
         if not is_vague or has_specifics:
             kept_facts.append(fact)
@@ -481,19 +491,20 @@ def purge_garbage_facts():
             print(f"    🗑️ Removed: {fact.get('fact', '')[:70]}")
 
     # Write cleaned version
-    with open(FACTS_FILE, 'w') as f:
+    with open(FACTS_FILE, "w") as f:
         for fact in kept_facts:
-            f.write(json.dumps(fact) + '\n')
+            f.write(json.dumps(fact) + "\n")
 
     print(f"  Purged {purged_count} garbage facts, kept {len(kept_facts)}")
     return purged_count
 
 
 def main():
-    process_all = '--all' in sys.argv
+    _lock_fd = acquire_lock()
+    process_all = "--all" in sys.argv
     hours = 4
     for i, arg in enumerate(sys.argv):
-        if arg == '--hours' and i + 1 < len(sys.argv):
+        if arg == "--hours" and i + 1 < len(sys.argv):
             hours = int(sys.argv[i + 1])
 
     state = load_state()
@@ -508,7 +519,7 @@ def main():
 
     if not messages:
         print("  Nothing to process")
-        state['last_run'] = datetime.now().isoformat()
+        state["last_run"] = datetime.now().isoformat()
         save_state(state)
         return
 
@@ -526,17 +537,17 @@ def main():
     print(f"  Existing facts for dedup: {len(existing_facts)}")
 
     for i, chunk in enumerate(chunks):
-        print(f"\n  [{i+1}/{len(chunks)}] Processing {chunk['count']} messages...")
+        print(f"\n  [{i + 1}/{len(chunks)}] Processing {chunk['count']} messages...")
 
         # PASS 1: Extract with strict specificity requirements
-        pass1_facts = pass1_extract_facts(chunk['text'])
+        pass1_facts = pass1_extract_facts(chunk["text"])
         print(f"    Pass 1 extracted: {len(pass1_facts)} facts")
 
         if not pass1_facts:
             continue
 
         # PASS 2: Verify against source text
-        pass2_facts = pass2_verify_facts(pass1_facts, chunk['text'])
+        pass2_facts = pass2_verify_facts(pass1_facts, chunk["text"])
         total_verified += len(pass1_facts) - len(pass2_facts)
         print(f"    Pass 2 verified: {len(pass2_facts)} (removed {total_verified} hallucinated)")
 
@@ -550,17 +561,17 @@ def main():
 
         # Store remaining facts
         for fact in pass3_facts:
-            if not fact.get('fact'):
+            if not fact.get("fact"):
                 continue
             stored = store_fact(fact, state)
             if stored:
                 total_new += 1
                 existing_facts.append(fact)  # Update local cache
-                print(f"      ✅ [{fact.get('category','?')}] {fact['fact'][:80]}")
+                print(f"      ✅ [{fact.get('category', '?')}] {fact['fact'][:80]}")
             else:
                 total_dup += 1
 
-    state['last_run'] = datetime.now().isoformat()
+    state["last_run"] = datetime.now().isoformat()
     save_state(state)
 
     print(f"\n📊 Results:")
@@ -571,5 +582,5 @@ def main():
     print(f"  Total facts in store: {len(state.get('fact_hashes', []))}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

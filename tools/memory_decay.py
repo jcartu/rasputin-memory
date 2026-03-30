@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import fcntl
 import json
 import os
 import sys
@@ -38,6 +39,7 @@ from qdrant_client.models import (
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
 ARCHIVE_COLLECTION = "memories_archive"
+LOCK_FILE = "/tmp/rasputin_memory_decay.lock"
 
 # Thresholds
 ARCHIVE_DAYS = 90  # Not accessed in 90 days + low importance → archive
@@ -45,6 +47,16 @@ SOFT_DELETE_DAYS = 180  # Not accessed in 180 days → soft delete
 LOW_IMPORTANCE_THRESHOLD = 40  # Below this = "low importance"
 
 qdrant = QdrantClient(url=QDRANT_URL)
+
+
+def acquire_lock():
+    lock_fd = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock_fd
+    except OSError:
+        print("[INFO] Another memory_decay instance is running. Exiting.")
+        sys.exit(0)
 
 
 def ensure_archive_collection():
@@ -525,6 +537,7 @@ def run_decay(execute=False, stats_only=False, limit=None):
 
 
 if __name__ == "__main__":
+    _lock_fd = acquire_lock()
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Decay Engine")
     parser.add_argument("--execute", action="store_true", help="Actually archive/delete (default: dry run)")
     parser.add_argument("--stats", action="store_true", help="Show age distribution only")

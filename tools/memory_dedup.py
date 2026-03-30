@@ -17,6 +17,7 @@ Usage:
 """
 
 import argparse
+import fcntl
 import json
 import os
 import sys
@@ -34,8 +35,19 @@ EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 CHECKPOINT_FILE = os.path.join(os.path.dirname(__file__), ".dedup_checkpoint.json")
 LOG_FILE = os.path.join(os.path.dirname(__file__), ".dedup_log.jsonl")
+LOCK_FILE = "/tmp/rasputin_memory_dedup.lock"
 
 qdrant = QdrantClient(url=QDRANT_URL)
+
+
+def acquire_lock():
+    lock_fd = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock_fd
+    except OSError:
+        print("[INFO] Another memory_dedup instance is running. Exiting.")
+        sys.exit(0)
 
 
 def load_checkpoint():
@@ -72,14 +84,15 @@ def score_memory(payload):
     """Score a memory for quality — higher is better. Used to pick the 'best' in a cluster."""
     score = 0
     text = payload.get("text", "")
-    
+
     # Length: longer text = more specific (up to a point)
     score += min(len(text), 2000) / 100  # max 20 points
-    
+
     # Source quality
     source_scores = {
         "manual_commit": 15,
-        "fact_extraction": 12, "fact_extractor": 12,
+        "fact_extraction": 12,
+        "fact_extractor": 12,
         "conversation": 8,
         "chatgpt": 7,
         "perplexity": 6,
@@ -90,7 +103,7 @@ def score_memory(payload):
     }
     source = payload.get("source", "")
     score += source_scores.get(source, 5)
-    
+
     # Importance
     imp = payload.get("importance", 50)
     try:
@@ -98,7 +111,7 @@ def score_memory(payload):
     except (ValueError, TypeError):
         imp = 50
     score += imp / 10  # max 10 points
-    
+
     # Recency: newer is better
     date_str = payload.get("date", "")
     if date_str:
@@ -108,15 +121,15 @@ def score_memory(payload):
             score += max(0, 10 - days_old / 30)  # max 10 points, decays over months
         except Exception:
             pass
-    
+
     # Retrieval count: frequently accessed = valuable
     ret_count = payload.get("retrieval_count", 0) or 0
     score += min(ret_count, 10)  # max 10 points
-    
+
     # Has graph connections
     if payload.get("connected_to"):
         score += 5
-    
+
     return round(score, 2)
 
 
@@ -134,11 +147,13 @@ def find_duplicates_for_point(point_id, vector, threshold=0.92, limit=10):
             if p.id == point_id:
                 continue
             if p.score >= threshold:
-                dupes.append({
-                    "id": p.id,
-                    "score": round(p.score, 4),
-                    "payload": dict(p.payload) if p.payload else {},
-                })
+                dupes.append(
+                    {
+                        "id": p.id,
+                        "score": round(p.score, 4),
+                        "payload": dict(p.payload) if p.payload else {},
+                    }
+                )
         return dupes
     except Exception as e:
         print(f"[ERROR] Search failed for point {point_id}: {e}")
@@ -147,9 +162,9 @@ def find_duplicates_for_point(point_id, vector, threshold=0.92, limit=10):
 
 def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_size=100):
     """Main deduplication loop."""
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"RASPUTIN Memory Deduplication Engine")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Mode: {'🔴 EXECUTE (will delete!)' if execute else '🟢 DRY RUN (safe)'}")
     print(f"Threshold: {threshold}")
     print(f"Limit: {limit or 'all'}")
@@ -181,7 +196,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
     scan_limit = limit or total_points
     offset = state["last_offset"]
-    
+
     start_time = time.time()
     last_report = time.time()
 
@@ -220,7 +235,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
             # Find duplicates
             dupes = find_duplicates_for_point(pid, point.vector, threshold=threshold)
-            
+
             if not dupes:
                 continue
 
@@ -242,35 +257,42 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
             removable = cluster_members[1:]
 
             state["clusters_found"] += 1
-            
+
             for r in removable:
                 if r["id"] not in to_delete:
                     to_delete.add(r["id"])
                     state["dupes_marked"] += 1
 
-            clusters.append({
-                "keeper_id": keeper["id"],
-                "keeper_score": keeper["quality_score"],
-                "keeper_text": keeper["payload"].get("text", "")[:80],
-                "removed": len(removable),
-                "removed_ids": [r["id"] for r in removable],
-            })
+            clusters.append(
+                {
+                    "keeper_id": keeper["id"],
+                    "keeper_score": keeper["quality_score"],
+                    "keeper_text": keeper["payload"].get("text", "")[:80],
+                    "removed": len(removable),
+                    "removed_ids": [r["id"] for r in removable],
+                }
+            )
 
-            log_action("cluster", {
-                "keeper": keeper["id"],
-                "removed": [r["id"] for r in removable],
-                "similarity": dupes[0]["score"] if dupes else 0,
-            })
+            log_action(
+                "cluster",
+                {
+                    "keeper": keeper["id"],
+                    "removed": [r["id"] for r in removable],
+                    "similarity": dupes[0]["score"] if dupes else 0,
+                },
+            )
 
         # Progress reporting every 30s
         if time.time() - last_report > 30:
             elapsed = time.time() - start_time
             rate = state["scanned"] / elapsed if elapsed > 0 else 0
-            print(f"  Scanned: {state['scanned']:,}/{scan_limit:,} | "
-                  f"Clusters: {state['clusters_found']} | "
-                  f"Dupes: {state['dupes_marked']} | "
-                  f"Rate: {rate:.0f}/s | "
-                  f"Elapsed: {elapsed:.0f}s")
+            print(
+                f"  Scanned: {state['scanned']:,}/{scan_limit:,} | "
+                f"Clusters: {state['clusters_found']} | "
+                f"Dupes: {state['dupes_marked']} | "
+                f"Rate: {rate:.0f}/s | "
+                f"Elapsed: {elapsed:.0f}s"
+            )
             last_report = time.time()
 
         # Save checkpoint after each batch
@@ -285,21 +307,23 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
     # Final report
     elapsed = time.time() - start_time
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"DEDUP RESULTS")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Scanned: {state['scanned']:,} vectors")
     print(f"Duplicate clusters found: {state['clusters_found']}")
     print(f"Vectors marked for removal: {state['dupes_marked']}")
     print(f"Time: {elapsed:.1f}s")
-    
+
     if clusters:
         print(f"\nTop 10 clusters (by size):")
         top = sorted(clusters, key=lambda x: x["removed"], reverse=True)[:10]
         for i, c in enumerate(top):
-            print(f"  {i+1}. Keeper: {c['keeper_id']} (score={c['keeper_score']}) | "
-                  f"Removed: {c['removed']} dupes | "
-                  f"Text: {c['keeper_text']}...")
+            print(
+                f"  {i + 1}. Keeper: {c['keeper_id']} (score={c['keeper_score']}) | "
+                f"Removed: {c['removed']} dupes | "
+                f"Text: {c['keeper_text']}..."
+            )
 
     # Execute deletions
     if execute and to_delete:
@@ -308,17 +332,17 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
         batch_size_del = 100
         deleted = 0
         for i in range(0, len(delete_list), batch_size_del):
-            batch = delete_list[i:i + batch_size_del]
+            batch = delete_list[i : i + batch_size_del]
             try:
                 qdrant.delete(
                     collection_name=COLLECTION,
                     points_selector=PointIdsList(points=batch),
                 )
                 deleted += len(batch)
-                print(f"  Deleted batch {i//batch_size_del + 1}: {len(batch)} vectors (total: {deleted})")
+                print(f"  Deleted batch {i // batch_size_del + 1}: {len(batch)} vectors (total: {deleted})")
                 log_action("delete", {"count": len(batch), "ids": batch[:5]})
             except Exception as e:
-                print(f"  [ERROR] Delete failed at batch {i//batch_size_del + 1}: {e}")
+                print(f"  [ERROR] Delete failed at batch {i // batch_size_del + 1}: {e}")
                 break
         print(f"\n✅ Deleted {deleted}/{len(to_delete)} duplicate vectors.")
     elif to_delete:
@@ -337,6 +361,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
 
 if __name__ == "__main__":
+    _lock_fd = acquire_lock()
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Deduplication Engine")
     parser.add_argument("--threshold", type=float, default=0.92, help="Cosine similarity threshold (default: 0.92)")
     parser.add_argument("--limit", type=int, default=None, help="Max vectors to scan (default: all)")
