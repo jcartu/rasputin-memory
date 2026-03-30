@@ -982,6 +982,7 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
                 "domain": payload.get("domain", ""),
                 "importance": payload.get("importance", 50),
                 "retrieval_count": payload.get("retrieval_count", 0),
+                "last_accessed": payload.get("last_accessed", ""),
                 "point_id": point.id,
                 "origin": "qdrant",
             }
@@ -1346,140 +1347,74 @@ def _update_access_tracking(results):
 # ─── Proactive Surfacing ─────────────────────────────────────────────────
 
 
-def proactive_surface(context_messages: list[str], max_results: int = 3) -> list[dict[str, Any]]:
-    """Surface relevant memories the user might want to know about.
-
-    Takes recent conversation context, extracts entities/topics,
-    searches for related memories NOT already in the conversation,
-    and returns high-importance, non-obvious results.
-
-    Args:
-        context_messages: list of recent message strings (last 2-3)
-        max_results: max suggestions to return
-
-    Returns:
-        list of {"text": ..., "relevance": ..., "reason": ...}
-    """
-    t0 = time.time()
-
+def proactive_surface(
+    context_messages: list[str],
+    max_results: int = 3,
+    active_entities: Optional[list[str]] = None,
+    min_days_since_access: int = 7,
+) -> list[dict[str, Any]]:
     if not context_messages:
         return []
 
-    # Combine context
     full_context = " ".join(context_messages[-3:])
     context_lower = full_context.lower()
 
-    # Extract entities and topics from context
-    entities = extract_entities_fast(full_context)
+    entity_names: list[str] = []
+    if active_entities:
+        entity_names.extend([str(v) for v in active_entities if str(v).strip()])
+    entity_names.extend([name for name, _ in extract_entities_fast(full_context)])
 
-    # Build diverse search queries from entities
-    search_queries = []
-    for entity_name, entity_type in entities[:5]:
-        if entity_type not in ("Keyword",):
-            search_queries.append(entity_name)
-
-    # Also add the full context as a query
-    if len(full_context) > 20:
-        # Use a summary of the context
-        words = full_context.split()
-        # Pick content words (skip stop words)
-        content_words = [w for w in words if w.lower().strip(".,!?") not in STOP_WORDS and len(w) > 3]
-        if content_words:
-            search_queries.append(" ".join(content_words[:8]))
-
-    if not search_queries:
-        return []
-
-    # Search for each query, collect unique results
-    all_results = {}
-
-    for query in search_queries[:4]:
-        try:
-            search_result = hybrid_search(query, limit=5)
-            for r in search_result.get("results", []):
-                text = r.get("text", "")
-                if not text or len(text) < 20:
-                    continue
-
-                # Novelty check: is this information already obvious from context?
-                text_lower = text.lower()
-
-                # Skip if >40% of the text words appear in the context
-                text_words = set(text_lower.split())
-                context_words_set = set(context_lower.split())
-                overlap = len(text_words & context_words_set) / max(len(text_words), 1)
-                if overlap > 0.4:
-                    continue
-
-                # Skip very short or generic results
-                if len(text) < 30:
-                    continue
-
-                # Compute a proactive relevance score
-                importance = r.get("importance", 50) or 50
-                try:
-                    importance = int(importance)
-                except (ValueError, TypeError):
-                    importance = 50
-
-                rerank_score = r.get("rerank_score", r.get("score", 0.5))
-
-                # Importance-weighted relevance
-                proactive_score = rerank_score * 0.5 + (importance / 100) * 0.3 + (1 - overlap) * 0.2
-
-                # Only surface high-importance or highly relevant results
-                if proactive_score < 0.3:
-                    continue
-
-                # Deduplicate by text prefix
-                key = text[:100]
-                if key not in all_results or all_results[key]["proactive_score"] < proactive_score:
-                    all_results[key] = {
-                        "text": text[:500],
-                        "proactive_score": round(proactive_score, 3),
-                        "source": r.get("source", ""),
-                        "date": r.get("date", ""),
-                        "matched_query": query,
-                        "overlap": round(overlap, 2),
-                        "importance": importance,
-                    }
-        except Exception as e:
-            logger.error("Proactive search error for '%s': %s", query, e)
-
-    # Sort by proactive score, return top N
-    sorted_results = sorted(all_results.values(), key=lambda x: x["proactive_score"], reverse=True)
-
-    # Final filtering: ensure diversity (no two results about same entity)
-    final = []
+    dedup_entities = []
     seen_entities = set()
+    for name in entity_names:
+        key = name.lower().strip()
+        if key and key not in seen_entities:
+            seen_entities.add(key)
+            dedup_entities.append(name)
 
-    for r in sorted_results:
-        r_entities = extract_entities_fast(r["text"])
-        r_entity_names = {name.lower() for name, _ in r_entities}
+    suggestions: list[dict[str, Any]] = []
+    now = time.time()
 
-        # Skip if all entities already covered
-        if r_entity_names and r_entity_names.issubset(seen_entities):
-            continue
+    for entity in dedup_entities[:8]:
+        try:
+            related = qdrant_search(entity, limit=6)
+        except Exception:
+            related = []
+        for row in related:
+            text = row.get("text", "")
+            if not text or text.lower() in context_lower:
+                continue
 
-        seen_entities.update(r_entity_names)
-        final.append(
-            {
-                "text": r["text"],
-                "relevance": r["proactive_score"],
-                "source": r["source"],
-                "reason": f"Related to: {r['matched_query']}",
-            }
-        )
+            last_accessed_raw = row.get("last_accessed") or row.get("date")
+            last_accessed = _parse_date(last_accessed_raw) if last_accessed_raw else None
+            if last_accessed is not None:
+                days_old = (now - last_accessed.timestamp()) / 86400
+                if days_old < min_days_since_access:
+                    continue
 
-        if len(final) >= max_results:
-            break
+            relevance = row.get("rerank_score", row.get("score", 0.0))
+            try:
+                relevance = float(relevance)
+            except (TypeError, ValueError):
+                relevance = 0.0
 
-    elapsed = time.time() - t0
-    logger.info(
-        "Proactive surfaced %s suggestions from %s queries (%sms)", len(final), len(search_queries), int(elapsed * 1000)
-    )
+            suggestions.append(
+                {
+                    "text": text[:500],
+                    "relevance": round(relevance, 3),
+                    "source": row.get("source", ""),
+                    "reason": f"Related to: {entity}",
+                    "last_accessed": row.get("last_accessed", ""),
+                }
+            )
 
-    return final
+    unique = {}
+    for item in suggestions:
+        key = item["text"][:120]
+        if key not in unique or item["relevance"] > unique[key]["relevance"]:
+            unique[key] = item
+
+    return sorted(unique.values(), key=lambda x: x["relevance"], reverse=True)[:max_results]
 
 
 # ─────────────────────────────────────────────
@@ -1694,6 +1629,8 @@ class HybridHandler(BaseHTTPRequestHandler):
             messages = data.get("messages", [])
             context = data.get("context", "")
             max_results = data.get("max_results", 3)
+            entities = data.get("entities", [])
+            min_days_since_access = int(data.get("min_days_since_access", 7))
 
             # Accept either a list of messages or a single context string
             if context and not messages:
@@ -1703,7 +1640,12 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Missing messages or context"}, 400)
                 return
 
-            suggestions = proactive_surface(messages, max_results=max_results)
+            suggestions = proactive_surface(
+                messages,
+                max_results=max_results,
+                active_entities=entities,
+                min_days_since_access=max(0, min_days_since_access),
+            )
             self._send_json(
                 {
                     "suggestions": suggestions,

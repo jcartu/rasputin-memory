@@ -191,3 +191,31 @@ def test_graph_enrichment_returns_data(monkeypatch):
     )
     assert "John Doe" in enrichment
     assert enrichment["John Doe"][0]["origin"] == "graph"
+
+
+def test_proactive_surfaces_related_memories(monkeypatch):
+    now = datetime.now(timezone.utc)
+    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [("BrandA", "Organization")])
+    monkeypatch.setattr(
+        hybrid_brain,
+        "qdrant_search",
+        lambda *_args, **_kwargs: [
+            {
+                "text": "BrandA was planning a Europe launch.",
+                "score": 0.8,
+                "source": "conversation",
+                "last_accessed": (now - timedelta(days=10)).isoformat(),
+            },
+            {
+                "text": "BrandA weekly standup notes.",
+                "score": 0.9,
+                "source": "conversation",
+                "last_accessed": (now - timedelta(days=2)).isoformat(),
+            },
+        ],
+    )
+
+    rows = hybrid_brain.proactive_surface(["Can you remind me about BrandA strategy?"], max_results=5)
+    assert len(rows) == 1
+    assert "Europe launch" in rows[0]["text"]
+    assert rows[0]["reason"] == "Related to: BrandA"
