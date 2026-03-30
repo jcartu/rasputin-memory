@@ -264,6 +264,47 @@ def scan_memories(limit=None):
     return stats, archive_candidates, soft_delete_candidates, age_distribution
 
 
+def recover_pending_archives(execute=False):
+    """Recover points marked pending_archive and complete archive/delete."""
+    ensure_archive_collection()
+    recovered = 0
+
+    try:
+        points, _ = qdrant.scroll(
+            collection_name=COLLECTION,
+            scroll_filter=Filter(must=[FieldCondition(key="pending_archive", match=MatchValue(value=True))]),
+            limit=10000,
+            with_payload=True,
+            with_vectors=True,
+        )
+    except Exception:
+        return 0
+
+    if not points:
+        return 0
+
+    if not execute:
+        return len(points)
+
+    try:
+        archive_points = []
+        ids = []
+        for p in points:
+            payload = dict(p.payload) if p.payload else {}
+            payload["archived_at"] = datetime.now().isoformat()
+            payload.setdefault("archive_reason", "pending_recovery")
+            archive_points.append(PointStruct(id=p.id, vector=p.vector, payload=payload))
+            ids.append(p.id)
+
+        qdrant.upsert(collection_name=ARCHIVE_COLLECTION, points=archive_points)
+        qdrant.delete(collection_name=COLLECTION, points_selector=PointIdsList(points=ids))
+        recovered = len(ids)
+    except Exception as e:
+        print(f"[ERROR] Pending archive recovery failed: {e}")
+
+    return recovered
+
+
 def archive_memories(candidates, execute=False):
     """Move memories to archive collection."""
     if not candidates:
@@ -292,12 +333,19 @@ def archive_memories(candidates, execute=False):
                 continue
 
             if execute:
-                # Write to archive
+                now_iso = datetime.now().isoformat()
+                qdrant.set_payload(
+                    collection_name=COLLECTION,
+                    points=batch_ids,
+                    payload={"pending_archive": True, "archive_started": now_iso},
+                )
+
                 archive_points = []
                 for p in points:
                     payload = dict(p.payload) if p.payload else {}
-                    payload["archived_at"] = datetime.now().isoformat()
+                    payload["archived_at"] = now_iso
                     payload["archive_reason"] = "decay_low_importance"
+                    payload["pending_archive"] = True
                     archive_points.append(
                         PointStruct(
                             id=p.id,
@@ -311,7 +359,6 @@ def archive_memories(candidates, execute=False):
                     points=archive_points,
                 )
 
-                # Delete from main collection
                 qdrant.delete(
                     collection_name=COLLECTION,
                     points_selector=PointIdsList(points=batch_ids),
@@ -352,13 +399,20 @@ def soft_delete_memories(candidates, execute=False):
             )
 
             if execute and points:
-                # Archive first
+                now_iso = datetime.now().isoformat()
+                qdrant.set_payload(
+                    collection_name=COLLECTION,
+                    points=batch_ids,
+                    payload={"pending_archive": True, "archive_started": now_iso},
+                )
+
                 archive_points = []
                 for p in points:
                     payload = dict(p.payload) if p.payload else {}
-                    payload["archived_at"] = datetime.now().isoformat()
+                    payload["archived_at"] = now_iso
                     payload["archive_reason"] = "decay_soft_delete"
                     payload["soft_deleted"] = True
+                    payload["pending_archive"] = True
                     archive_points.append(
                         PointStruct(
                             id=p.id,
@@ -372,7 +426,6 @@ def soft_delete_memories(candidates, execute=False):
                     points=archive_points,
                 )
 
-                # Delete from main
                 qdrant.delete(
                     collection_name=COLLECTION,
                     points_selector=PointIdsList(points=batch_ids),
@@ -399,6 +452,10 @@ def run_decay(execute=False, stats_only=False, limit=None):
     print()
 
     # Check collections
+    pending = recover_pending_archives(execute=execute)
+    if pending:
+        print(f"Recovered pending archives: {pending}")
+
     try:
         info = qdrant.get_collection(COLLECTION)
         print(f"Collection: {COLLECTION} ({info.points_count:,} points)")

@@ -76,3 +76,10 @@ def test_high_importance_not_soft_deleted():
     source = (ROOT / "tools" / "memory_decay.py").read_text()
     assert '"protected_high_importance"' in source
     assert 'importance >= 80' in source
+
+
+def test_archive_atomicity():
+    source = (ROOT / "tools" / "memory_decay.py").read_text()
+    assert 'pending_archive' in source
+    assert 'def recover_pending_archives' in source
+    assert 'recover_pending_archives(execute=execute)' in source
