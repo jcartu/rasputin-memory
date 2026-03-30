@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import importlib
 import json
 import os
 import re
@@ -29,6 +30,12 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 # BM25 hybrid reranking — core pipeline component
 from bm25_search import hybrid_rerank as bm25_rerank
+
+try:
+    _source_tiering = importlib.import_module("pipeline.source_tiering")
+except ModuleNotFoundError:
+    _source_tiering = importlib.import_module("tools.pipeline.source_tiering")
+get_source_weight = _source_tiering.get_source_weight
 
 print("[HybridBrain] BM25 reranking: enabled", flush=True)
 BM25_AVAILABLE = True
@@ -744,19 +751,6 @@ def apply_multifactor_scoring(results):
 
     Formula: score = vector_sim * (0.35 + 0.25*importance_norm + 0.20*recency + 0.10*source_weight + 0.10*retrieval_boost)
     """
-    SOURCE_WEIGHTS = {
-        "conversation": 0.9,
-        "fact_extractor": 0.85,
-        "chatgpt": 0.8,
-        "perplexity": 0.75,
-        "email": 0.6,
-        "telegram": 0.7,
-        "whatsapp": 0.65,
-        "social_intel": 0.5,
-        "web_page": 0.4,
-        "benchmark_test": 0.1,
-    }
-
     for r in results:
         importance = r.get("importance", 50)
         if importance is None:
@@ -769,10 +763,7 @@ def apply_multifactor_scoring(results):
 
         # Source reliability
         source = r.get("source", "")
-        source_weight = SOURCE_WEIGHTS.get(source, 0.5)
-        # Match partial source names (grok_social_intel_*)
-        if source_weight == 0.5 and "social_intel" in source:
-            source_weight = 0.5
+        source_weight = get_source_weight(source)
 
         # Retrieval frequency boost (capped at 1.0)
         retrieval_count = r.get("retrieval_count", 0) or 0
