@@ -168,3 +168,26 @@ def test_feedback_negative_decays(monkeypatch):
     assert result["ok"] is True
     assert result["importance_after"] == 50
     assert "last_feedback" in state["update"]["payload"]
+
+
+def test_graph_enrichment_returns_data(monkeypatch):
+    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [("John Doe", "Person")])
+    monkeypatch.setattr(
+        hybrid_brain,
+        "graph_search",
+        lambda *_args, **_kwargs: [
+            {
+                "text": "John Doe worked with BrandA",
+                "origin": "graph",
+                "graph_hop": 1,
+                "source": "graph_memory",
+            }
+        ],
+    )
+
+    enrichment = hybrid_brain.enrich_with_graph(
+        [{"text": "John Doe discussed roadmap"}],
+        limit=3,
+    )
+    assert "John Doe" in enrichment
+    assert enrichment["John Doe"][0]["origin"] == "graph"

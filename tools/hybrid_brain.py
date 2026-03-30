@@ -1180,45 +1180,18 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
     return results[: limit * 2]  # Return more candidates for reranker
 
 
-GRAPH_API_URL = "http://127.0.0.1:7778"
-
-
 def enrich_with_graph(results: list[dict[str, Any]], limit: int = 5) -> dict[str, Any]:
-    """Call graph_api /expand for entities mentioned in top results.
-    Non-fatal: returns empty dict if graph_api is down."""
     try:
-        # Extract entity names from top results (connected_to field or entity field)
+        enrichment: dict[str, list[dict[str, Any]]] = {}
         entity_names = set()
-        for r in results[:limit]:
-            if r.get("connected_to"):
-                for name in r["connected_to"] if isinstance(r["connected_to"], list) else [r["connected_to"]]:
-                    if name and len(name) > 2:
-                        entity_names.add(name)
-            if r.get("entity"):
-                entity_names.add(r["entity"])
-            # Also try extracting from text using fast NER
+        for r in results[: max(1, limit)]:
             text = r.get("text", "")
             for name, _ in extract_entities_fast(text[:500]):
                 entity_names.add(name)
-
-        if not entity_names:
-            return {}
-
-        enrichment = {}
-        for name in list(entity_names)[:8]:  # Cap at 8 entities
-            try:
-                resp = requests.get(
-                    f"{GRAPH_API_URL}/expand",
-                    params={"entity": name, "hops": 2},
-                    timeout=2,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data.get("connections"):
-                        enrichment[name] = data["connections"][:10]
-            except Exception:
-                continue
-
+        for name in list(entity_names)[:8]:
+            related = graph_search(name, hops=2, limit=3)
+            if related:
+                enrichment[name] = related[:3]
         return enrichment
     except Exception as e:
         logger.error("Graph enrichment non-fatal error: %s", e)
@@ -1301,7 +1274,6 @@ def hybrid_search(
             gc["score"] = 0.1  # Low score — these are context, not search results
             merged.append(gc)
 
-    # Stage 4: GraphRAG enrichment via graph_api (non-fatal)
     graph_enrichment = enrich_with_graph(merged, limit=5)
 
     elapsed = time.time() - t0
@@ -1313,8 +1285,9 @@ def hybrid_search(
         "query": query,
         "elapsed_ms": round(elapsed * 1000, 1),
         "results": merged,
-        "graph_context": graph_results,  # Keep separate for backward compat
-        "graph_enrichment": graph_enrichment,  # Deep multi-hop from graph_api
+        "graph_context": graph_enrichment,
+        "graph_results": graph_results,
+        "graph_enrichment": graph_enrichment,
         "stats": {
             "expanded_queries": len(queries),
             "query_expansion_enabled": bool(expand),
