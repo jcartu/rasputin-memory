@@ -1,4 +1,3 @@
-import os
 #!/usr/bin/env python3
 """
 Query the FalkorDB graph brain.
@@ -11,6 +10,7 @@ Usage:
     python3 graph_query.py --stats
 """
 
+import os
 import argparse
 import json
 import re
