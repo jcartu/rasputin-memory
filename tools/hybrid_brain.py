@@ -953,7 +953,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                         seen_memory_ids.add(mid)
                         results.append(
                             {
-                                "text": mtext[:500],
+                                "text": mtext,
                                 "entity": matched_entity,
                                 "date": mdate,
                                 "origin": "graph",
@@ -991,7 +991,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                             seen_memory_ids.add(mid)
                             results.append(
                                 {
-                                    "text": mtext[:500],
+                                    "text": mtext,
                                     "entity": entity_name,
                                     "connected_to": co_name,
                                     "node_type": co_type,
@@ -1023,7 +1023,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                         seen_memory_ids.add(mid)
                         results.append(
                             {
-                                "text": mtext[:500],
+                                "text": mtext,
                                 "entity": entity_name,
                                 "date": mdate,
                                 "origin": "graph",
