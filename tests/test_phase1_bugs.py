@@ -63,3 +63,10 @@ def test_amac_metrics_thread_safe():
     assert '_amac_metrics_lock = threading.Lock()' in source
     assert 'def _inc_metric(key, amount=1):' in source
     assert '_amac_metrics["accepted"] += 1' not in source
+
+
+def test_access_tracking_increments():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert '"point_id": point.id' in source
+    assert 'qdrant.retrieve(' in source
+    assert 'for r in results[:10]' not in source

@@ -688,6 +688,7 @@ def qdrant_search(query, limit=10, source_filter=None):
             "domain": point.payload.get("domain", ""),
             "importance": point.payload.get("importance", 50),
             "retrieval_count": point.payload.get("retrieval_count", 0),
+            "point_id": point.id,
             "origin": "qdrant",
         })
     
@@ -1118,54 +1119,36 @@ def hybrid_search(query, limit=10, graph_hops=2, source_filter=None):
 # ─── Access Tracking ─────────────────────────────────────────────────────
 
 def _update_access_tracking(results):
-    """Update last_accessed and access_count for returned search results.
-    Non-blocking — failures are logged but don't affect search."""
+    """Update last_accessed and retrieval_count for returned search results.
+    Non-blocking — failures are ignored."""
     from datetime import datetime as _dt
     now = _dt.now().isoformat()
-    
-    for r in results:
-        # We need the point ID — reconstruct from text hash if not available
-        # Qdrant results from query_points have .id on the point objects,
-        # but by the time they're in our dict format, we don't have IDs.
-        # We'll use set_payload with a filter approach instead.
-        pass  # Access tracking needs point IDs — implemented via scroll below
 
-    # Batch approach: search for the texts and update payloads
-    # This is intentionally lightweight — we update in a background thread
-    import threading
-    
     def _do_update():
-        for r in results[:10]:  # Cap at 10 to avoid slow updates
-            text = r.get("text", "")
-            if not text or len(text) < 10:
+        for r in results:
+            pid = r.get("point_id")
+            if pid is None:
                 continue
             try:
-                # Find the point by searching with its own embedding
-                # More efficient: use the text to find the exact point
-                search_results = qdrant.scroll(
+                points = qdrant.retrieve(
                     collection_name=COLLECTION,
-                    scroll_filter=Filter(must=[
-                        FieldCondition(key="text", match=MatchValue(value=text[:200]))
-                    ]),
-                    limit=1,
-                    with_payload=False,
+                    ids=[pid],
+                    with_payload=True,
                 )
-                points, _ = search_results
                 if points:
-                    pid = points[0].id
-                    current_count = r.get("retrieval_count", 0) or 0
+                    payload = points[0].payload or {}
+                    current_count = payload.get("retrieval_count", 0) or 0
                     qdrant.set_payload(
                         collection_name=COLLECTION,
                         points=[pid],
                         payload={
                             "last_accessed": now,
-                            "access_count": current_count + 1,
                             "retrieval_count": current_count + 1,
-                        }
+                        },
                     )
             except Exception:
-                pass  # Non-fatal
-    
+                pass
+
     try:
         t = threading.Thread(target=_do_update, daemon=True)
         t.start()
