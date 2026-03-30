@@ -130,6 +130,7 @@ def test_commit_includes_schema_version(monkeypatch):
     monkeypatch.setattr(hybrid_brain, "check_duplicate", lambda *_args, **_kwargs: (False, None, 0))
     monkeypatch.setattr(hybrid_brain, "get_embedding", lambda *_args, **_kwargs: [0.1] * 768)
     monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [])
+    monkeypatch.setattr(hybrid_brain, "check_contradictions", lambda *_a, **_k: [])
 
     result = hybrid_brain.commit_memory("A" * 64, source="conversation", importance=60)
 
