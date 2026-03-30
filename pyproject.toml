@@ -57,7 +57,14 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 40
+fail_under = 50
+
+[tool.setuptools]
+packages = ["brain", "pipeline"]
+package-dir = {"" = "tools"}
+
+[tool.setuptools.package-data]
+brain = ["py.typed"]
 
 [tool.mypy]
 python_version = "3.11"
