@@ -683,7 +683,7 @@ def commit_memory(
             "auto_committed": True,
             "retrieval_count": 0,
             "embedding_model": EMBED_MODEL,
-            "schema_version": "3.0",
+            "schema_version": "0.3",
             "contradicts": contradiction_ids,
             "supersedes": supersedes_ids,
             "has_contradictions": bool(contradiction_ids),

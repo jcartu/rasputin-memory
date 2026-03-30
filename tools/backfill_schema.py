@@ -38,7 +38,7 @@ def backfill_schema(batch_size: int = 100) -> int:
         qdrant.set_payload(
             collection_name=collection,
             points=PointIdsList(points=cast(list[Any], ids)),
-            payload={"embedding_model": embedding_model, "schema_version": "3.0"},
+            payload={"embedding_model": embedding_model, "schema_version": "0.3"},
         )
         total += len(ids)
         print(f"Backfilled {total} points", flush=True)

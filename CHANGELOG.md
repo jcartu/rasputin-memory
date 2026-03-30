@@ -10,7 +10,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Changed
 - Ongoing hardening and operational improvements.
 
-## [3.0.0] - 2026-03-31
+## [0.3.0] - 2026-03-31
 
 This release completes the 78-task work order across seven phases.
 
@@ -24,7 +24,7 @@ This release completes the 78-task work order across seven phases.
 - **Phase 1 (Critical Bug Fixes):** fixed high-impact correctness issues in decay, BM25 flow, extraction, and concurrency handling.
 - **Phase 2 (Pipeline Unification):** consolidated retrieval path to reduce drift between components and improve consistency.
 - **Phase 3 (Architecture Cleanup):** config normalization, dead-code removal, and type-hint improvements for maintainability.
-- **Documentation:** README refreshed for v3.0 architecture, setup, config, API usage, and developer workflow.
+- **Documentation:** README refreshed for v0.3 architecture, setup, config, API usage, and developer workflow.
 
 ### Fixed
 - Race-prone and edge-case behavior in maintenance paths and ingestion filters identified during the audit-driven work order.
@@ -45,5 +45,5 @@ This release completes the 78-task work order across seven phases.
 - **Phase 6:** Tasks 60-68 — Test suite
 - **Phase 7:** Tasks 69-78 — CI/CD and documentation
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v3.0.0...HEAD
-[3.0.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v3.0.0
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v0.3.0

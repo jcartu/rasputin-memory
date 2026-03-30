@@ -90,7 +90,7 @@ Key payload fields used by the memory pipeline:
 | `date` | string | ISO timestamp |
 | `importance` | int | 0–100 ranking weight |
 | `embedding_model` | string | Embedding model identifier |
-| `schema_version` | string | Current schema version (`3.0`) |
+| `schema_version` | string | Current schema version (`0.3`) |
 | `contradicts` | list | IDs contradicted by this memory |
 | `supersedes` | list | IDs superseded by this memory |
 | `has_contradictions` | bool | Fast filter for contradiction listing |

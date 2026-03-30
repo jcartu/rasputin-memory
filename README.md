@@ -1,4 +1,4 @@
-# RASPUTIN Memory v3.0
+# RASPUTIN Memory v0.3
 
 Production-grade long-term memory for AI agents using a hybrid retrieval pipeline:
 
@@ -11,7 +11,7 @@ Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 
 ---
 
-## Architecture Overview (v3.0)
+## Architecture Overview (v0.3)
 
 ```text
 User Query
@@ -243,9 +243,9 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ---
 
-## Version Notes (v2.0 → v3.0)
+## Version Notes (v0.2 → v0.3)
 
-Major updates in v3.0 focus on:
+Major updates in v0.3 focus on:
 
 - Unified hybrid retrieval pipeline hardening
 - Expanded test coverage and CI automation

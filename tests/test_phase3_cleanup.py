@@ -138,7 +138,7 @@ def test_commit_includes_schema_version(monkeypatch):
     upsert_kwargs = mock_qdrant.upsert.call_args.kwargs
     payload = upsert_kwargs["points"][0].payload
     assert payload["embedding_model"] == hybrid_brain.EMBED_MODEL
-    assert payload["schema_version"] == "3.0"
+    assert payload["schema_version"] == "0.3"
 
 
 def test_backfill_schema_sets_payload(monkeypatch):
@@ -177,7 +177,7 @@ def test_backfill_schema_sets_payload(monkeypatch):
 
     assert updated == 3
     assert len(fake.payload_calls) == 2
-    assert fake.payload_calls[0]["payload"]["schema_version"] == "3.0"
+    assert fake.payload_calls[0]["payload"]["schema_version"] == "0.3"
 
 
 def test_no_dead_imports():
