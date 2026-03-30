@@ -11,6 +11,7 @@ Usage:
 """
 
 import os
+import asyncio
 
 os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
 
@@ -83,14 +84,20 @@ async def rerank(req: RerankRequest):
         pairs = [[req.query, p] for p in req.passages]
 
         with torch.no_grad():
-            inputs = tokenizer(pairs, padding=True, truncation=True, max_length=1024, return_tensors="pt").to(device)
+            inputs = await asyncio.to_thread(
+                tokenizer,
+                pairs,
+                padding=True,
+                truncation=True,
+                max_length=1024,
+                return_tensors="pt",
+            )
+            inputs = inputs.to(device)
 
-            outputs = model(**inputs)
+            outputs = await asyncio.to_thread(model, **inputs)
             logits = outputs.logits.squeeze(-1)
-            scores = torch.sigmoid(logits).cpu().tolist()
-
-        if isinstance(scores, float):
-            scores = [scores]
+            raw_scores = torch.sigmoid(logits).flatten().cpu().tolist()
+            scores: List[float] = [float(s) for s in raw_scores]
 
         return RerankResponse(scores=scores)
 

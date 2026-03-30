@@ -15,6 +15,8 @@ WARNINGS = []
 ERRORS = []
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
+MEMORY_API_HOST = os.environ.get("MEMORY_API_HOST", "localhost")
+MEMORY_API_URL = os.environ.get("MEMORY_API_URL", f"http://{MEMORY_API_HOST}:7777")
 
 
 def check(name, fn):
@@ -82,7 +84,7 @@ def check_reranker():
 
 
 def check_hybrid_brain():
-    r = requests.get("${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/health", timeout=5)
+    r = requests.get(f"{MEMORY_API_URL}/health", timeout=5)
     data = r.json()
     status = data.get("status", "unknown")
     components = data.get("components", {})
@@ -115,7 +117,7 @@ def check_round_trip():
 
     # Commit
     r = requests.post(
-        "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/commit",
+        f"{MEMORY_API_URL}/commit",
         json={"text": test_text, "source": "health_check", "importance": 1},
         timeout=15,
     )
@@ -130,8 +132,7 @@ def check_round_trip():
 
     # Search with semantic terms from the committed text
     search_query = "RASPUTIN memory system self-diagnostic embedding pipeline verification"
-    memory_api_url = os.environ.get("MEMORY_API_URL", f"http://{os.environ.get('MEMORY_API_HOST', 'localhost')}:7777")
-    r = requests.get(f"{memory_api_url}/search?q={search_query}&limit=5", timeout=15)
+    r = requests.get(f"{MEMORY_API_URL}/search?q={search_query}&limit=5", timeout=15)
     r.raise_for_status()
     data = r.json()
 

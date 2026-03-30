@@ -19,22 +19,22 @@ def get_embeddings_dual(texts, batch_size=200):
     embeddings = []
     for i in range(0, len(texts), batch_size):
         batch = texts[i : i + batch_size]
-        for text in batch:
-            resp = requests.post(
-                EMBED_URL, json={"model": EMBED_MODEL, "input": f"search_document: {text[:2000]}"}, timeout=30
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            if "embeddings" in data:
-                embeddings.append(data["embeddings"][0])
-            elif "embedding" in data:
-                embeddings.append(data["embedding"])
+        prefixed_batch = [f"search_document: {text[:2000]}" for text in batch]
+        resp = requests.post(EMBED_URL, json={"model": EMBED_MODEL, "input": prefixed_batch}, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        if "embeddings" in data:
+            embeddings.extend(data["embeddings"])
+        elif "embedding" in data:
+            embeddings.append(data["embedding"])
     return embeddings
 
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 TARGET_COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
 
+# Migration-specific snapshot captured during the one-time consolidation run.
+# Keep static for reproducibility of this migration plan.
 # Collections to delete (empty)
 EMPTY_COLLECTIONS = [
     "research",
@@ -47,6 +47,8 @@ EMPTY_COLLECTIONS = [
     "jarvis_225_tool_learnings",
 ]
 
+# Migration-specific snapshot (name, count, dimension) from pre-consolidation state.
+# Counts are informational and may drift from runtime values.
 # Collections to migrate (name, count, dimension)
 MIGRATE_COLLECTIONS = [
     ("gmail_import", 306896, 1024),

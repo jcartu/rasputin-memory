@@ -367,7 +367,7 @@ def main():
             return i
 
     def worker(wid):
-        endpoint = LLM_ENDPOINTS[wid]
+        endpoint = LLM_ENDPOINTS[wid % len(LLM_ENDPOINTS)]
         while True:
             idx = get_next()
             if idx >= len(remaining):

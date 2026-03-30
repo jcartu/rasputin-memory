@@ -1,5 +1,15 @@
 # RASPUTIN Memory v0.3
 
+![RASPUTIN Memory](assets/social-preview-1280x640.png)
+
+[![CI](https://github.com/jcartu/rasputin-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/jcartu/rasputin-memory/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+
+A self-hosted memory backend for AI agents that goes beyond simple vector search. RASPUTIN combines four retrieval strategies — semantic vectors, keyword matching, knowledge graph traversal, and neural reranking — into a single API, with an LLM quality gate that prevents junk from entering the memory store.
+
+**Why not just use pgvector / Pinecone / plain RAG?** Because vector similarity alone misses keyword-exact matches, can't follow entity relationships, and treats "ok thanks" the same as a critical business decision. RASPUTIN solves all three.
+
 Production-grade long-term memory for AI agents using a hybrid retrieval pipeline:
 
 - Vector search (Qdrant)
@@ -39,6 +49,22 @@ Memory Commit
   - `tools/memory_dedup.py`
   - `tools/fact_extractor.py`
   - `tools/memory_consolidator_v4.py`
+
+---
+
+## How It Compares
+
+| Feature | RASPUTIN | Mem0 | Zep | LightRAG |
+|---------|----------|------|-----|----------|
+| Vector search | ✅ Qdrant | ✅ | ✅ | ✅ |
+| BM25 keyword search | ✅ | ❌ | ❌ | ❌ |
+| Knowledge graph | ✅ FalkorDB | ❌ | ✅ | ✅ |
+| Neural reranking | ✅ BGE cross-encoder | ❌ | ❌ | ❌ |
+| LLM quality gate | ✅ A-MAC | ❌ | ❌ | ❌ |
+| Memory decay model | ✅ Ebbinghaus-inspired | ❌ | ❌ | ❌ |
+| Contradiction detection | ✅ | ❌ | ❌ | ❌ |
+| Self-hosted / no vendor lock | ✅ | ✅ | ❌ (SaaS) | ✅ |
+| Sub-200ms p95 latency | ✅ | ✅ | ✅ | ❓ |
 
 ---
 

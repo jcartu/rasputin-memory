@@ -157,4 +157,20 @@ def hybrid_rerank(query: str, dense_results: list[dict[str, Any]], bm25_weight: 
     fused_results = reciprocal_rank_fusion(dense_results, bm25_scores)
     if bm25_weight <= 0:
         return fused_results
-    return fused_results
+
+    weight = max(0.0, min(1.0, bm25_weight))
+    bm25_values = [float(r.get("bm25_score", 0.0)) for r in fused_results]
+    bm25_min = min(bm25_values) if bm25_values else 0.0
+    bm25_max = max(bm25_values) if bm25_values else 0.0
+    bm25_span = bm25_max - bm25_min
+
+    rescored = []
+    for r in fused_results:
+        dense_score = float(r.get("score", 0.0))
+        bm25_score = float(r.get("bm25_score", 0.0))
+        bm25_norm = ((bm25_score - bm25_min) / bm25_span) if bm25_span > 0 else 0.0
+        item = r.copy()
+        item["hybrid_score"] = (1.0 - weight) * dense_score + weight * bm25_norm
+        rescored.append(item)
+
+    return sorted(rescored, key=lambda x: x.get("hybrid_score", 0.0), reverse=True)

@@ -999,6 +999,11 @@ def _decode(val):
     return str(val) if val is not None else ""
 
 
+def _safe_graph_label(label: str) -> str:
+    allowed = {"Person", "Organization", "Project", "Topic", "Location"}
+    return label if label in allowed else "Entity"
+
+
 def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, Any]]:
     """Graph traversal search via FalkorDB with type-aware entity targeting + 2-hop.
 
@@ -1040,14 +1045,19 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         # --- 1-hop: Entity → Memory nodes (direct mentions) ---
         for label in labels:
             try:
+                safe_label = _safe_graph_label(label)
+                params = {"name": entity_name}
                 mem_result = r.execute_command(
                     "GRAPH.QUERY",
                     GRAPH_NAME,
-                    f"MATCH (m:Memory)-[:MENTIONS]->(n:{label}) "
-                    f"WHERE toLower(n.name) CONTAINS toLower($name) "
-                    f"RETURN m.id, m.text, m.created_at, n.name LIMIT {limit}",
+                    "MATCH (m:Memory)-[:MENTIONS]->(n:{label}) "
+                    "WHERE toLower(n.name) CONTAINS toLower($name) "
+                    "RETURN m.id, m.text, m.created_at, n.name LIMIT {limit}".format(
+                        label=safe_label,
+                        limit=limit,
+                    ),
                     "--params",
-                    json.dumps({"name": entity_name}),
+                    json.dumps(params),
                 )
                 for row in mem_result[1] or []:
                     mid = _decode(row[0])
@@ -1073,18 +1083,23 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         if hops >= 2 and labels:
             for label in labels:
                 try:
+                    safe_label = _safe_graph_label(label)
+                    params = {"name": entity_name, "seen": list(seen_memory_ids)}
                     twohop = r.execute_command(
                         "GRAPH.QUERY",
                         GRAPH_NAME,
-                        f"MATCH (m1:Memory)-[:MENTIONS]->(n:{label}) "
-                        f"MATCH (m1)-[:MENTIONS]->(co) "
-                        f"WHERE toLower(n.name) CONTAINS toLower($name) AND n <> co "
-                        f"WITH DISTINCT co, count(m1) AS shared ORDER BY shared DESC LIMIT 5 "
-                        f"MATCH (m2:Memory)-[:MENTIONS]->(co) "
-                        f"WHERE NOT m2.id IN $seen "
-                        f"RETURN m2.id, m2.text, m2.created_at, co.name, labels(co)[0] LIMIT {limit}",
+                        "MATCH (m1:Memory)-[:MENTIONS]->(n:{label}) "
+                        "MATCH (m1)-[:MENTIONS]->(co) "
+                        "WHERE toLower(n.name) CONTAINS toLower($name) AND n <> co "
+                        "WITH DISTINCT co, count(m1) AS shared ORDER BY shared DESC LIMIT 5 "
+                        "MATCH (m2:Memory)-[:MENTIONS]->(co) "
+                        "WHERE NOT m2.id IN $seen "
+                        "RETURN m2.id, m2.text, m2.created_at, co.name, labels(co)[0] LIMIT {limit}".format(
+                            label=safe_label,
+                            limit=limit,
+                        ),
                         "--params",
-                        json.dumps({"name": entity_name, "seen": list(seen_memory_ids)}),
+                        json.dumps(params),
                     )
                     for row in twohop[1] or []:
                         mid = _decode(row[0])
@@ -1142,15 +1157,17 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         # --- Also collect entity relationship context (non-Memory neighbors) ---
         for label in labels:
             try:
+                safe_label = _safe_graph_label(label)
+                params = {"name": entity_name}
                 ctx = r.execute_command(
                     "GRAPH.QUERY",
                     GRAPH_NAME,
-                    f"MATCH (n:{label})-[rel]-(connected) "
-                    f"WHERE toLower(n.name) CONTAINS toLower($name) "
-                    f"AND NOT labels(connected)[0] = 'Memory' "
-                    f"RETURN labels(connected)[0], connected.name, type(rel), n.name LIMIT 8",
+                    "MATCH (n:{label})-[rel]-(connected) "
+                    "WHERE toLower(n.name) CONTAINS toLower($name) "
+                    "AND NOT labels(connected)[0] = 'Memory' "
+                    "RETURN labels(connected)[0], connected.name, type(rel), n.name LIMIT 8".format(label=safe_label),
                     "--params",
-                    json.dumps({"name": entity_name}),
+                    json.dumps(params),
                 )
                 for row in ctx[1] or []:
                     c_type = _decode(row[0])
@@ -1789,6 +1806,8 @@ def serve(port: int = SERVER_PORT) -> None:
         logger.info("FalkorDB: %s nodes, %s edges", nc, ec)
     except Exception:
         logger.warning("FalkorDB unavailable (graph search disabled)")
+    if not MEMORY_API_TOKEN:
+        logger.warning("⚠️  No MEMORY_API_TOKEN set — API authentication is DISABLED")
     server.serve_forever()
 
 

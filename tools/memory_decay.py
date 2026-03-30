@@ -18,6 +18,7 @@ Usage:
 import argparse
 import fcntl
 import os
+import re
 import sys
 import time
 from datetime import datetime
@@ -111,8 +112,6 @@ def compute_importance_score(payload):
     # Content quality heuristics
     text = payload.get("text", "")
     # Business/personal facts with numbers, names, dates
-    import re
-
     has_numbers = bool(re.search(r"\$[\d,]+|\d+%|\d+K|\€[\d,]+", text))
     has_names = bool(re.search(r"[A-Z][a-z]+ [A-Z][a-z]+", text))
     has_dates = bool(re.search(r"\d{4}-\d{2}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b", text))

@@ -14,7 +14,8 @@ import argparse
 
 from mcp.server.fastmcp import FastMCP
 
-BRAIN_URL = "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}"
+MEMORY_API_HOST = os.environ.get("MEMORY_API_HOST", "localhost")
+BRAIN_URL = os.environ.get("MEMORY_API_URL", f"http://{MEMORY_API_HOST}:7777")
 FALKORDB_HOST = "localhost"
 FALKORDB_PORT = 6380
 
@@ -35,6 +36,13 @@ def _redis_cmd(*args: str, timeout: int = 10) -> str:
     cmd = ["redis-cli", "-h", FALKORDB_HOST, "-p", str(FALKORDB_PORT)] + list(args)
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     return r.stdout.strip()
+
+
+def _validate_cypher_readonly(cypher: str) -> bool:
+    upper = cypher.strip().upper()
+    if any(kw in upper for kw in ["DELETE", "REMOVE", "SET ", "CREATE", "MERGE", "DROP"]):
+        return False
+    return upper.startswith("MATCH") or upper.startswith("RETURN")
 
 
 # ── Tools ────────────────────────────────────────────────────────────────
@@ -92,6 +100,8 @@ def memory_proactive(context: list[str]) -> str:
 def memory_graph_query(cypher: str) -> str:
     """Run a Cypher query against RASPUTIN's FalkorDB knowledge graph.
     Example: MATCH (n:Entity) RETURN n.name LIMIT 10"""
+    if not _validate_cypher_readonly(cypher):
+        return "Error: only read-only Cypher queries starting with MATCH/RETURN are allowed."
     raw = _redis_cmd("GRAPH.QUERY", "memory_graph", cypher)
     if not raw:
         return "Empty result or graph not found."
@@ -142,6 +152,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.http:
-        mcp_server.run(transport="sse", host="0.0.0.0", port=8101)
+        mcp_server.run(transport="sse")
     else:
         mcp_server.run(transport="stdio")

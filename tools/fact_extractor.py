@@ -30,9 +30,7 @@ EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 LOCK_FILE = "/tmp/rasputin_fact_extractor.lock"
 
 # LLM proxy endpoint (OpenAI-compatible or Anthropic-compatible)
-LLM_PROXY_URL = os.environ.get(
-    "LLM_API_URL", os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
-)
+LLM_PROXY_URL = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
 
 
