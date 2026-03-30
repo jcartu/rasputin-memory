@@ -1,14 +1,14 @@
 # Core dependencies
-qdrant-client>=1.9.0
-redis>=5.0.0
+qdrant-client==1.9.0
+redis==5.0.0
 FalkorDB>=1.0.0
-requests>=2.31.0
-python-dotenv>=1.0.0
+requests==2.31.0
+python-dotenv==1.0.0
 
 # Reranker (optional — system degrades gracefully without it)
-fastapi>=0.110.0
-uvicorn>=0.29.0
-pydantic>=2.0.0
+fastapi==0.110.0
+uvicorn==0.29.0
+pydantic==2.0.0
 transformers>=4.40.0
 torch>=2.0.0
 sentencepiece>=0.2.0
