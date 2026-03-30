@@ -3,7 +3,8 @@ import os
 import re
 
 ENTITY_GRAPH_PATH = os.environ.get(
-    "ENTITY_GRAPH_PATH", os.path.expanduser("~/.openclaw/workspace/memory/entity_graph.json")
+    "ENTITY_GRAPH_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "..", "config", "entity_graph.json"),
 )
 
 _SKIP_WORDS = {
@@ -106,17 +107,7 @@ _SKIP_WORDS = {
     "Like",
 }
 
-_SEMANTIC_EXPANSIONS = {
-    "ivf": "fertility supplements embryo PGT genetic screening",
-    "business": "revenue deposits analytics marketing",
-    "car": "supercar sports-car tuning racing motorsport",
-    "health": "testosterone peptide HGH surgery recovery",
-    "vpn": "Russia censorship Astrill Amnezia proxy",
-    "property": "house apartment Moscow Sochi real estate",
-    "crypto": "Bitcoin CHRONOS wallet blockchain hardware",
-    "doctor": "medical appointment clinic surgery health",
-    "ring": "engagement proposal diamond wedding",
-}
+_SEMANTIC_EXPANSIONS: dict[str, str] = {}
 
 
 def lookup_entity_graph(name: str, entity_graph_path: str | None = None) -> str:

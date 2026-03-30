@@ -34,12 +34,11 @@ echo ""
 
 # ─── 2. Environment file ────────────────────────────────────────────────────
 
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "📝 Created .env from .env.example"
-    echo "   Edit .env if you need non-default ports or models"
+if [ ! -f config/rasputin.toml ]; then
+    echo "📝 Using default config at config/rasputin.toml"
+    echo "   Edit config/rasputin.toml if you need non-default ports or models"
 else
-    echo "📝 .env already exists — keeping your settings"
+    echo "📝 config/rasputin.toml already exists — keeping your settings"
 fi
 
 echo ""
@@ -86,7 +85,7 @@ echo ""
 # ─── 5. Python dependencies ─────────────────────────────────────────────────
 
 echo "📦 Installing Python dependencies..."
-pip install -q -r requirements.txt
+pip install -q -r requirements-core.txt
 
 echo ""
 

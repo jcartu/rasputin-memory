@@ -57,7 +57,7 @@ This should start Qdrant and FalkorDB from the repository compose file.
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-core.txt
 ```
 
 ### 3) Start API server
@@ -239,7 +239,7 @@ pytest tests/test_integration.py -v
 pytest tests/ --cov=tools --cov-report=term-missing
 ```
 
-Coverage threshold is configured in `pyproject.toml` (`fail_under = 60`).
+Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ---
 

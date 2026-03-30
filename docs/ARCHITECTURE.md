@@ -9,42 +9,33 @@ Deep dive on the 7-layer hybrid retrieval pipeline, data flow, and design decisi
 │                      RASPUTIN Memory System                     │
 └─────────────────────────────────────────────────────────────────┘
 
-LAYER 1: HOT CONTEXT (always in prompt)
-├── MEMORY.md — identity, tools, architecture
-├── AGENTS.md — behavioral rules
-└── SOUL.md — personality, voice, style
-
-LAYER 2: SEMANTIC SEARCH (on-demand retrieval)
-├── Qdrant (port 6333) — 134K+ vectors, 768d nomic-embed-text v1
+LAYER 1: SEMANTIC SEARCH (on-demand retrieval)
+├── Qdrant (port 6333) — 768d nomic-embed-text v1
 ├── BM25 sparse keyword search (bm25_search.py)
-└── Reranker (port 8006) — BAAI/bge-reranker-v2-m3 on GPU
+└── Reranker (port 8006) — BAAI/bge-reranker-v2-m3
 
-LAYER 3: KNOWLEDGE GRAPH (relationship reasoning)
-├── FalkorDB (port 6380, Docker) — 240K nodes, 535K edges
+LAYER 2: KNOWLEDGE GRAPH (relationship reasoning)
+├── FalkorDB (port 6380, Docker)
 ├── Graph: "brain" — entities, relationships, temporal
 └── Entity extraction: fast NER on every commit
 
-LAYER 4: HYBRID SEARCH ENGINE (orchestration)
-└── hybrid_brain.py (PM2, port 7777)
+LAYER 3: HYBRID SEARCH ENGINE (orchestration)
+└── hybrid_brain.py (port 7777)
     ├── /search — vector + graph + BM25 + neural rerank
     ├── /commit — embed + A-MAC + store + entity extract + graph
     ├── /graph — direct Cypher queries
     ├── /stats — counts + health
     └── /health — component health check
 
-LAYER 5: OBSERVATIONAL MEMORY (fast local context)
-├── om_observations.md — compressed recent context (24h TTL)
-└── entity_graph.json — lightweight in-process entity cache
-
-LAYER 6: LLM ENRICHMENT (quality gate + extraction)
-├── A-MAC quality gate — Qwen 35B scores every commit
+LAYER 4: LLM ENRICHMENT (quality gate + extraction)
+├── A-MAC quality gate — LLM scores every commit
 ├── Entity extraction — fast NER + graph writes
-└── fact_extractor.py — 4h cron, mines sessions for facts
+└── fact_extractor.py — cron, mines sessions for facts
 
-LAYER 7: CONTINUOUS MAINTENANCE
-├── fact_extractor.py — every 4h, personal knowledge extraction
-├── Second brain enrichment — 6x overnight, importance scoring
-└── Graph deepening — daily, FalkorDB relationship extraction
+LAYER 5: CONTINUOUS MAINTENANCE
+├── fact_extractor.py — periodic knowledge extraction
+├── Importance recalculation — daily scoring
+└── Graph deepening — FalkorDB relationship extraction
 ```
 
 ---
@@ -228,10 +219,10 @@ FalkorDB is a Redis-compatible graph database using the Cypher query language.
 
 **Why FalkorDB?** Redis-protocol compatible (any Redis client works), persistent graph with Cypher, lightweight Docker footprint.
 
-**Why nomic-embed-text v1?** 768 dimensions is the sweet spot — large enough for nuanced similarity, small enough for fast cosine search. v1 was the model used when the collection was first built; all 134K+ vectors use it. Switching models would require re-embedding everything.
+**Why nomic-embed-text v1?** 768 dimensions is the sweet spot — large enough for nuanced similarity, small enough for fast cosine search. v1.5 uses a different dimension count and is incompatible with existing collections. Switching models requires re-embedding everything.
 
 **Why neural reranking?** Bi-encoder cosine similarity (ANN search) is fast but imprecise — it embeds query and passage independently. Cross-encoder reranking reads query+passage together, which is dramatically more accurate. Running it only on top-50 keeps latency acceptable.
 
 **Why A-MAC?** Without a quality gate, trivial content ("ok", "thanks", "yes") would flood the vector store and dilute search quality. A-MAC ensures only information-dense, novel, specific memories get stored.
 
-**Why local LLMs?** Zero marginal cost. A-MAC runs 24/7 scoring every commit. At cloud API prices this would be $100s/month. With local Qwen 35B it's $0.
+**Why local LLMs?** Zero marginal cost. A-MAC runs continuously scoring every commit. Using local inference avoids recurring cloud API costs.

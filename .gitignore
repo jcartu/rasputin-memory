@@ -20,3 +20,6 @@ brainbox/brainbox.db
 .dedup_log.jsonl
 *.bak
 .coverage
+AGENTS.md
+WORK-ORDER.md
+audits/

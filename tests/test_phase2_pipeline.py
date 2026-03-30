@@ -21,7 +21,6 @@ def test_query_expansion_basic():
     assert queries[0] == "What did we email about crypto last week?"
     assert any(q.startswith("email ") for q in queries)
     assert any(q.startswith("recent ") for q in queries)
-    assert any("Bitcoin CHRONOS wallet blockchain hardware" in q for q in queries)
 
 
 def test_query_expansion_entity_aware(tmp_path):

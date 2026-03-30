@@ -1505,7 +1505,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             if not self._enforce_rate_limit("/search"):
                 return
             query = params.get("q", [""])[0]
-            limit = int(params.get("limit", ["10"])[0])
+            limit = min(max(int(params.get("limit", ["10"])[0]), 1), 100)
             source = params.get("source", [None])[0]
             expand = params.get("expand", ["true"])[0].lower() != "false"
 
@@ -1518,8 +1518,8 @@ class HybridHandler(BaseHTTPRequestHandler):
 
         elif parsed.path == "/graph":
             query = params.get("q", [""])[0]
-            limit = int(params.get("limit", ["10"])[0])
-            hops = int(params.get("hops", ["2"])[0])
+            limit = min(max(int(params.get("limit", ["10"])[0]), 1), 100)
+            hops = min(max(int(params.get("hops", ["2"])[0]), 1), 4)
 
             if not query:
                 self._send_json({"error": "Missing q parameter"}, 400)
@@ -1532,14 +1532,14 @@ class HybridHandler(BaseHTTPRequestHandler):
             try:
                 info = qdrant.get_collection(COLLECTION)
                 qdrant_count = info.points_count
-            except:
+            except Exception:
                 qdrant_count = -1
 
             try:
                 r = get_redis()
                 node_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
                 edge_count = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
-            except:
+            except Exception:
                 node_count = -1
                 edge_count = -1
 
@@ -1593,19 +1593,19 @@ class HybridHandler(BaseHTTPRequestHandler):
             self._send_json(health)
 
         elif parsed.path == "/amac/metrics":
-            total = _amac_metrics["accepted"] + _amac_metrics["rejected"]
+            with _amac_metrics_lock:
+                snapshot = dict(_amac_metrics)
+            total = snapshot["accepted"] + snapshot["rejected"]
             avg_score = (
-                round(_amac_metrics["score_sum"] / _amac_metrics["score_count"], 2)
-                if _amac_metrics["score_count"] > 0
-                else None
+                round(snapshot["score_sum"] / snapshot["score_count"], 2) if snapshot["score_count"] > 0 else None
             )
-            rejection_rate = round(_amac_metrics["rejected"] / total * 100, 1) if total > 0 else 0
+            rejection_rate = round(snapshot["rejected"] / total * 100, 1) if total > 0 else 0
             self._send_json(
                 {
-                    "accepted": _amac_metrics["accepted"],
-                    "rejected": _amac_metrics["rejected"],
-                    "bypassed": _amac_metrics["bypassed"],
-                    "timeout_accepts": _amac_metrics["timeout_accepts"],
+                    "accepted": snapshot["accepted"],
+                    "rejected": snapshot["rejected"],
+                    "bypassed": snapshot["bypassed"],
+                    "timeout_accepts": snapshot["timeout_accepts"],
                     "total": total,
                     "avg_composite_score": avg_score,
                     "rejection_rate_pct": rejection_rate,
@@ -1614,8 +1614,8 @@ class HybridHandler(BaseHTTPRequestHandler):
             )
 
         elif parsed.path == "/contradictions":
-            limit = int(params.get("limit", ["50"])[0])
-            rows = list_contradictions(limit=max(1, min(limit, 500)))
+            limit = min(max(int(params.get("limit", ["50"])[0]), 1), 500)
+            rows = list_contradictions(limit=limit)
             self._send_json({"count": len(rows), "results": rows})
 
         else:
@@ -1642,7 +1642,7 @@ class HybridHandler(BaseHTTPRequestHandler):
 
         try:
             data = json.loads(body) if body else {}
-        except:
+        except Exception:
             self._send_json({"error": "Invalid JSON"}, 400)
             return
 
@@ -1790,7 +1790,7 @@ def serve(port: int = SERVER_PORT) -> None:
         nc = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][0]
         ec = r.execute_command("GRAPH.QUERY", GRAPH_NAME, "MATCH ()-[e]->() RETURN count(e)")[1][0][0]
         logger.info("FalkorDB: %s nodes, %s edges", nc, ec)
-    except:
+    except Exception:
         logger.warning("FalkorDB unavailable (graph search disabled)")
     server.serve_forever()
 
@@ -1800,5 +1800,3 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=SERVER_PORT)
     args = parser.parse_args()
     serve(args.port)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
-logger = logging.getLogger("hybrid_brain")
