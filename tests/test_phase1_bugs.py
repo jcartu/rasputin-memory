@@ -22,3 +22,8 @@ def test_decay_collection_matches_production():
     assert 'COLLECTION = "memories_v2"' not in source
     # Must read from env with correct default
     assert 'os.environ.get("QDRANT_COLLECTION", "second_brain")' in source
+
+
+def test_bm25_available_defined():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "BM25_AVAILABLE = True" in source

@@ -29,6 +29,7 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 # BM25 hybrid reranking — core pipeline component
 from bm25_search import hybrid_rerank as bm25_rerank
 print("[HybridBrain] BM25 reranking: enabled", flush=True)
+BM25_AVAILABLE = True
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
