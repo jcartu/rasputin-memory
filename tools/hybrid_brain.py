@@ -631,13 +631,25 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
 
 def _parse_date(date_str):
     """Parse various date formats, return datetime or None."""
-    from datetime import datetime as _dt
+    from datetime import datetime as _dt, timezone as _tz
 
     if not date_str:
         return None
+
+    try:
+        normalized = date_str
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        dt = _dt.fromisoformat(normalized)
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=_tz.utc)
+        return dt.astimezone(_tz.utc)
+    except ValueError:
+        pass
+
     for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
         try:
-            return _dt.strptime(date_str[:26], fmt)
+            return _dt.strptime(date_str, fmt).replace(tzinfo=_tz.utc)
         except ValueError:
             continue
     return None
@@ -655,9 +667,9 @@ def apply_temporal_decay(results, half_life_days=30):
     - Floor at 20% to never fully kill old critical memories
     """
     import math
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     for r in results:
         dt = _parse_date(r.get("date", ""))

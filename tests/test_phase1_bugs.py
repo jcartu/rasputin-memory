@@ -116,3 +116,10 @@ def test_task15_dedup_uses_regex_tokenizer():
     assert "set(text.lower().split())" not in source
     assert 'set(re.findall(r"\\w+", text.lower()))' in source
     assert 'set(re.findall(r"\\w+", existing_text.lower()))' in source
+
+
+def test_task16_timezone_aware_decay_and_parsing():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "datetime.now(timezone.utc)" in source
+    assert "date_str[:26]" not in source
+    assert "fromisoformat(normalized)" in source
