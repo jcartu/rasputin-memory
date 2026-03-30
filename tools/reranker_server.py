@@ -11,6 +11,7 @@ Usage:
 """
 
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
 
 from fastapi import FastAPI, HTTPException
@@ -34,12 +35,15 @@ model = None
 tokenizer = None
 device = None
 
+
 class RerankRequest(BaseModel):
     query: str
     passages: List[str]
 
+
 class RerankResponse(BaseModel):
     scores: List[float]
+
 
 def load_model():
     """Load cross-encoder reranker model on GPU."""
@@ -57,9 +61,11 @@ def load_model():
     if torch.cuda.is_available():
         logger.info(f"  Memory allocated: {torch.cuda.memory_allocated(0) / 1e9:.2f} GB")
 
+
 @app.on_event("startup")
 async def startup():
     load_model()
+
 
 @app.post("/rerank", response_model=RerankResponse)
 async def rerank(req: RerankRequest):
@@ -77,13 +83,7 @@ async def rerank(req: RerankRequest):
         pairs = [[req.query, p] for p in req.passages]
 
         with torch.no_grad():
-            inputs = tokenizer(
-                pairs,
-                padding=True,
-                truncation=True,
-                max_length=512,
-                return_tensors="pt"
-            ).to(device)
+            inputs = tokenizer(pairs, padding=True, truncation=True, max_length=1024, return_tensors="pt").to(device)
 
             outputs = model(**inputs)
             logits = outputs.logits.squeeze(-1)
@@ -97,6 +97,7 @@ async def rerank(req: RerankRequest):
     except Exception as e:
         logger.error(f"Rerank error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/health")
 async def health():
@@ -114,10 +115,12 @@ async def health():
         "memory_allocated_gb": mem_gb,
     }
 
+
 @app.get("/")
 async def root():
     """Root handler for health checks."""
     return {"status": "ok", "service": "reranker", "model": MODEL_NAME}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="info")
