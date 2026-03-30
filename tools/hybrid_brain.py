@@ -387,7 +387,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
                 GRAPH_NAME,
                 f"MERGE (n:{safe_label} {{name: $name}}) "
                 f"ON CREATE SET n.type = $etype, n.created_at = $ts "
-                f"WITH n MATCH (m:Memory {{id: $id}}) MERGE (n)-[:MENTIONED_IN]->(m)",
+                f"WITH n MATCH (m:Memory {{id: $id}}) MERGE (m)-[:MENTIONS]->(n)",
                 "--params",
                 json.dumps({"name": name, "etype": etype, "ts": ts, "id": str(point_id)}),
             )
@@ -938,7 +938,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                 mem_result = r.execute_command(
                     "GRAPH.QUERY",
                     GRAPH_NAME,
-                    f"MATCH (n:{label})-[:MENTIONED_IN]->(m:Memory) "
+                    f"MATCH (m:Memory)-[:MENTIONS]->(n:{label}) "
                     f"WHERE toLower(n.name) CONTAINS toLower($name) "
                     f"RETURN m.id, m.text, m.created_at, n.name LIMIT {limit}",
                     "--params",
@@ -971,10 +971,11 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                     twohop = r.execute_command(
                         "GRAPH.QUERY",
                         GRAPH_NAME,
-                        f"MATCH (n:{label})-[:MENTIONED_IN]->(m1:Memory)<-[:MENTIONED_IN]-(co) "
+                        f"MATCH (m1:Memory)-[:MENTIONS]->(n:{label}) "
+                        f"MATCH (m1)-[:MENTIONS]->(co) "
                         f"WHERE toLower(n.name) CONTAINS toLower($name) AND n <> co "
                         f"WITH DISTINCT co, count(m1) AS shared ORDER BY shared DESC LIMIT 5 "
-                        f"MATCH (co)-[:MENTIONED_IN]->(m2:Memory) "
+                        f"MATCH (m2:Memory)-[:MENTIONS]->(co) "
                         f"WHERE NOT m2.id IN $seen "
                         f"RETURN m2.id, m2.text, m2.created_at, co.name, labels(co)[0] LIMIT {limit}",
                         "--params",
