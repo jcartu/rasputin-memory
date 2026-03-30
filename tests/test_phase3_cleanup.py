@@ -1,4 +1,5 @@
 import sys
+import importlib
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock
@@ -8,10 +9,14 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 
-import config  # noqa: E402
-import bm25_search  # noqa: E402
-import backfill_schema  # noqa: E402
-import hybrid_brain  # noqa: E402
+config = importlib.import_module("config")
+bm25_search = importlib.import_module("bm25_search")
+backfill_schema = importlib.import_module("backfill_schema")
+hybrid_brain = importlib.import_module("hybrid_brain")
+state = importlib.import_module("brain._state")
+embedding = importlib.import_module("brain.embedding")
+entities = importlib.import_module("brain.entities")
+commit_module = importlib.import_module("brain.commit")
 
 load_config: Any = getattr(config, "load_config")
 
@@ -126,13 +131,13 @@ known_entities_path = "config/known_entities.json"
 
 def test_commit_includes_schema_version(monkeypatch):
     mock_qdrant = Mock()
-    monkeypatch.setattr(hybrid_brain, "qdrant", mock_qdrant)
-    monkeypatch.setattr(hybrid_brain, "check_duplicate", lambda *_args, **_kwargs: (False, None, 0))
-    monkeypatch.setattr(hybrid_brain, "get_embedding", lambda *_args, **_kwargs: [0.1] * 768)
-    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [])
-    monkeypatch.setattr(hybrid_brain, "check_contradictions", lambda *_a, **_k: [])
+    monkeypatch.setattr(state, "qdrant", mock_qdrant)
+    monkeypatch.setattr(embedding, "check_duplicate", lambda *_args, **_kwargs: (False, None, 0))
+    monkeypatch.setattr(embedding, "get_embedding", lambda *_args, **_kwargs: [0.1] * 768)
+    monkeypatch.setattr(entities, "extract_entities_fast", lambda _text: [])
+    monkeypatch.setattr(commit_module, "check_contradictions", lambda *_a, **_k: [])
 
-    result = hybrid_brain.commit_memory("A" * 64, source="conversation", importance=60)
+    result = commit_module.commit_memory("A" * 64, source="conversation", importance=60)
 
     assert result["ok"] is True
     upsert_kwargs = mock_qdrant.upsert.call_args.kwargs

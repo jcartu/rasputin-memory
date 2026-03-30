@@ -9,6 +9,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 query_expansion = importlib.import_module("pipeline.query_expansion")
 source_tiering = importlib.import_module("pipeline.source_tiering")
 get_source_weight = source_tiering.get_source_weight
+search_module = importlib.import_module("brain.search")
+graph_module = importlib.import_module("brain.graph")
+embedding_module = importlib.import_module("brain.embedding")
+state = importlib.import_module("brain._state")
 
 
 def test_query_expansion_basic():
@@ -54,8 +58,6 @@ def test_source_tiering_unknown_source():
 
 
 def test_search_uses_query_expansion(monkeypatch):
-    hb = importlib.import_module("hybrid_brain")
-
     calls = []
 
     def fake_expand_queries(query, max_expansions=5):
@@ -80,15 +82,15 @@ def test_search_uses_query_expansion(monkeypatch):
             }
         ]
 
-    monkeypatch.setattr(hb, "expand_queries", fake_expand_queries)
-    monkeypatch.setattr(hb, "qdrant_search", fake_qdrant_search)
-    monkeypatch.setattr(hb, "graph_search", lambda *args, **kwargs: [])
-    monkeypatch.setattr(hb, "enrich_with_graph", lambda *args, **kwargs: {})
-    monkeypatch.setattr(hb, "_update_access_tracking", lambda *args, **kwargs: None)
-    monkeypatch.setattr(hb, "is_reranker_available", lambda: False)
-    monkeypatch.setattr(hb, "BM25_AVAILABLE", False)
+    monkeypatch.setattr(search_module, "expand_queries", fake_expand_queries)
+    monkeypatch.setattr(search_module, "qdrant_search", fake_qdrant_search)
+    monkeypatch.setattr(graph_module, "graph_search", lambda *args, **kwargs: [])
+    monkeypatch.setattr(graph_module, "enrich_with_graph", lambda *args, **kwargs: {})
+    monkeypatch.setattr(search_module, "_update_access_tracking", lambda *args, **kwargs: None)
+    monkeypatch.setattr(embedding_module, "is_reranker_available", lambda: False)
+    monkeypatch.setattr(state, "BM25_AVAILABLE", False)
 
-    result = hb.hybrid_search("vpn history", limit=5, expand=True)
+    result = search_module.hybrid_search("vpn history", limit=5, expand=True)
 
     assert calls == ["vpn history", "vpn history alternate"]
     assert result["results"][0]["score"] == 0.8

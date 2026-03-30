@@ -21,7 +21,7 @@ def test_decay_collection_matches_production():
 
 
 def test_bm25_available_defined():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "_state.py").read_text()
     assert "BM25_AVAILABLE = True" in source
 
 
@@ -49,22 +49,24 @@ def test_embed_url_consistency():
 
 
 def test_concurrent_commits_no_dupes():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
-    assert "_commit_lock = threading.Lock()" in source
-    assert "with _commit_lock:" in source
+    state_source = (ROOT / "tools" / "brain" / "_state.py").read_text()
+    commit_source = (ROOT / "tools" / "brain" / "commit.py").read_text()
+    assert "_commit_lock = threading.Lock()" in state_source
+    assert "with _state._commit_lock:" in commit_source
 
 
 def test_amac_metrics_thread_safe():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
-    assert "_amac_metrics_lock = threading.Lock()" in source
-    assert "def _inc_metric(" in source
-    assert '_amac_metrics["accepted"] += 1' not in source
+    state_source = (ROOT / "tools" / "brain" / "_state.py").read_text()
+    amac_source = (ROOT / "tools" / "brain" / "amac.py").read_text()
+    assert "_amac_metrics_lock = threading.Lock()" in state_source
+    assert "def _inc_metric(" in amac_source
+    assert '_amac_metrics["accepted"] += 1' not in amac_source
 
 
 def test_access_tracking_increments():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "search.py").read_text()
     assert '"point_id": point.id' in source
-    assert "qdrant.retrieve(" in source
+    assert "qdrant.retrieve(" in source or "_state.qdrant.retrieve(" in source
     assert "for r in results[:10]" not in source
 
 
@@ -102,44 +104,45 @@ def test_handler_js_uses_process_env_urls():
 
 
 def test_task14_entity_matching_uses_word_boundaries():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "entities.py").read_text()
     assert "if name.lower() in text_lower" not in source
     assert 're.search(r"\\b" + re.escape(name.lower()) + r"\\b", text_lower)' in source
 
 
 def test_task15_dedup_uses_regex_tokenizer():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "embedding.py").read_text()
     assert "set(text.lower().split())" not in source
     assert 'set(re.findall(r"\\w+", text.lower()))' in source
     assert 'set(re.findall(r"\\w+", existing_text.lower()))' in source
 
 
 def test_task16_timezone_aware_decay_and_parsing():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "scoring.py").read_text()
     assert "datetime.now(timezone.utc)" in source
     assert "date_str[:26]" not in source
     assert "fromisoformat(normalized)" in source
 
 
 def test_task17_commit_text_length_validation():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "server.py").read_text()
     assert "Text too short (minimum 20 characters)" in source
     assert "Text too long (maximum 8000 characters)" in source
 
 
 def test_task18_importance_is_clamped_to_0_100():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "server.py").read_text()
     assert "importance = max(0, min(100, importance))" in source
 
 
 def test_task19_request_body_size_limit():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
-    assert "MAX_BODY_SIZE = 1 * 1024 * 1024" in source
-    assert "Request body too large (max 1MB)" in source
+    state_source = (ROOT / "tools" / "brain" / "_state.py").read_text()
+    server_source = (ROOT / "tools" / "brain" / "server.py").read_text()
+    assert "MAX_BODY_SIZE = 1 * 1024 * 1024" in state_source
+    assert "Request body too large (max 1MB)" in server_source
 
 
 def test_task20_commit_metadata_protects_core_fields():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "commit.py").read_text()
     assert "protected_fields" in source
     assert '"text"' in source[source.index("protected_fields") : source.index("protected_fields") + 300]
     assert '"embedding_model"' in source[source.index("protected_fields") : source.index("protected_fields") + 300]
@@ -147,13 +150,13 @@ def test_task20_commit_metadata_protects_core_fields():
 
 
 def test_task21_amac_scores_sentinel_prompt_and_parser():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "amac.py").read_text()
     assert "Output format: SCORES: R,N,S" in source
     assert 're.search(r"SCORES:\\s*(.*)", raw, re.IGNORECASE | re.DOTALL)' in source
 
 
 def test_task22_known_entities_ttl_cache_present():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "entities.py").read_text()
     assert "KNOWN_ENTITIES_CACHE_TTL_SECONDS = 5 * 60" in source
     assert "_known_entities_cache" in source
     assert "if _known_entities_cache and (now - _known_entities_cache_ts) < KNOWN_ENTITIES_CACHE_TTL_SECONDS:" in source
@@ -172,5 +175,5 @@ def test_task24_reranker_max_length_1024():
 
 
 def test_task25_amac_importance_blending_formula():
-    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    source = (ROOT / "tools" / "brain" / "server.py").read_text()
     assert "importance = int(0.4 * importance + 0.6 * amac_composite * 10)" in source

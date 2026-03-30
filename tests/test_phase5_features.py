@@ -9,8 +9,13 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 contradiction = importlib.import_module("tools.pipeline.contradiction")
 importance_recalculator = importlib.import_module("tools.importance_recalculator")
-hybrid_brain = importlib.import_module("tools.hybrid_brain")
 embedding_health = importlib.import_module("tools.embedding_health")
+state_module = importlib.import_module("brain._state")
+commit_module = importlib.import_module("brain.commit")
+entities_module = importlib.import_module("brain.entities")
+graph_module = importlib.import_module("brain.graph")
+proactive_module = importlib.import_module("brain.proactive")
+search_module = importlib.import_module("brain.search")
 
 
 class _FakePoint:
@@ -147,8 +152,8 @@ def test_feedback_positive_boosts(monkeypatch):
         def set_payload(self, **kwargs):
             state["update"] = kwargs
 
-    monkeypatch.setattr(hybrid_brain, "qdrant", _FeedbackQdrant())
-    result = hybrid_brain.apply_relevance_feedback(point_id="p1", helpful=True)
+    monkeypatch.setattr(state_module, "qdrant", _FeedbackQdrant())
+    result = commit_module.apply_relevance_feedback(point_id="p1", helpful=True)
     assert result["ok"] is True
     assert result["importance_after"] == 65
     updated_payload = state["update"]["payload"]
@@ -166,8 +171,8 @@ def test_feedback_negative_decays(monkeypatch):
         def set_payload(self, **kwargs):
             state["update"] = kwargs
 
-    monkeypatch.setattr(hybrid_brain, "qdrant", _FeedbackQdrant())
-    result = hybrid_brain.apply_relevance_feedback(point_id="p2", helpful=False)
+    monkeypatch.setattr(state_module, "qdrant", _FeedbackQdrant())
+    result = commit_module.apply_relevance_feedback(point_id="p2", helpful=False)
     assert result["ok"] is True
     assert result["importance_after"] == 50
     updated_payload = state["update"]["payload"]
@@ -176,9 +181,9 @@ def test_feedback_negative_decays(monkeypatch):
 
 
 def test_graph_enrichment_returns_data(monkeypatch):
-    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [("John Doe", "Person")])
+    monkeypatch.setattr(entities_module, "extract_entities_fast", lambda _text: [("John Doe", "Person")])
     monkeypatch.setattr(
-        hybrid_brain,
+        graph_module,
         "graph_search",
         lambda *_args, **_kwargs: [
             {
@@ -190,7 +195,7 @@ def test_graph_enrichment_returns_data(monkeypatch):
         ],
     )
 
-    enrichment = hybrid_brain.enrich_with_graph(
+    enrichment = graph_module.enrich_with_graph(
         [{"text": "John Doe discussed roadmap"}],
         limit=3,
     )
@@ -200,9 +205,9 @@ def test_graph_enrichment_returns_data(monkeypatch):
 
 def test_proactive_surfaces_related_memories(monkeypatch):
     now = datetime.now(timezone.utc)
-    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda _text: [("BrandA", "Organization")])
+    monkeypatch.setattr(entities_module, "extract_entities_fast", lambda _text: [("BrandA", "Organization")])
     monkeypatch.setattr(
-        hybrid_brain,
+        search_module,
         "qdrant_search",
         lambda *_args, **_kwargs: [
             {
@@ -220,7 +225,7 @@ def test_proactive_surfaces_related_memories(monkeypatch):
         ],
     )
 
-    rows = hybrid_brain.proactive_surface(["Can you remind me about BrandA strategy?"], max_results=5)
+    rows = proactive_module.proactive_surface(["Can you remind me about BrandA strategy?"], max_results=5)
     assert len(rows) == 1
     assert "Europe launch" in rows[0]["text"]
     assert rows[0]["reason"] == "Related to: BrandA"
@@ -244,6 +249,7 @@ def test_embedding_health_no_drift():
         "alpha": [1.0, 0.0, 0.0],
         "beta": [0.0, 1.0, 0.0],
     }
+
     def embed_fn(text):
         return expected[text]
 

@@ -4,7 +4,12 @@ import json
 from types import SimpleNamespace
 
 
-hybrid_brain = importlib.import_module("hybrid_brain")
+state = importlib.import_module("brain._state")
+embedding = importlib.import_module("brain.embedding")
+entities = importlib.import_module("brain.entities")
+commit_module = importlib.import_module("brain.commit")
+amac = importlib.import_module("brain.amac")
+server = importlib.import_module("brain.server")
 
 
 class FakeResponse:
@@ -20,22 +25,22 @@ class FakeResponse:
 
 
 def test_amac_parser_extracts_triplet(monkeypatch):
-    monkeypatch.setattr(hybrid_brain.requests, "post", lambda *a, **k: FakeResponse("SCORES: 8,7,6"))
-    scores = hybrid_brain.amac_score("test memory")
+    monkeypatch.setattr(state.requests, "post", lambda *a, **k: FakeResponse("SCORES: 8,7,6"))
+    scores = amac.amac_score("test memory")
     assert scores == (8.0, 7.0, 6.0, 7.0)
 
 
 def test_amac_parser_ignores_examples(monkeypatch):
     raw = "example 0,1,0\nexample 4,2,2\nfinal answer\n9,8,7"
-    monkeypatch.setattr(hybrid_brain.requests, "post", lambda *a, **k: FakeResponse(raw))
-    scores = hybrid_brain.amac_score("test memory")
+    monkeypatch.setattr(state.requests, "post", lambda *a, **k: FakeResponse(raw))
+    scores = amac.amac_score("test memory")
     assert scores == (9.0, 8.0, 7.0, 8.0)
 
 
 def test_dedup_detects_near_duplicate(monkeypatch):
     p = SimpleNamespace(id=101, score=0.96, payload={"text": "John Doe moved to Toronto yesterday"})
-    monkeypatch.setattr(hybrid_brain, "qdrant", SimpleNamespace(query_points=lambda **k: SimpleNamespace(points=[p])))
-    is_dupe, existing_id, similarity = hybrid_brain.check_duplicate([0.1] * 768, "John Doe moved to Toronto yesterday")
+    monkeypatch.setattr(state, "qdrant", SimpleNamespace(query_points=lambda **k: SimpleNamespace(points=[p])))
+    is_dupe, existing_id, similarity = embedding.check_duplicate([0.1] * 768, "John Doe moved to Toronto yesterday")
     assert is_dupe is True
     assert existing_id == 101
     assert similarity >= 0.95
@@ -43,23 +48,21 @@ def test_dedup_detects_near_duplicate(monkeypatch):
 
 def test_dedup_allows_different_text(monkeypatch):
     p = SimpleNamespace(id=102, score=0.93, payload={"text": "Completely unrelated business update"})
-    monkeypatch.setattr(hybrid_brain, "qdrant", SimpleNamespace(query_points=lambda **k: SimpleNamespace(points=[p])))
-    is_dupe, existing_id, similarity = hybrid_brain.check_duplicate(
-        [0.1] * 768, "Health appointment details with doctor"
-    )
+    monkeypatch.setattr(state, "qdrant", SimpleNamespace(query_points=lambda **k: SimpleNamespace(points=[p])))
+    is_dupe, existing_id, similarity = embedding.check_duplicate([0.1] * 768, "Health appointment details with doctor")
     assert is_dupe is False
     assert existing_id is None
     assert similarity == 0
 
 
 def test_payload_has_required_fields(monkeypatch, mock_qdrant):
-    monkeypatch.setattr(hybrid_brain, "qdrant", mock_qdrant)
-    monkeypatch.setattr(hybrid_brain, "get_embedding", lambda *a, **k: [0.2] * 768)
-    monkeypatch.setattr(hybrid_brain, "check_duplicate", lambda *a, **k: (False, None, 0))
-    monkeypatch.setattr(hybrid_brain, "check_contradictions", lambda *a, **k: [])
-    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda *_: [])
+    monkeypatch.setattr(state, "qdrant", mock_qdrant)
+    monkeypatch.setattr(embedding, "get_embedding", lambda *a, **k: [0.2] * 768)
+    monkeypatch.setattr(embedding, "check_duplicate", lambda *a, **k: (False, None, 0))
+    monkeypatch.setattr(commit_module, "check_contradictions", lambda *a, **k: [])
+    monkeypatch.setattr(entities, "extract_entities_fast", lambda *_: [])
 
-    result = hybrid_brain.commit_memory("A" * 64, source="conversation", importance=77)
+    result = commit_module.commit_memory("A" * 64, source="conversation", importance=77)
     assert result["ok"] is True
 
     pid = result["id"]
@@ -75,8 +78,8 @@ def test_importance_clamped(monkeypatch):
         captured["importance"] = importance
         return {"ok": True, "id": 1}
 
-    monkeypatch.setattr(hybrid_brain, "commit_memory", fake_commit_memory)
-    monkeypatch.setattr(hybrid_brain, "amac_gate", lambda *a, **k: (True, "bypassed", {}))
+    monkeypatch.setattr(commit_module, "commit_memory", fake_commit_memory)
+    monkeypatch.setattr(amac, "amac_gate", lambda *a, **k: (True, "bypassed", {}))
 
     body = json.dumps({"text": "x" * 50, "importance": 999}).encode()
     handler = SimpleNamespace(
@@ -89,19 +92,19 @@ def test_importance_clamped(monkeypatch):
     sent = {}
     handler._send_json = lambda payload, status=200: sent.update({"payload": payload, "status": status})
 
-    hybrid_brain.HybridHandler._handle_post(handler)
+    server.HybridHandler._handle_post(handler)
     assert sent["status"] == 200
     assert captured["importance"] == 100
 
 
 def test_protected_fields_not_overwritten(monkeypatch, mock_qdrant):
-    monkeypatch.setattr(hybrid_brain, "qdrant", mock_qdrant)
-    monkeypatch.setattr(hybrid_brain, "get_embedding", lambda *a, **k: [0.3] * 768)
-    monkeypatch.setattr(hybrid_brain, "check_duplicate", lambda *a, **k: (False, None, 0))
-    monkeypatch.setattr(hybrid_brain, "check_contradictions", lambda *a, **k: [])
-    monkeypatch.setattr(hybrid_brain, "extract_entities_fast", lambda *_: [])
+    monkeypatch.setattr(state, "qdrant", mock_qdrant)
+    monkeypatch.setattr(embedding, "get_embedding", lambda *a, **k: [0.3] * 768)
+    monkeypatch.setattr(embedding, "check_duplicate", lambda *a, **k: (False, None, 0))
+    monkeypatch.setattr(commit_module, "check_contradictions", lambda *a, **k: [])
+    monkeypatch.setattr(entities, "extract_entities_fast", lambda *_: [])
 
-    result = hybrid_brain.commit_memory(
+    result = commit_module.commit_memory(
         "B" * 80,
         source="conversation",
         importance=61,
@@ -123,9 +126,9 @@ def test_protected_fields_not_overwritten(monkeypatch, mock_qdrant):
 
 def test_rate_limiter_blocks_excess(monkeypatch):
     now = {"t": 1000.0}
-    monkeypatch.setattr(hybrid_brain.time, "time", lambda: now["t"])
+    monkeypatch.setattr(server.time, "time", lambda: now["t"])
 
-    limiter = hybrid_brain.SimpleRateLimiter(calls_per_minute=2)
+    limiter = server.SimpleRateLimiter(calls_per_minute=2)
     assert limiter.allow("/search:127.0.0.1") is True
     assert limiter.allow("/search:127.0.0.1") is True
     assert limiter.allow("/search:127.0.0.1") is False
