@@ -37,6 +37,12 @@ except ModuleNotFoundError:
     _source_tiering = importlib.import_module("tools.pipeline.source_tiering")
 get_source_weight = _source_tiering.get_source_weight
 
+try:
+    _query_expansion = importlib.import_module("pipeline.query_expansion")
+except ModuleNotFoundError:
+    _query_expansion = importlib.import_module("tools.pipeline.query_expansion")
+expand_queries = _query_expansion.expand_queries
+
 print("[HybridBrain] BM25 reranking: enabled", flush=True)
 BM25_AVAILABLE = True
 
@@ -1207,16 +1213,32 @@ def enrich_with_graph(results, limit=5):
         return {}
 
 
-def hybrid_search(query, limit=10, graph_hops=2, source_filter=None):
+def hybrid_search(query, limit=10, graph_hops=2, source_filter=None, expand=True):
     """Combined Qdrant vector + FalkorDB graph + BM25 + Neural reranking search.
 
     Pipeline: Qdrant vector → BM25 rerank → Neural rerank → merge graph → graph_api enrich → return
     """
     t0 = time.time()
 
-    # Fetch more from Qdrant to give rerankers better candidates
+    queries = [query]
+    if expand:
+        queries = expand_queries(query, max_expansions=5)
+
     fetch_limit = limit * 4
-    qdrant_results = qdrant_search(query, limit=fetch_limit, source_filter=source_filter)
+    all_qdrant_results = []
+    for expanded_query in queries:
+        all_qdrant_results.extend(qdrant_search(expanded_query, limit=fetch_limit, source_filter=source_filter))
+
+    deduped_by_text = {}
+    for item in all_qdrant_results:
+        text_key = (item.get("text") or "").strip().lower()
+        if not text_key:
+            text_key = f"point:{item.get('point_id', '')}"
+        current = deduped_by_text.get(text_key)
+        if current is None or item.get("score", 0) > current.get("score", 0):
+            deduped_by_text[text_key] = item
+
+    qdrant_results = sorted(deduped_by_text.values(), key=lambda x: x.get("score", 0), reverse=True)
     graph_results = graph_search(query, hops=graph_hops, limit=limit)
 
     # Stage 1: BM25 keyword reranking
@@ -1275,6 +1297,8 @@ def hybrid_search(query, limit=10, graph_hops=2, source_filter=None):
         "graph_context": graph_results,  # Keep separate for backward compat
         "graph_enrichment": graph_enrichment,  # Deep multi-hop from graph_api
         "stats": {
+            "expanded_queries": len(queries),
+            "query_expansion_enabled": bool(expand),
             "qdrant_hits": len([r for r in merged if r.get("origin") != "graph"]),
             "graph_hits": len(graph_results),
             "graph_merged": len([r for r in merged if r.get("origin") == "graph"]),
@@ -1506,12 +1530,13 @@ class HybridHandler(BaseHTTPRequestHandler):
             query = params.get("q", [""])[0]
             limit = int(params.get("limit", ["10"])[0])
             source = params.get("source", [None])[0]
+            expand = params.get("expand", ["true"])[0].lower() != "false"
 
             if not query:
                 self._send_json({"error": "Missing q parameter"}, 400)
                 return
 
-            result = hybrid_search(query, limit=limit, source_filter=source)
+            result = hybrid_search(query, limit=limit, source_filter=source, expand=expand)
             self._send_json(result)
 
         elif parsed.path == "/graph":
@@ -1635,12 +1660,17 @@ class HybridHandler(BaseHTTPRequestHandler):
             query = data.get("q", data.get("query", ""))
             limit = data.get("limit", 10)
             source = data.get("source", None)
+            expand_raw = data.get("expand", True)
+            if isinstance(expand_raw, str):
+                expand = expand_raw.lower() != "false"
+            else:
+                expand = bool(expand_raw)
 
             if not query:
                 self._send_json({"error": "Missing query"}, 400)
                 return
 
-            result = hybrid_search(query, limit=limit, source_filter=source)
+            result = hybrid_search(query, limit=limit, source_filter=source, expand=expand)
             self._send_json(result)
 
         elif parsed.path == "/proactive":
