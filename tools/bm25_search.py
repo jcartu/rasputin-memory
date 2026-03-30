@@ -19,7 +19,7 @@ class BM25Scorer:
     
     def tokenize(self, text):
         """Simple tokenization: lowercase, split on non-alphanumeric."""
-        return re.findall(r'[a-zA-Z0-9]+', text.lower())
+        return re.findall(r'\w+', text.lower())
     
     def score(self, query, documents):
         """

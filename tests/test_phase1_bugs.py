@@ -27,3 +27,14 @@ def test_decay_collection_matches_production():
 def test_bm25_available_defined():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert "BM25_AVAILABLE = True" in source
+
+
+def test_bm25_tokenizer_cyrillic():
+    bm25_source = (ROOT / "tools" / "bm25_search.py").read_text()
+    engine_source = (ROOT / "tools" / "memory_engine.py").read_text()
+    assert "re.findall(r'\\w+', text.lower())" in bm25_source
+    assert "\\b\\w{3,}\\b" in engine_source
+
+    bm25_mod = importlib.import_module("bm25_search")
+    tokens = bm25_mod.BM25Scorer().tokenize("Москва river")
+    assert "москва" in tokens

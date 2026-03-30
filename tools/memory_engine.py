@@ -97,7 +97,7 @@ def om_lookup(query, max_chunks=5):
         blocks.append("\n".join(current_block))
     
     # Score each block by keyword overlap with query
-    query_words = set(re.findall(r'\b[a-zA-Z0-9]{3,}\b', query.lower()))
+    query_words = set(re.findall(r'\b\w{3,}\b', query.lower()))
     scored = []
     for block in blocks:
         block_lower = block.lower()
@@ -304,7 +304,7 @@ def graph_traverse(query, max_hops=2):
         return ""
     
     query_lower = query.lower()
-    query_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', query_lower))
+    query_words = set(re.findall(r'\b\w{3,}\b', query_lower))
     
     found_entities = []
     
