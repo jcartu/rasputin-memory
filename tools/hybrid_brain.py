@@ -1714,6 +1714,10 @@ class HybridHandler(BaseHTTPRequestHandler):
                 return
             # ─────────────────────────
 
+            if scores and "composite" in scores:
+                amac_composite = float(scores.get("composite", 0))
+                importance = int(0.4 * importance + 0.6 * amac_composite * 10)
+
             result = commit_memory(text, source=source, importance=importance, metadata=metadata)
             if scores:
                 result["amac"] = {"reason": reason, "scores": scores}

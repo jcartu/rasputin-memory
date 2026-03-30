@@ -171,3 +171,8 @@ def test_task24_reranker_max_length_1024():
     source = (ROOT / "tools" / "reranker_server.py").read_text()
     assert "max_length=1024" in source
     assert "max_length=512" not in source
+
+
+def test_task25_amac_importance_blending_formula():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "importance = int(0.4 * importance + 0.6 * amac_composite * 10)" in source
