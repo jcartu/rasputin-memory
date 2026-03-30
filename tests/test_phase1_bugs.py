@@ -146,3 +146,9 @@ def test_task20_commit_metadata_protects_core_fields():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert 'protected_fields = {"text", "source", "date", "importance", "auto_committed", "retrieval_count"}' in source
     assert "payload.update(safe_metadata)" in source
+
+
+def test_task21_amac_scores_sentinel_prompt_and_parser():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "Output format: SCORES: R,N,S" in source
+    assert 're.search(r"SCORES:\\s*(.*)", raw, re.IGNORECASE | re.DOTALL)' in source

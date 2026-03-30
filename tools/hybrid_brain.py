@@ -408,7 +408,7 @@ Examples:
 
 Memory: "{text}"
 
-Output format: R,N,S (three integers separated by commas, nothing else)
+Output format: SCORES: R,N,S (three integers separated by commas, nothing else)
 """
 
 
@@ -437,6 +437,17 @@ def amac_score(text: str, retry: int = 2):
 
             # First, try to find where actual scores are in response
             # The key is finding the FINAL "X,Y,Z" triplet that represents the decision
+
+            sentinel_match = re.search(r"SCORES:\s*(.*)", raw, re.IGNORECASE | re.DOTALL)
+            if sentinel_match:
+                sentinel_text = sentinel_match.group(1)
+                sentinel_scores = re.findall(r"(?<!\d)(\d{1,2})\s*,\s*(\d{1,2})\s*,\s*(\d{1,2})(?!\d)", sentinel_text)
+                for s in sentinel_scores:
+                    if all(0 <= int(x) <= 10 for x in s):
+                        r, n, s_val = float(s[0]), float(s[1]), float(s[2])
+                        composite = round((r + n + s_val) / 3, 2)
+                        print(f"[A-MAC] Parsed sentinel scores: r={r}, n={n}, s={s_val}", flush=True)
+                        return r, n, s_val, composite
 
             # Pattern 1: Look for explicit score output after thinking
             # Qwen typically puts results at the very end, often with "Here are" or similar
