@@ -15,6 +15,9 @@ import requests
 CHECKS = []
 WARNINGS = []
 ERRORS = []
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
+
 
 def check(name, fn):
     """Run a check, record result."""
@@ -26,15 +29,18 @@ def check(name, fn):
         ERRORS.append(f"🔴 {name}: {e}")
         return False
 
+
 def warn(name, msg):
     WARNINGS.append(f"⚠️ {name}: {msg}")
+
 
 # ──────────────────────────────────────────
 # Component checks
 # ──────────────────────────────────────────
 
+
 def check_qdrant():
-    r = requests.get("http://localhost:6333/collections/second_brain", timeout=5)
+    r = requests.get(f"{QDRANT_URL}/collections/{COLLECTION}", timeout=5)
     data = r.json()["result"]
     count = data["points_count"]
     status = data["status"]
@@ -42,20 +48,20 @@ def check_qdrant():
         warn("Qdrant", f"status={status}")
     return f"{count} points, status={status}"
 
+
 def check_falkordb():
     import redis
+
     r = redis.Redis(host="localhost", port=6380)
     r.ping()
-    nc = r.execute_command('GRAPH.QUERY', 'brain', 'MATCH (n) RETURN count(n)')[1][0][0]
+    nc = r.execute_command("GRAPH.QUERY", "brain", "MATCH (n) RETURN count(n)")[1][0][0]
     return f"{nc} nodes"
+
 
 def check_ollama_embed():
     t0 = time.time()
     embed_url = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
-    r = requests.post(embed_url, json={
-        "model": "nomic-embed-text",
-        "input": "memory health check"
-    }, timeout=10)
+    r = requests.post(embed_url, json={"model": "nomic-embed-text", "input": "memory health check"}, timeout=10)
     r.raise_for_status()
     emb = r.json().get("embeddings", [])
     if not emb or len(emb[0]) != 768:
@@ -63,16 +69,19 @@ def check_ollama_embed():
     ms = (time.time() - t0) * 1000
     return f"768-dim in {ms:.0f}ms"
 
+
 def check_reranker():
-    r = requests.post("http://localhost:8006/rerank", json={
-        "query": "test query",
-        "passages": ["test passage one", "test passage two"]
-    }, timeout=10)
+    r = requests.post(
+        "http://localhost:8006/rerank",
+        json={"query": "test query", "passages": ["test passage one", "test passage two"]},
+        timeout=10,
+    )
     r.raise_for_status()
     scores = r.json().get("scores", [])
     if len(scores) != 2:
         raise Exception(f"Expected 2 scores, got {len(scores)}")
     return f"2 passages scored ({scores[0]:.3f}, {scores[1]:.3f})"
+
 
 def check_hybrid_brain():
     r = requests.get("${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/health", timeout=5)
@@ -86,28 +95,33 @@ def check_hybrid_brain():
         raise Exception(f"status={status}, components={components}")
     return f"v{data.get('version', '?')}, all components up"
 
+
 def check_openclaw_mem():
     r = requests.get("http://localhost:18790/stats", timeout=5)
     r.raise_for_status()
     data = r.json()
     return f"sessions={data.get('sessions', '?')}, observations={data.get('observations', '?')}"
 
+
 def check_round_trip():
     """The critical test: commit → search → find. Proves the pipeline works end-to-end.
     Uses semantically rich text so vector search can find it, then verifies by point_id."""
     import hashlib
+
     ts = int(time.time())
     # Semantically meaningful text so vector search works
-    test_text = (f"PIPELINE_TEST_{ts}: The RASPUTIN memory system is running a scheduled "
-                 f"self-diagnostic. Embedding pipeline, Qdrant vector search, and reranker are "
-                 f"being verified. Timestamp: {ts}.")
+    test_text = (
+        f"PIPELINE_TEST_{ts}: The RASPUTIN memory system is running a scheduled "
+        f"self-diagnostic. Embedding pipeline, Qdrant vector search, and reranker are "
+        f"being verified. Timestamp: {ts}."
+    )
 
     # Commit
-    r = requests.post("${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/commit", json={
-        "text": test_text,
-        "source": "health_check",
-        "importance": 1
-    }, timeout=15)
+    r = requests.post(
+        "${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/commit",
+        json={"text": test_text, "source": "health_check", "importance": 1},
+        timeout=15,
+    )
     r.raise_for_status()
     result = r.json()
     if not result.get("ok"):
@@ -119,7 +133,9 @@ def check_round_trip():
 
     # Search with semantic terms from the committed text
     search_query = "RASPUTIN memory system self-diagnostic embedding pipeline verification"
-    r = requests.get(f"${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q={search_query}&limit=5", timeout=15)
+    r = requests.get(
+        f"${MEMORY_API_URL:-http://${MEMORY_API_HOST:-localhost:7777}}/search?q={search_query}&limit=5", timeout=15
+    )
     r.raise_for_status()
     data = r.json()
 
@@ -134,14 +150,14 @@ def check_round_trip():
 
     # Cleanup
     try:
-        requests.post("http://localhost:6333/collections/second_brain/points/delete",
-                      json={"points": [point_id]}, timeout=5)
+        requests.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/delete", json={"points": [point_id]}, timeout=5)
     except:
         pass
 
     if not found:
         raise Exception("Committed memory NOT found in search — embedding pipeline broken!")
     return f"commit→search OK (score={score:.4f}, {data.get('elapsed_ms', '?')}ms)"
+
 
 # ──────────────────────────────────────────
 # Run all checks
@@ -168,7 +184,7 @@ if __name__ == "__main__":
         if WARNINGS:
             for w in WARNINGS:
                 print(w)
-        print(f"\nPassed: {len(CHECKS)}/{len(CHECKS)+len(ERRORS)} | {elapsed:.1f}s")
+        print(f"\nPassed: {len(CHECKS)}/{len(CHECKS) + len(ERRORS)} | {elapsed:.1f}s")
         sys.exit(1)
     elif WARNINGS:
         print("⚠️ **Memory System: WARNINGS**")

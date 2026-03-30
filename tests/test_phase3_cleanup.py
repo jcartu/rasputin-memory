@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import Mock
+import re
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -208,3 +209,13 @@ def test_server_handles_unexpected_error(monkeypatch):
 
     assert sent["status"] == 500
     assert sent["payload"] == {"error": "Internal server error"}
+
+
+def test_all_files_use_config_collection():
+    collection_assignment = re.compile(r"COLLECTION\s*=\s*\"second_brain\"")
+    hardcoded_collection_url = re.compile(r"/collections/second_brain")
+
+    for py_file in (ROOT / "tools").glob("*.py"):
+        text = py_file.read_text(encoding="utf-8")
+        assert collection_assignment.search(text) is None, f"Hardcoded collection assignment in {py_file}"
+        assert hardcoded_collection_url.search(text) is None, f"Hardcoded collection URL in {py_file}"

@@ -20,8 +20,8 @@ from datetime import datetime, timezone
 
 import requests
 
-QDRANT_URL = "http://localhost:6333"
-COLLECTION = "second_brain"
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
 PROXY_URL = "http://localhost:11438/v1/chat/completions"
 MODEL = "qwen3.5-122b-a10b"
 LOG_DIR = os.path.expanduser("~/.openclaw/workspace/memory/enrichment")
@@ -51,11 +51,7 @@ def qdrant_scroll(offset=None, limit=50):
         "limit": limit,
         "with_payload": True,
         "with_vector": False,
-        "filter": {
-            "must_not": [
-                {"key": "enriched", "match": {"value": True}}
-            ]
-        }
+        "filter": {"must_not": [{"key": "enriched", "match": {"value": True}}]},
     }
     if offset:
         payload["offset"] = offset
@@ -75,8 +71,8 @@ def qdrant_batch_update(updates):
                 "enriched": True,
                 "importance_score": enrichment_data.get("importance", 0),
                 "summary": enrichment_data.get("summary", ""),
-                "enriched_at": datetime.now(timezone.utc).isoformat()
-            }
+                "enriched_at": datetime.now(timezone.utc).isoformat(),
+            },
         }
         r = requests.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/payload", json=payload, timeout=10)
         r.raise_for_status()
@@ -97,19 +93,17 @@ def call_model_batch(chunks_with_text):
         "model": MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 1000,
-        "temperature": 0.1
+        "temperature": 0.1,
     }
 
-    r = requests.post(PROXY_URL, json=payload, headers={
-        "Content-Type": "application/json"
-    }, timeout=90)
+    r = requests.post(PROXY_URL, json=payload, headers={"Content-Type": "application/json"}, timeout=90)
     r.raise_for_status()
 
     resp = r.json()
     msg = resp.get("choices", [{}])[0].get("message", {})
     content = msg.get("content")
     reasoning = msg.get("reasoning", "") or ""
-    
+
     # First try direct JSON from content
     if content:
         try:
@@ -124,20 +118,21 @@ def call_model_batch(chunks_with_text):
                 return results
         except (json.JSONDecodeError, AttributeError):
             pass
-    
+
     # For thinking models, extract decisions from reasoning output
     if reasoning:
         import re
+
         # Look for "Selected Importance: X" and "Selected Summary: ..." patterns
-        imp_match = re.search(r'Selected\s+Importance\s*:\s*(\d+)', reasoning, re.IGNORECASE)
+        imp_match = re.search(r"Selected\s+Importance\s*:\s*(\d+)", reasoning, re.IGNORECASE)
         sum_match = re.search(r'Selected\s+Summary\s*:\s*["\']([^"\']+)["\']', reasoning, re.IGNORECASE)
-        
+
         if imp_match and sum_match:
             # Try to get the id from context (usually 1 for single chunk)
             return [{"id": 1, "importance": int(imp_match.group(1)), "summary": sum_match.group(1)}]
-        
+
         # Fallback: look for JSON structure pattern with actual values
-        json_match = re.search(r'JSON Structure:\s*(\[.*?\])', reasoning, re.DOTALL)
+        json_match = re.search(r"JSON Structure:\s*(\[.*?\])", reasoning, re.DOTALL)
         if json_match:
             try:
                 results = json.loads(json_match.group(1))
@@ -145,7 +140,7 @@ def call_model_batch(chunks_with_text):
                     return results
             except json.JSONDecodeError:
                 pass
-    
+
     return None
 
 
@@ -162,9 +157,11 @@ def run_enrichment(batch_size=500, chunks_per_call=10, dry_run=False):
 
     # Get remaining count
     try:
-        count_r = requests.post(f"{QDRANT_URL}/collections/{COLLECTION}/points/count", json={
-            "filter": {"must_not": [{"key": "enriched", "match": {"value": True}}]}
-        }, timeout=10)
+        count_r = requests.post(
+            f"{QDRANT_URL}/collections/{COLLECTION}/points/count",
+            json={"filter": {"must_not": [{"key": "enriched", "match": {"value": True}}]}},
+            timeout=10,
+        )
         remaining = count_r.json()["result"]["count"]
     except:
         remaining = "unknown"
@@ -191,7 +188,7 @@ def run_enrichment(batch_size=500, chunks_per_call=10, dry_run=False):
 
     # Process in batches of chunks_per_call
     for i in range(0, len(all_points), chunks_per_call):
-        batch = all_points[i:i + chunks_per_call]
+        batch = all_points[i : i + chunks_per_call]
         chunks_with_text = []
 
         for point in batch:
@@ -226,14 +223,16 @@ def run_enrichment(batch_size=500, chunks_per_call=10, dry_run=False):
 
                 qdrant_batch_update(updates)
                 batch_num = i // chunks_per_call + 1
-                avg_imp = sum(r.get("importance", 0) for r in results[:len(chunks_with_text)]) / len(chunks_with_text)
+                avg_imp = sum(r.get("importance", 0) for r in results[: len(chunks_with_text)]) / len(chunks_with_text)
                 print(f"  [OK] Batch {batch_num}: {len(chunks_with_text)} chunks, avg importance={avg_imp:.1f}")
             else:
                 # Partial or failed parse — mark as enriched to avoid re-processing
                 for point_id, _ in chunks_with_text:
                     qdrant_batch_update([(point_id, {"importance": 0, "summary": "parse_error"})])
                 total_failed += len(chunks_with_text)
-                print(f"  [FAIL] Batch {i // chunks_per_call + 1}: Parse error ({len(results) if results else 0} results for {len(chunks_with_text)} chunks)")
+                print(
+                    f"  [FAIL] Batch {i // chunks_per_call + 1}: Parse error ({len(results) if results else 0} results for {len(chunks_with_text)} chunks)"
+                )
 
         except Exception as e:
             total_failed += len(chunks_with_text)
