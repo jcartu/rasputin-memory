@@ -42,64 +42,70 @@ def test_bm25_tokenizer_cyrillic():
 
 def test_fact_extractor_single_commit():
     source = (ROOT / "tools" / "fact_extractor.py").read_text()
-    assert '/collections/second_brain/points' not in source
-    assert 'http://localhost:7777/commit' in source
+    assert "/collections/second_brain/points" not in source
+    assert "http://localhost:7777/commit" in source
 
 
 def test_embed_url_consistency():
     source = (ROOT / "tools" / "fact_extractor.py").read_text()
-    assert 'http://localhost:11434/api/embed' in source
-    assert '/api/embeddings' not in source
+    assert "http://localhost:11434/api/embed" in source
+    assert "/api/embeddings" not in source
 
 
 def test_concurrent_commits_no_dupes():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
-    assert '_commit_lock = threading.Lock()' in source
-    assert 'with _commit_lock:' in source
+    assert "_commit_lock = threading.Lock()" in source
+    assert "with _commit_lock:" in source
 
 
 def test_amac_metrics_thread_safe():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
-    assert '_amac_metrics_lock = threading.Lock()' in source
-    assert 'def _inc_metric(key, amount=1):' in source
+    assert "_amac_metrics_lock = threading.Lock()" in source
+    assert "def _inc_metric(key, amount=1):" in source
     assert '_amac_metrics["accepted"] += 1' not in source
 
 
 def test_access_tracking_increments():
     source = (ROOT / "tools" / "hybrid_brain.py").read_text()
     assert '"point_id": point.id' in source
-    assert 'qdrant.retrieve(' in source
-    assert 'for r in results[:10]' not in source
+    assert "qdrant.retrieve(" in source
+    assert "for r in results[:10]" not in source
 
 
 def test_high_importance_not_soft_deleted():
     source = (ROOT / "tools" / "memory_decay.py").read_text()
     assert '"protected_high_importance"' in source
-    assert 'importance >= 80' in source
+    assert "importance >= 80" in source
 
 
 def test_archive_atomicity():
     source = (ROOT / "tools" / "memory_decay.py").read_text()
-    assert 'pending_archive' in source
-    assert 'def recover_pending_archives' in source
-    assert 'recover_pending_archives(execute=execute)' in source
+    assert "pending_archive" in source
+    assert "def recover_pending_archives" in source
+    assert "recover_pending_archives(execute=execute)" in source
 
 
 def test_memory_engine_commit_uses_api():
     source = (ROOT / "tools" / "memory_engine.py").read_text()
-    assert 'requests.post(' in source
-    assert 'http://localhost:7777/commit' in source
+    assert "requests.post(" in source
+    assert "http://localhost:7777/commit" in source
 
 
 def test_consolidator_uses_commit_api():
     source = (ROOT / "tools" / "memory_consolidator_v4.py").read_text()
-    assert 'http://localhost:7777/commit' in source
-    assert '/collections/second_brain/points' not in source
+    assert "http://localhost:7777/commit" in source
+    assert "/collections/second_brain/points" not in source
 
 
 def test_handler_js_uses_process_env_urls():
     source = (ROOT / "hooks" / "openclaw-mem" / "handler.js").read_text()
-    assert 'process.env.MEMORY_API_URL' in source
-    assert 'process.env.HONCHO_URL' in source
-    assert '${MEMORY_API_URL:-' not in source
-    assert 'os.environ.get' not in source
+    assert "process.env.MEMORY_API_URL" in source
+    assert "process.env.HONCHO_URL" in source
+    assert "${MEMORY_API_URL:-" not in source
+    assert "os.environ.get" not in source
+
+
+def test_task14_entity_matching_uses_word_boundaries():
+    source = (ROOT / "tools" / "hybrid_brain.py").read_text()
+    assert "if name.lower() in text_lower" not in source
+    assert 're.search(r"\\b" + re.escape(name.lower()) + r"\\b", text_lower)' in source
