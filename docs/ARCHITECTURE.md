@@ -66,7 +66,7 @@ Total latency: ~150-200ms p95 (mostly embed + rerank)
 When you call `POST /commit {"text": "...", "source": "conversation"}`:
 
 ```
-1. A-MAC Quality Gate: text → Qwen 35B (port 11436)
+1. A-MAC Quality Gate: text → LLM (configured in rasputin.toml [amac])
    - Scores Relevance, Novelty, Specificity (0–10 each)
    - Composite = mean of all three
    - Composite < 4.0 → REJECTED (logged to /tmp/amac_rejected.log)

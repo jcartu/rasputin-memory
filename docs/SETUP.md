@@ -20,11 +20,11 @@ git clone https://github.com/jcartu/rasputin-memory.git
 cd rasputin-memory
 
 # 2. Install dependencies
-pip install -r requirements.txt
+pip install -r requirements-core.txt
+# Optional: pip install -r requirements-ml.txt  # for reranker/embedding GPU server
 
-# 3. Configure environment
-cp .env.example .env
-# Edit .env if you need non-default ports
+# 3. Configure
+# Edit config/rasputin.toml if you need non-default ports or models
 
 # 4. Start databases (Qdrant + FalkorDB)
 docker-compose up -d
@@ -124,13 +124,20 @@ Set `LLM_API_URL` in your `.env` to point to any OpenAI-compatible server (Ollam
 
 ---
 
-## Production (PM2)
+## Production Deployment
+
+Use any process manager to keep the server running:
 
 ```bash
-npm install -g pm2
-pm2 start tools/hybrid_brain.py --name rasputin --interpreter python3
-pm2 startup
-pm2 save
+# systemd (recommended for Linux)
+# Create /etc/systemd/system/rasputin.service, then:
+systemctl enable --now rasputin
+
+# Docker (see docker-compose.yml)
+docker compose up -d
+
+# Or any process manager (supervisord, PM2, etc.)
+python3 tools/hybrid_brain.py --port 7777
 ```
 
 ---

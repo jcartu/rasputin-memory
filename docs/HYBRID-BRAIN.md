@@ -267,7 +267,7 @@ FALKORDB_GRAPH = "brain"
 
 # A-MAC settings
 AMAC_THRESHOLD = 4.0           # Minimum composite score to accept
-AMAC_OLLAMA_MODEL = "qwen3.5:35b"
+AMAC_OLLAMA_MODEL = "qwen2.5:14b"  # Set in config/rasputin.toml [amac] section
 AMAC_REJECT_LOG = "/tmp/amac_rejected.log"
 AMAC_TIMEOUT = 30              # Seconds — fail-open on timeout
 
@@ -287,8 +287,8 @@ python3 hybrid_brain.py serve
 # Custom port
 python3 hybrid_brain.py serve 8888
 
-# Or with PM2
-pm2 start hybrid_brain.py --name rasputin --interpreter python3
+# Or with any process manager (systemd, supervisord, etc.)
+# See docs/SETUP.md for production deployment options
 ```
 
 The server is a simple Python `http.server.BaseHTTPRequestHandler` subclass — no external web framework required.
@@ -322,7 +322,7 @@ There are two Python files — here's the difference:
 | | `hybrid_brain.py` | `memory_engine.py` |
 |---|---|---|
 | **Role** | HTTP API server | CLI tool / library |
-| **Runs as** | PM2 daemon on port 7777 | Called directly or imported |
+| **Runs as** | Long-running server on port 7777 | Called directly or imported |
 | **A-MAC** | ✅ Full quality gate | ❌ Simpler commit |
 | **Graph** | ✅ FalkorDB integration | ❌ JSON entity graph only |
 | **BM25** | ✅ via bm25_search.py | ✅ via bm25_search.py |

@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct
 
 from brain import _state
 from brain import embedding
@@ -99,8 +99,6 @@ def commit_memory(
             payload.update(safe_metadata)
 
         try:
-            from qdrant_client.models import PointStruct
-
             _state.qdrant.upsert(
                 collection_name=_state.COLLECTION,
                 points=[PointStruct(id=point_id, vector=vector, payload=payload)],

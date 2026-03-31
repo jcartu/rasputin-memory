@@ -33,6 +33,10 @@ class SimpleRateLimiter:
                 return False
             entries.append(now)
             self.history[key] = entries
+            # Evict stale keys to prevent unbounded memory growth
+            if len(self.history) > 10000:
+                cutoff = now - 60
+                self.history = {k: v for k, v in self.history.items() if v and v[-1] > cutoff}
             return True
 
 
@@ -150,7 +154,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             health = {
                 "status": "ok",
                 "engine": "hybrid-brain",
-                "version": "4.0-intelligence",
+                "version": "0.3.0",
                 "components": {
                     "qdrant": "unknown",
                     "falkordb": "unknown",
@@ -248,7 +252,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             if not self._enforce_rate_limit("/search"):
                 return
             query = data.get("q", data.get("query", ""))
-            limit = data.get("limit", 10)
+            limit = min(max(int(data.get("limit", 10)), 1), 100)
             source = data.get("source", None)
             expand_raw = data.get("expand", True)
             if isinstance(expand_raw, str):

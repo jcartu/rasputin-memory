@@ -176,13 +176,13 @@ def pass1_extract_facts(chunk_text):
 - If a fact is too vague to be useful to a stranger who doesn't know the user, DON'T include it
 
 ✅ GOOD EXAMPLES (include these):
-- "The user increased their medication dosage from 5mg to 7.5mg on March 3"
-- "User's spouse started a health drink business called BrandX"
-- "User's father had a double lung transplant at a major hospital"
-- "The user got married on January 14, 2026"
-- "The user runs a SaaS company with growing monthly revenue across multiple products"
-- "The user takes testosterone propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6"
-- "User's brother got married in a ceremony in Feb 2026"
+- "The team's quarterly revenue reached $2.3M in Q1 2026"
+- "Alice started a new role as VP Engineering at Acme Corp on March 3"
+- "The company signed a 3-year contract with Globex for $500K/year"
+- "Bob relocated from New York to London in January 2026"
+- "The product launch date was moved from April to June 2026"
+- "The user's preferred stack is Python + FastAPI + Qdrant + FalkorDB"
+- "The team hired 3 new engineers in February, bringing headcount to 12"
 
 ❌ BAD EXAMPLES (DO NOT include these):
 - "The user has family members" (too vague)
@@ -508,7 +508,7 @@ def main():
     state = load_state()
 
     print(f"🧠 Fact Extractor — {'ALL sessions' if process_all else f'last {hours}h'}")
-    print("  LLM proxy: qwen3.5-122b-a10b via localhost:11436")
+    print(f"  LLM proxy: {LLM_MODEL} via {LLM_PROXY_URL}")
     print(f"  Existing facts: {len(state.get('fact_hashes', []))}")
 
     # Extract messages

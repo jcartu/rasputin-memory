@@ -79,7 +79,7 @@ The hook automatically searches memory on every user message and writes results 
 }
 ```
 
-**Agent rule** (in AGENTS.md or system prompt):
+**Agent rule** (in your system prompt):
 ```
 At the start of every response:
 1. Check if memory/last-recall.md exists and was modified in the last 60 seconds
@@ -269,9 +269,9 @@ python3 tools/memory_engine.py challenge "We should spend $50K on Google Ads"
 
 ---
 
-## AGENTS.md Configuration
+## System Prompt Configuration
 
-Add these rules to your AGENTS.md (or equivalent system prompt) for automatic memory behavior:
+Add these rules to your agent's system prompt for automatic memory behavior:
 
 ```markdown
 ## Memory
