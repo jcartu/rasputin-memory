@@ -69,8 +69,22 @@ def test_dedup_removes_same_thread(monkeypatch):
 
 def test_source_tiering_weights():
     rows = [
-        {"score": 0.7, "importance": 60, "source": "conversation", "retrieval_count": 0, "days_old": 10},
-        {"score": 0.7, "importance": 60, "source": "web_page", "retrieval_count": 0, "days_old": 10},
+        {
+            "score": 0.7,
+            "importance": 60,
+            "source": "conversation",
+            "source_weight": 0.95,
+            "retrieval_count": 0,
+            "days_old": 10,
+        },
+        {
+            "score": 0.7,
+            "importance": 60,
+            "source": "web_page",
+            "source_weight": 0.35,
+            "retrieval_count": 0,
+            "days_old": 10,
+        },
     ]
     out = scoring.apply_multifactor_scoring(rows)
     assert out[0]["source"] == "conversation"

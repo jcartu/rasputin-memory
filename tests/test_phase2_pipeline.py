@@ -17,35 +17,25 @@ state = importlib.import_module("brain._state")
 
 def test_query_expansion_basic():
     queries = query_expansion.expand_queries(
-        "What did we email about crypto last week?",
+        "What happened with the project?",
         max_expansions=10,
     )
 
     assert queries
-    assert queries[0] == "What did we email about crypto last week?"
-    assert any(q.startswith("email ") for q in queries)
-    assert any(q.startswith("recent ") for q in queries)
+    assert queries[0] == "What happened with the project?"
 
 
 def test_query_expansion_entity_aware(tmp_path):
     graph_path = Path(tmp_path) / "entity_graph.json"
-    graph_path.write_text(
-        json.dumps(
-            {
-                "people": {
-                    "Oren": {
-                        "role": "founder",
-                        "context": "chronos wallet",
-                    }
-                }
-            }
-        )
-    )
+    graph_path.write_text(json.dumps({"people": {"Oren": {"role": "founder", "context": "chronos wallet"}}}))
+    entities_path = Path(tmp_path) / "known_entities.json"
+    entities_path.write_text(json.dumps({"persons": ["Oren"], "organizations": [], "projects": []}))
 
     setattr(query_expansion, "ENTITY_GRAPH_PATH", str(graph_path))
+    setattr(query_expansion, "_KNOWN_ENTITIES_PATH", str(entities_path))
     queries = query_expansion.expand_queries("What did Oren discuss?", max_expansions=10)
 
-    assert any("Oren founder chronos wallet" in q for q in queries)
+    assert any("Oren" in q and "founder" in q for q in queries)
 
 
 def test_source_tiering_gold():

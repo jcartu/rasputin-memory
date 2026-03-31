@@ -14,6 +14,12 @@ from brain import entities
 from brain import graph
 
 try:
+    _source_tiering = importlib.import_module("pipeline.source_tiering")
+except ModuleNotFoundError:
+    _source_tiering = importlib.import_module("tools.pipeline.source_tiering")
+get_source_weight = _source_tiering.get_source_weight
+
+try:
     _contradiction = importlib.import_module("pipeline.contradiction")
 except ModuleNotFoundError:
     _contradiction = importlib.import_module("tools.pipeline.contradiction")
@@ -63,10 +69,7 @@ def commit_memory(
             contradiction_ids = [
                 hit.get("existing_id") for hit in contradiction_hits if hit.get("existing_id") is not None
             ]
-            lowered = text.lower()
-            if contradiction_ids and any(
-                token in lowered for token in ("now", "currently", "no longer", "stopped", "moved to", "updated")
-            ):
+            if contradiction_ids:
                 supersedes_ids = list(contradiction_ids)
 
         timestamp = datetime.now().isoformat()
@@ -74,6 +77,7 @@ def commit_memory(
         payload = {
             "text": text[:4000],
             "source": source,
+            "source_weight": get_source_weight(source),
             "date": timestamp,
             "importance": importance,
             "auto_committed": True,

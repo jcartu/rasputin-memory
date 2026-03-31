@@ -1,19 +1,8 @@
 from __future__ import annotations
 
-import importlib
 import math
 from datetime import datetime, timezone
 from typing import Any, Optional
-
-from brain import _state
-
-_ = _state
-
-try:
-    _source_tiering = importlib.import_module("pipeline.source_tiering")
-except ModuleNotFoundError:
-    _source_tiering = importlib.import_module("tools.pipeline.source_tiering")
-get_source_weight = _source_tiering.get_source_weight
 
 
 def _parse_date(date_str: str) -> Optional[Any]:
@@ -89,8 +78,7 @@ def apply_multifactor_scoring(results: list[dict[str, Any]]) -> list[dict[str, A
             importance = 50
         importance_norm = min(importance / 100.0, 1.0)
 
-        source = row.get("source", "")
-        source_weight = get_source_weight(source)
+        source_weight = row.get("source_weight", 0.5)
 
         retrieval_count = row.get("retrieval_count", 0) or 0
         retrieval_boost = min(retrieval_count / 10.0, 1.0)

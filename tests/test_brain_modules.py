@@ -91,12 +91,20 @@ def test_apply_temporal_decay_math():
     assert out[0]["score"] == expected
 
 
-def test_apply_multifactor_scoring_composite(monkeypatch):
-    monkeypatch.setattr(scoring, "get_source_weight", lambda _source: 0.8)
-    rows = [{"score": 0.8, "importance": 80, "source": "conversation", "retrieval_count": 5, "days_old": 3}]
+def test_apply_multifactor_scoring_composite():
+    rows = [
+        {
+            "score": 0.8,
+            "importance": 80,
+            "source": "conversation",
+            "source_weight": 0.95,
+            "retrieval_count": 5,
+            "days_old": 3,
+        }
+    ]
     out = scoring.apply_multifactor_scoring(rows)
 
-    multiplier = 0.35 + 0.25 * 0.8 + 0.20 * 1.0 + 0.10 * 0.8 + 0.10 * 0.5
+    multiplier = 0.35 + 0.25 * 0.8 + 0.20 * 1.0 + 0.10 * 0.95 + 0.10 * 0.5
     assert out[0]["multifactor"] == round(multiplier, 3)
     assert out[0]["score"] == round(0.8 * multiplier, 4)
 

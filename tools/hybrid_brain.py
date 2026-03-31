@@ -58,7 +58,7 @@ amac_gate = amac.amac_gate
 _parse_date = scoring._parse_date
 apply_temporal_decay = scoring.apply_temporal_decay
 apply_multifactor_scoring = scoring.apply_multifactor_scoring
-get_source_weight = scoring.get_source_weight
+get_source_weight = commit.get_source_weight
 
 _decode = graph._decode
 _safe_graph_label = graph._safe_graph_label
@@ -73,7 +73,6 @@ apply_relevance_feedback = commit.apply_relevance_feedback
 
 expand_queries = search.expand_queries
 bm25_rerank = search.bm25_rerank
-STOP_WORDS = search.STOP_WORDS
 qdrant_search = search.qdrant_search
 _update_access_tracking = search._update_access_tracking
 hybrid_search = search.hybrid_search
