@@ -97,19 +97,15 @@ When you call `POST /commit {"text": "...", "source": "conversation"}`:
 
 ---
 
-## Multi-Angle Query Expansion
+## Query Expansion
 
-`memory_engine.py` expands every query into up to 12 search angles before embedding:
+`pipeline/query_expansion.py` expands queries using known entities before embedding:
 
-1. **Original query** — baseline
-2. **Proper noun extraction** — each capitalized entity searched separately
-3. **Entity graph lookup** — augment entity queries with graph context
-4. **Topic rephrasing** — strip question words, search the clean topic
-5. **Source-specific** — if query mentions "email" or "searched", add source filters
-6. **Temporal expansion** — "last week" queries get a recency boost
-7. **Semantic expansions** — known domain mappings (project planning→planning, product→deposits)
+1. **Original query** — always included as baseline
+2. **Known entity lookup** — matches query against `config/known_entities.json` (persons, organizations, projects)
+3. **Entity graph enrichment** — augments matched entities with context from `config/entity_graph.json`
 
-All 12 queries are batch-embedded in a single Ollama API call (one HTTP request, all embeddings in parallel). Typical cost: ~55ms for 8 embeddings.
+Expansion is language-agnostic — it matches explicit configured names, not English-specific regex patterns. Source scoping (email, chatgpt, etc.) is handled via the `source_filter` parameter on the search API, not keyword detection.
 
 ---
 
