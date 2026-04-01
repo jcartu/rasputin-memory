@@ -17,7 +17,7 @@ Usage:
 """
 
 import argparse
-import fcntl
+import importlib
 import json
 import os
 import sys
@@ -30,25 +30,19 @@ from qdrant_client.models import PointIdsList
 from pipeline.dateparse import parse_date
 from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
+try:
+    _locking = importlib.import_module("pipeline.locking")
+except ModuleNotFoundError:
+    _locking = importlib.import_module("tools.pipeline.locking")
+acquire_pipeline_lock = _locking.acquire_lock
+
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
 EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 CHECKPOINT_FILE = os.path.join(os.path.dirname(__file__), ".dedup_checkpoint.json")
 LOG_FILE = os.path.join(os.path.dirname(__file__), ".dedup_log.jsonl")
-LOCK_FILE = "/tmp/rasputin_memory_dedup.lock"
-
 qdrant = QdrantClient(url=QDRANT_URL)
-
-
-def acquire_lock():
-    lock_fd = open(LOCK_FILE, "w")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return lock_fd
-    except OSError:
-        print("[INFO] Another memory_dedup instance is running. Exiting.")
-        sys.exit(0)
 
 
 def load_checkpoint():
@@ -351,7 +345,11 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
 
 
 if __name__ == "__main__":
-    _lock_fd = acquire_lock()
+    try:
+        _lock_fd = acquire_pipeline_lock("memory_dedup")
+    except OSError:
+        print("[INFO] Another memory_dedup instance is running. Exiting.")
+        sys.exit(0)
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Deduplication Engine")
     parser.add_argument("--threshold", type=float, default=0.92, help="Cosine similarity threshold (default: 0.92)")
     parser.add_argument("--limit", type=int, default=None, help="Max vectors to scan (default: all)")

@@ -16,7 +16,7 @@ Usage:
 """
 
 import argparse
-import fcntl
+import importlib
 import os
 import re
 import sys
@@ -37,10 +37,21 @@ from qdrant_client.models import (
 from pipeline.dateparse import parse_date
 from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
+try:
+    _locking = importlib.import_module("pipeline.locking")
+except ModuleNotFoundError:
+    _locking = importlib.import_module("tools.pipeline.locking")
+acquire_pipeline_lock = _locking.acquire_lock
+
+try:
+    _qdrant_batch = importlib.import_module("pipeline.qdrant_batch")
+except ModuleNotFoundError:
+    _qdrant_batch = importlib.import_module("tools.pipeline.qdrant_batch")
+scroll_all = _qdrant_batch.scroll_all
+
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
 ARCHIVE_COLLECTION = "memories_archive"
-LOCK_FILE = "/tmp/rasputin_memory_decay.lock"
 
 # Thresholds
 ARCHIVE_DAYS = 90  # Not accessed in 90 days + low importance → archive
@@ -48,16 +59,6 @@ SOFT_DELETE_DAYS = 180  # Not accessed in 180 days → soft delete
 LOW_IMPORTANCE_THRESHOLD = 40  # Below this = "low importance"
 
 qdrant = QdrantClient(url=QDRANT_URL)
-
-
-def acquire_lock():
-    lock_fd = open(LOCK_FILE, "w")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return lock_fd
-    except OSError:
-        print("[INFO] Another memory_decay instance is running. Exiting.")
-        sys.exit(0)
 
 
 def ensure_archive_collection():
@@ -155,26 +156,14 @@ def scan_memories(limit=None):
     soft_delete_candidates = []
     age_distribution = defaultdict(int)
 
-    offset = None
-    batch_size = 100
-
-    while True:
-        try:
-            points, next_offset = qdrant.scroll(
-                collection_name=COLLECTION,
-                limit=batch_size,
-                offset=offset,
-                with_payload=True,
-                with_vectors=False,
-            )
-        except Exception as e:
-            print(f"[ERROR] Scroll failed: {e}")
-            break
-
-        if not points:
-            break
-
-        for point in points:
+    try:
+        for point in scroll_all(
+            qdrant_client=qdrant,
+            collection=COLLECTION,
+            batch_size=100,
+            with_payload=True,
+            with_vectors=False,
+        ):
             stats["total"] += 1
             payload = dict(point.payload) if point.payload else {}
 
@@ -229,19 +218,13 @@ def scan_memories(limit=None):
             else:
                 stats["active"] += 1
 
+            if stats["total"] % 10000 == 0:
+                print(f"  Scanned {stats['total']:,}...")
+
             if limit and stats["total"] >= limit:
                 break
-
-        if limit and stats["total"] >= limit:
-            break
-
-        offset = next_offset
-        if offset is None:
-            break
-
-        # Progress
-        if stats["total"] % 10000 == 0:
-            print(f"  Scanned {stats['total']:,}...")
+    except Exception as e:
+        print(f"[ERROR] Scroll failed: {e}")
 
     return stats, archive_candidates, soft_delete_candidates, age_distribution
 
@@ -507,7 +490,11 @@ def run_decay(execute=False, stats_only=False, limit=None):
 
 
 if __name__ == "__main__":
-    _lock_fd = acquire_lock()
+    try:
+        _lock_fd = acquire_pipeline_lock("memory_decay")
+    except OSError:
+        print("[INFO] Another memory_decay instance is running. Exiting.")
+        sys.exit(0)
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Decay Engine")
     parser.add_argument("--execute", action="store_true", help="Actually archive/delete (default: dry run)")
     parser.add_argument("--stats", action="store_true", help="Show age distribution only")

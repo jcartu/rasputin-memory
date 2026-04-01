@@ -13,6 +13,12 @@ from qdrant_client import QdrantClient
 from pipeline.dateparse import parse_date
 
 try:
+    _qdrant_batch = importlib.import_module("pipeline.qdrant_batch")
+except ModuleNotFoundError:
+    _qdrant_batch = importlib.import_module("tools.pipeline.qdrant_batch")
+scroll_all = _qdrant_batch.scroll_all
+
+try:
     _config_module = importlib.import_module("config")
 except ModuleNotFoundError:
     _config_module = importlib.import_module("tools.config")
@@ -86,39 +92,30 @@ def recalculate_importance(
 
     updated = 0
     scanned = 0
-    offset = None
+    for point in scroll_all(
+        qdrant_client=qdrant_client,
+        collection=collection,
+        batch_size=batch_size,
+        with_payload=True,
+        with_vectors=False,
+    ):
+        scanned += 1
+        payload = point.payload or {}
+        new_importance = calculate_new_importance(payload, now, topics)
+        old_importance = payload.get("importance", 50)
+        try:
+            old_importance = int(old_importance)
+        except (TypeError, ValueError):
+            old_importance = 50
 
-    while True:
-        points, offset = qdrant_client.scroll(
-            collection_name=collection,
-            limit=batch_size,
-            offset=offset,
-            with_payload=True,
-            with_vectors=False,
-        )
-        if not points:
-            break
-
-        for point in points:
-            scanned += 1
-            payload = point.payload or {}
-            new_importance = calculate_new_importance(payload, now, topics)
-            old_importance = payload.get("importance", 50)
-            try:
-                old_importance = int(old_importance)
-            except (TypeError, ValueError):
-                old_importance = 50
-
-            if new_importance != old_importance:
-                updated += 1
-                if execute:
-                    qdrant_client.set_payload(
-                        collection_name=collection,
-                        points=[point.id],
-                        payload={"importance": new_importance, "importance_recalculated_at": now.isoformat()},
-                    )
-        if offset is None:
-            break
+        if new_importance != old_importance:
+            updated += 1
+            if execute:
+                qdrant_client.set_payload(
+                    collection_name=collection,
+                    points=[point.id],
+                    payload={"importance": new_importance, "importance_recalculated_at": now.isoformat()},
+                )
 
     return {
         "ok": True,

@@ -13,13 +13,19 @@ Usage:
 """
 
 import json
+import importlib
 import os
 import sys
-import fcntl
 import hashlib
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
+
+try:
+    _locking = importlib.import_module("pipeline.locking")
+except ModuleNotFoundError:
+    _locking = importlib.import_module("tools.pipeline.locking")
+acquire_pipeline_lock = _locking.acquire_lock
 
 WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / ".openclaw" / "workspace"))
 SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / ".openclaw/agents/main/sessions"))
@@ -27,21 +33,10 @@ FACTS_FILE = WORKSPACE / "memory" / "facts.jsonl"
 STATE_FILE = WORKSPACE / "memory" / "fact_extractor_state.json"
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
-LOCK_FILE = "/tmp/rasputin_fact_extractor.lock"
 
 # LLM proxy endpoint (OpenAI-compatible or Anthropic-compatible)
 LLM_PROXY_URL = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
-
-
-def acquire_lock():
-    lock_fd = open(LOCK_FILE, "w")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return lock_fd
-    except OSError:
-        print("[INFO] Another fact_extractor instance is running. Exiting.")
-        sys.exit(0)
 
 
 def load_state():
@@ -498,7 +493,11 @@ def purge_garbage_facts():
 
 
 def main():
-    _lock_fd = acquire_lock()
+    try:
+        _lock_fd = acquire_pipeline_lock("fact_extractor")
+    except OSError:
+        print("[INFO] Another fact_extractor instance is running. Exiting.")
+        sys.exit(0)
     process_all = "--all" in sys.argv
     hours = 4
     for i, arg in enumerate(sys.argv):

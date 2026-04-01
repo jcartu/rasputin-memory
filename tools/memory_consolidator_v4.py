@@ -6,8 +6,8 @@ Large context windows per session (30K chars), fresh dedup (no old hashes).
 Resume-safe.
 """
 
-import fcntl
 import json
+import importlib
 import os
 import sys
 import time
@@ -19,6 +19,12 @@ import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+try:
+    _locking = importlib.import_module("pipeline.locking")
+except ModuleNotFoundError:
+    _locking = importlib.import_module("tools.pipeline.locking")
+acquire_pipeline_lock = _locking.acquire_lock
+
 # === CONFIG ===
 SESSIONS_DIR = os.environ.get("SESSIONS_DIR", os.path.join(os.path.dirname(__file__), "..", "sessions"))
 OUT_DIR = os.environ.get("CONSOLIDATION_DIR", os.path.expanduser("./memory/consolidation"))
@@ -28,7 +34,6 @@ PROGRESS_FILE = os.path.join(OUT_DIR, "progress-v4.json")
 OUTPUT_FILE = os.path.join(OUT_DIR, "extracted-v4.jsonl")
 SUMMARY_FILE = os.path.join(OUT_DIR, "CONSOLIDATION-REPORT-v4.md")
 LOG_FILE = os.path.join(OUT_DIR, "consolidator-v4.log")
-LOCK_FILE = "/tmp/rasputin_memory_consolidator_v4.lock"
 
 _default_endpoint = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/completions")
 _default_model = os.environ.get("LLM_MODEL", "qwen2.5:14b")
@@ -51,16 +56,6 @@ stats_lock = threading.Lock()
 seen_hashes = set()
 stats = {"sessions": 0, "facts": 0, "committed": 0, "skipped": 0, "errors": 0}
 processed_set = set()
-
-
-def acquire_lock():
-    lock_fd = open(LOCK_FILE, "w")
-    try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return lock_fd
-    except OSError:
-        print("[INFO] Another memory_consolidator_v4 instance is running. Exiting.")
-        sys.exit(0)
 
 
 def log(msg):
@@ -312,7 +307,11 @@ def process_session(fpath, endpoint, worker_id):
 
 
 def main():
-    _lock_fd = acquire_lock()
+    try:
+        _lock_fd = acquire_pipeline_lock("memory_consolidator_v4")
+    except OSError:
+        print("[INFO] Another memory_consolidator_v4 instance is running. Exiting.")
+        sys.exit(0)
     global start_time, seen_hashes, processed_set, stats
 
     # Clear old log

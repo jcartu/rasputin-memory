@@ -8,6 +8,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import PointIdsList
 
 try:
+    _qdrant_batch = importlib.import_module("pipeline.qdrant_batch")
+except ModuleNotFoundError:
+    _qdrant_batch = importlib.import_module("tools.pipeline.qdrant_batch")
+scroll_all = _qdrant_batch.scroll_all
+
+try:
     _config_module = importlib.import_module("config")
 except ModuleNotFoundError:
     _config_module = importlib.import_module("tools.config")
@@ -19,28 +25,36 @@ def backfill_schema(batch_size: int = 100) -> int:
     qdrant = QdrantClient(url=cfg["qdrant"]["url"])
     collection = cfg["qdrant"]["collection"]
 
-    offset = None
     total = 0
     embedding_model = cfg["embeddings"]["model"]
+    ids_batch: list[Any] = []
 
-    while True:
-        points, offset = qdrant.scroll(
-            collection_name=collection,
-            offset=offset,
-            limit=batch_size,
-            with_payload=False,
-            with_vectors=False,
-        )
-        if not points:
-            break
-
-        ids = [point.id for point in points]
+    for point in scroll_all(
+        qdrant_client=qdrant,
+        collection=collection,
+        batch_size=batch_size,
+        with_payload=False,
+        with_vectors=False,
+    ):
+        ids_batch.append(point.id)
+        if len(ids_batch) < batch_size:
+            continue
         qdrant.set_payload(
             collection_name=collection,
-            points=PointIdsList(points=cast(list[Any], ids)),
+            points=PointIdsList(points=cast(list[Any], ids_batch)),
             payload={"embedding_model": embedding_model, "schema_version": "0.3"},
         )
-        total += len(ids)
+        total += len(ids_batch)
+        print(f"Backfilled {total} points", flush=True)
+        ids_batch = []
+
+    if ids_batch:
+        qdrant.set_payload(
+            collection_name=collection,
+            points=PointIdsList(points=cast(list[Any], ids_batch)),
+            payload={"embedding_model": embedding_model, "schema_version": "0.3"},
+        )
+        total += len(ids_batch)
         print(f"Backfilled {total} points", flush=True)
 
     return total
