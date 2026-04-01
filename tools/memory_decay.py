@@ -248,16 +248,30 @@ def recover_pending_archives(execute=False):
         return len(points)
 
     try:
+        ids = [p.id for p in points]
+        archived_ids = set()
+        try:
+            archived_points = qdrant.retrieve(
+                collection_name=ARCHIVE_COLLECTION,
+                ids=ids,
+                with_payload=False,
+                with_vectors=False,
+            )
+            archived_ids = {p.id for p in archived_points or []}
+        except Exception:
+            archived_ids = set()
+
         archive_points = []
-        ids = []
         for p in points:
+            if p.id in archived_ids:
+                continue
             payload = dict(p.payload) if p.payload else {}
             payload["archived_at"] = datetime.now().isoformat()
             payload.setdefault("archive_reason", "pending_recovery")
             archive_points.append(PointStruct(id=p.id, vector=cast(Any, p.vector), payload=payload))
-            ids.append(p.id)
 
-        qdrant.upsert(collection_name=ARCHIVE_COLLECTION, points=archive_points)
+        if archive_points:
+            qdrant.upsert(collection_name=ARCHIVE_COLLECTION, points=archive_points)
         qdrant.delete(collection_name=COLLECTION, points_selector=PointIdsList(points=ids))
         recovered = len(ids)
     except Exception as e:
