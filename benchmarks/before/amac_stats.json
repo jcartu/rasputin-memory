@@ -1,0 +1,46 @@
+{
+  "benchmark_date": "2026-03-31T16:00:29.504800",
+  "method": "heuristic (LLM scoring not feasible - qwen3 thinking model overhead ~3s/call)",
+  "sample_size": 500,
+  "threshold": 4.0,
+  "composite_scores": {
+    "mean": 6.352,
+    "median": 6.83,
+    "stdev": 0.901,
+    "min": 2.93,
+    "max": 7.33
+  },
+  "dimension_means": {
+    "R_relevance": 5.631,
+    "N_novelty": 6.991,
+    "S_specificity": 6.441
+  },
+  "rejection_rate_at_4": 0.056,
+  "would_reject_count": 28,
+  "score_histogram": {
+    "0-1": 0,
+    "1-2": 0,
+    "2-3": 1,
+    "3-4": 27,
+    "4-5": 19,
+    "5-6": 47,
+    "6-7": 371,
+    "7-8": 35,
+    "8-9": 0,
+    "9-10": 0
+  },
+  "mean_score_by_source": {
+    "perplexity": 6.65,
+    "swarm-scout": 6.02,
+    "swarm-vanguard": 5.83,
+    "daily-retro": 5.83,
+    "conversation": 5.53,
+    "session-march-17": 5.13,
+    "manual": 4.99,
+    "consolidator-v4": 4.87,
+    "fitbit": 4.75,
+    "auto-benchmark": 4.47,
+    "matrix": 4.28,
+    "telegram": 4.17
+  }
+}

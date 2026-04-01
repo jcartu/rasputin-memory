@@ -1,0 +1,4369 @@
+{
+  "benchmark_date": "2026-03-31T15:51:53.534153",
+  "aggregate": {
+    "total_queries": 50,
+    "successful_queries": 50,
+    "mean_mrr": 0.9183,
+    "mean_p_at_1": 0.9,
+    "mean_p_at_3": 0.8467,
+    "mean_p_at_5": 0.836,
+    "mean_p_at_10": 0.814,
+    "median_latency_ms": 180.84,
+    "p95_latency_ms": 204.63,
+    "p99_latency_ms": 214.29,
+    "min_latency_ms": 150.27,
+    "max_latency_ms": 214.29
+  },
+  "per_category": {
+    "personal": {
+      "n": 10,
+      "mean_mrr": 1.0,
+      "mean_p_at_1": 1.0,
+      "mean_p_at_3": 0.9333,
+      "mean_p_at_5": 0.86,
+      "mean_latency_ms": 176.01
+    },
+    "business": {
+      "n": 10,
+      "mean_mrr": 1.0,
+      "mean_p_at_1": 1.0,
+      "mean_p_at_3": 1.0,
+      "mean_p_at_5": 1.0,
+      "mean_latency_ms": 166.28
+    },
+    "technical": {
+      "n": 10,
+      "mean_mrr": 1.0,
+      "mean_p_at_1": 1.0,
+      "mean_p_at_3": 1.0,
+      "mean_p_at_5": 1.0,
+      "mean_latency_ms": 180.16
+    },
+    "people": {
+      "n": 10,
+      "mean_mrr": 0.8333,
+      "mean_p_at_1": 0.8,
+      "mean_p_at_3": 0.7667,
+      "mean_p_at_5": 0.76,
+      "mean_latency_ms": 189.79
+    },
+    "temporal": {
+      "n": 5,
+      "mean_mrr": 0.85,
+      "mean_p_at_1": 0.8,
+      "mean_p_at_3": 0.6667,
+      "mean_p_at_5": 0.72,
+      "mean_latency_ms": 174.6
+    },
+    "edge_cases": {
+      "n": 5,
+      "mean_mrr": 0.6667,
+      "mean_p_at_1": 0.6,
+      "mean_p_at_3": 0.4,
+      "mean_p_at_5": 0.4,
+      "mean_latency_ms": 178.13
+    }
+  },
+  "queries": [
+    {
+      "query": "Josh's wife's name",
+      "category": "personal",
+      "latency_ms": 193.69,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Family members] Josh's wife's name is Alexandra.",
+          "score": 0.3658,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's wife/partner is named Alexandra 'Sasha'",
+          "score": 0.5016,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Family members] Josh's wife is named Alexandra, not just Sasha. They were married on January 14, 2026.",
+          "score": 0.363,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Relationships] Sasha is Josh's wife.",
+          "score": 0.3479,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Relationships] Josh's wife is Sasha, who runs a keto drink business called 'Beauty Addicted'.",
+          "score": 0.3467,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh's wife is Alexandra (full name Alexandra), married Jan 14, 2026. Cats Motya and Richard came when she moved in (mid-2025). Brother Jonathan's wed",
+          "score": 0.3132,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Life events] Josh married Alexandra 'Sasha' on January 14, 2026",
+          "score": 0.3067,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Life events] Josh's wife Sasha has an IVF clinic consultation scheduled for March 15, 2026, at 15:30",
+          "score": 0.3044,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh wife Alexandra \"Sasha\" → IVF planning with fertility supplements (Orthomol Natal for her, Fertil Plus for him), married Jan 14 2026, explored Can",
+          "score": 0.3167,
+          "source": "conversation",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Family members] Josh Cartu's wife is Alexandra 'Sasha' Cartu (Russian), married on January 14, 2026",
+          "score": 0.3384,
+          "source": "fact-extractor",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        2,
+        2,
+        2,
+        2,
+        3,
+        0,
+        2,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 0.7
+    },
+    {
+      "query": "Josh's cats",
+      "category": "personal",
+      "latency_ms": 181.36,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Family members] Josh has two cats named Motya and Richard, which came with Sasha when she moved in around mid-2025",
+          "score": 0.4103,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Hobbies, interests, possessions] Josh has two cats named Motya and Richard, which came when Alexandra moved in (mid-2025).",
+          "score": 0.3383,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu owns cats Motya and Richard, came with Sasha when she moved in mid-2025. Josh researched hypoallergenic cat breeds available in Russia. Con",
+          "score": 0.3403,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu wife: Alexandra \"Sasha\" (married Jan 14, 2026). IVF planning - Orthomol Natal pre for her, Fertil Plus for him. Cats: Motya & Richard (came",
+          "score": 0.332,
+          "source": "conversation",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Josh Cartu -> Alexandra Sasha (wife, married Jan 14 2026): IVF planning Feb-Mar 2026 with fertility optimization stack. Context: Josh researching Cana",
+          "score": 0.2938,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh's wife is Alexandra (full name Alexandra), married Jan 14, 2026. Cats Motya and Richard came when she moved in (mid-2025). Brother Jonathan's wed",
+          "score": 0.2824,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Personal fact [pets]: Josh has cats.",
+          "score": 0.3902,
+          "source": "fact_extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Sasha (Alexandra) is Josh Cartus wife, married January 14, 2026. She is Russian and Josh explored options for her to get a Canadian passport from Russ",
+          "score": 0.2989,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's cat named Richard is being treated with 1mg of Terazosin (Kornam 2mg, half dose)",
+          "score": 0.2694,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shaycoon Mobile Mobile:\n[Josh] Hey, it's Josh Cartu from many years ago.... the Canadian guy who adopted Yoyo :)\n[Josh] Do ",
+          "score": 0.2764,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        0,
+        3,
+        3,
+        0,
+        3,
+        0,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 0.8,
+      "p_at_10": 0.7
+    },
+    {
+      "query": "Where does Josh live",
+      "category": "personal",
+      "latency_ms": 165.67,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Locations] Josh lives in Moscow (implied by Anat's plan to visit him there and the mention of a train ride to Moscow).",
+          "score": 0.3008,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[locations] Josh lives in Moscow.",
+          "score": 0.3457,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Locations] Josh is located in Moscow, Russia (Europe/Moscow timezone).",
+          "score": 0.3487,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Locations] Josh Cartu is 46 years old, Canadian-born, and currently lives in Moscow/SPb, unable to travel outside Russia indefinitely",
+          "score": 0.2804,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Life events] Josh's father still lives in Florida and spends half the year there.",
+          "score": 0.317,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Life events] Josh grew up spending three months a year in Fort Lauderdale.",
+          "score": 0.2994,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Locations] As of March 2026, reports suggest Josh Cartu and his wife may have moved to Georgia (the country), though his whereabouts remain officiall",
+          "score": 0.2721,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Family members] Josh's father had a house in Sunrise Key, Florida.",
+          "score": 0.2961,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[locations] Josh is active in a group chat with the subject 'R D J' and is located in a timezone GMT+3.",
+          "score": 0.2692,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh's wife is Alexandra (full name Alexandra), married Jan 14, 2026. Cats Motya and Richard came when she moved in (mid-2025). Brother Jonathan's wed",
+          "score": 0.2854,
+          "source": "conversation",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        2,
+        2,
+        2,
+        2,
+        0,
+        2,
+        2,
+        0,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 0.8,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "Josh's brother Jonathan",
+      "category": "personal",
+      "latency_ms": 153.92,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Family members] Josh has a brother named Jonathan",
+          "score": 0.4937,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's brother is Jonathan (nickname 'Jon'), who recently got married.",
+          "score": 0.3852,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh has a brother named Jonathan who is getting married in Pushkin, with the venue deposit deadline on March 5, 2026.",
+          "score": 0.3262,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[family members] Josh has a brother named Jonathan who is married to Amina.",
+          "score": 0.3688,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu has a brother named Jonathan who is married to Amina with a ceremony scheduled for February 2026 in Pushkin",
+          "score": 0.3027,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh talked about his brother Jonathan who is getting married to Amina in February 2026 in Pushkin, St Petersburg",
+          "score": 0.3308,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Jonathan (Josh's brother) had a wedding in February 2026 in Pushkin, SPb",
+          "score": 0.2933,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Relationships] Josh's brother is named Jon (Jonathan).",
+          "score": 0.36,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Assistant notes: {'type': 'thinking', 'thinking': 'Josh is having a family argument with his brother Jonathan about hosting cousins (the Eyals) in Mos",
+          "score": 0.2913,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's brother, Jonathan, is getting married to Amina this weekend.",
+          "score": 0.3506,
+          "source": "fact-extractor",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        3,
+        3,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Josh's dad health",
+      "category": "personal",
+      "latency_ms": 167.68,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Health information] Josh's dad is being treated for Parvel and CMV infections with two medications, including acyclovir which is lowering his hemoglo",
+          "score": 0.3175,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Josh's dad has inflammation affecting his bone marrow.",
+          "score": 0.3449,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh's dad Lazar Cartu received double lung transplant at Toronto General Hospital. Lead surgeon is Dr. Shaf Keshavjee. IPF progression halted, FEV1 a",
+          "score": 0.2926,
+          "source": "family_health",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Josh's father Lazar had lung transplant (referenced in predictive-memory files)",
+          "score": 0.3993,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Health information] Josh's dad Lazar underwent a double lung transplant at Toronto General Hospital and had an emergency at Broward hospital in Fort ",
+          "score": 0.3088,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Josh's dad, Lazar, had a medical emergency in Fort Lauderdale (Broward hospital) and was considered for transfer to Mount Sinai. ",
+          "score": 0.2878,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Family members] Josh's father is Lazar Cartu, who had a double lung transplant at Toronto General Hospital led by an Indian surgeon",
+          "score": 0.3365,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Health information] Josh's dad Lazar had a double lung transplant at Toronto General Hospital",
+          "score": 0.3153,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's father had a lung transplant and is due for a follow-up appointment with Dr. Singh at Toronto General.",
+          "score": 0.3125,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Personal fact [Health information]: Josh's dad is in a medical situation, but the details are not specified.",
+          "score": 0.3925,
+          "source": "fact_extractor",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        2,
+        3,
+        2,
+        2,
+        3,
+        2,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Josh birthday",
+      "category": "personal",
+      "latency_ms": 183.91,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Relationships] Josh has a friend or acquaintance named Oren whose birthday is on March 10, 2026.",
+          "score": 0.3455,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Life events] Josh's father Lazar has a birthday on March 24, 2026.",
+          "score": 0.3924,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's birthday is March 11",
+          "score": 0.2939,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 17753888888-1498643065@g.us:\n[77058888821@s.whatsapp.net] Josh Happy Birthday!!! Happiness and further success 🎁🎊👌🏻\n[Josh] ",
+          "score": 0.2631,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79111737080@s.whatsapp.net:\n[Josh] Here is the final invitation including the dinner arrangements! Can't wait to see you an",
+          "score": 0.2638,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Emilia Aziend:\n[Emilia Aziend] Happy Birthday Josh! 🎂🎂🎂🎂😘😘😘\n[Josh] Thank you!!!",
+          "score": 0.2779,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 36302117550@s.whatsapp.net:\n[36302117550@s.whatsapp.net] Josh wishing you a very happy   Birthday ❤❤❤Mazal Tov!\nMay your bi",
+          "score": 0.2929,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Kevin Moskau:\n[Kevin Moskau] Happy Birthday Josh. All the Best.\n[Josh] Thank you!!! 🙏",
+          "score": 0.2948,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with A 🤍 Alina:\n[Josh] Thank you!!!$\n[A 🤍 Alina] Hey Josh! Happy birthday to you! 🥰Be happy and healthy! May all your wishes com",
+          "score": 0.2773,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu reminder set: March 21 2026 - congratulate Dinos on his birthday.",
+          "score": 0.2852,
+          "source": "session-digest",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Sasha birthday",
+      "category": "personal",
+      "latency_ms": 184.31,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Sasha Neshama] Истра-Ленд 2 tel\n[Josh] https://prodoctorov.ru/spb/vrach/842070-varnavskiy/\n[Josh] Skin doct",
+          "score": 0.2648,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] it's just Club 54 1970's style\n[Josh] you need a very short skirt basically and very high heels lol\n[",
+          "score": 0.2877,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] You said leave at 1350\n[Sasha Neshama] Cool) it’s okay)\n[Josh] It’s Sasha’s birthday today! I don’t k",
+          "score": 0.2843,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Josh] Hey sis!!! I'm super happy to hear such wonderful kind words from you. Thank you for thinking of ",
+          "score": 0.2641,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] INN\nTIN: 502424360068\nSurname: Карту\nName: Джошуа Микаэль Орен\nDate of birth: 11.03.1979\n[Sasha Nesha",
+          "score": 0.2626,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Sasha Neshama] Honey \nDo you want to come with me to this birthday in Peter?\n[Sasha Neshama] It will be 21 ",
+          "score": 0.2902,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Sasha is 28 years old with an AMH (Anti-Müllerian Hormone) level of 2.25.",
+          "score": 0.3341,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Sasha Neshama] I think if you decide to do it you can get ready for it and win him😘\n[Josh] We would be raci",
+          "score": 0.2563,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Team Tsar:\n[Sasha Team Tsar] Seems like a fun guy\n[Sasha Team Tsar] Smallworld\n[Josh] He is and he speaks Russian so ",
+          "score": 0.2531,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Sasha (Alexandra) is Josh Cartus wife, married January 14, 2026. She is Russian and Josh explored options for her to get a Canadian passport from Russ",
+          "score": 0.253,
+          "source": "conversation",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        0,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 0.8,
+      "p_at_10": 0.9
+    },
+    {
+      "query": "Josh's car interests",
+      "category": "personal",
+      "latency_ms": 182.97,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[PERSONAL] Josh Cartu has deep interests in supercars including Porsche and Ferrari",
+          "score": 0.3142,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSONAL] Josh Cartu has personal interests in supercars including chat conversations and car purchases",
+          "score": 0.3337,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSONAL] Josh is interested in the Porsche Carrera Cup Asia 2026 in Shanghai",
+          "score": 0.3178,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Hobbies/interests] Josh is interested in AI/LLM infrastructure, local inference, new models, agent frameworks, gadgets, tech hardware, GPUs, wearable",
+          "score": 0.2897,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Hobbies/interests] Josh has a background in Ferrari motorsport and participates in the Gumball rally.",
+          "score": 0.3151,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Business details] Josh's business interests include iGaming technology, payment rails, and regulatory compliance.",
+          "score": 0.2915,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Josh is interested in Russian real estate and supercars",
+          "score": 0.3494,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu has supercar interests",
+          "score": 0.3207,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Life events] Josh has a scheduled payment of 1,253,800 ₽ for a Porsche 911 due on March 25, 2026, under contract #30008-И/20 with ИП Дмитриенко.",
+          "score": 0.3102,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Personal fact [hobbies, interests, possessions]: Josh is interested in new gadgets and wants to be informed about them every day.",
+          "score": 0.319,
+          "source": "fact_extractor",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        2,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        2,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.4,
+      "p_at_10": 0.4
+    },
+    {
+      "query": "Josh testosterone protocol",
+      "category": "personal",
+      "latency_ms": 181.85,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Health information] Josh is currently on a serious anti-aging protocol including BPC-157, TB-500, MOTS-c, HGH + CJC-1295/GHRP-6, and Mounjaro.",
+          "score": 0.3211,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] Good luck! 👍\n[Josh] I tried\n[Sasha Neshama] It’s okay))\n[Josh] I will be here another half an hour I ",
+          "score": 0.3217,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Health information] Josh's peptide stack includes Testosterone Propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6, MOTS-c, 5-Amino-1MQ, BPC-157, TB-500",
+          "score": 0.3268,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh started Testosterone Propionate 0.2ml/day and HGH 3iu",
+          "score": 0.2869,
+          "source": "test",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Josh takes Testosterone Propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6, MOTS-c, 5-Amino-1MQ, BPC-157, TB-500, and Mounjaro (tir",
+          "score": 0.3662,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh health stack: Testosterone Propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6, MOTS-c, 5-Amino-1MQ, BPC-157, TB-500, Mounjaro (tirzepatide). Device",
+          "score": 0.2834,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu uses Testosterone Propionate 0.2ml daily as part of his biohacking stack since January 2026",
+          "score": 0.3124,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] As of Feb 24, 2026 (per USER.md), Josh's health stack includes Test Propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6, MOTS-c, 5-A",
+          "score": 0.2772,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Health information] Josh has been monitoring his testosterone levels, which have fluctuated from suppressed (4.96 nmol/L) to exogenous-boosted (33.30",
+          "score": 0.324,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu is on an anti-aging protocol including BPC-157, TB-500, MOTS-c, HGH, CJC-1295, GHRP-6, and Mounjaro",
+          "score": 0.2771,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        0,
+        2,
+        3,
+        3,
+        3,
+        3,
+        0,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.8,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "Josh Whoop device",
+      "category": "personal",
+      "latency_ms": 164.75,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Health information] Josh uses a Pixel Watch 4 (Fitbit), Whoop 5, and Dexcom G7 CGM; his resting heart rate was 69-73 bpm in February 2026",
+          "score": 0.3343,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Personal preferences] Josh uses a Pixel Watch, Whoop, and Dexcom for health tracking.",
+          "score": 0.3211,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh health stack: Testosterone Propionate 0.2ml/day, HGH 3iu, CJC-1295 + GHRP-6, MOTS-c, 5-Amino-1MQ, BPC-157, TB-500, Mounjaro (tirzepatide). Device",
+          "score": 0.2776,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu has a Whoop 5 device",
+          "score": 0.335,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh is exploring the integration of Whoop 5 with Dexcom G7 for a workaround.",
+          "score": 0.2912,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh is using a Lenovo ThinkPad laptop equipped with a Quectel EM05-CN modem.",
+          "score": 0.2551,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSONAL] Josh uses a Whoop 5 with daily sync",
+          "score": 0.3337,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Personal preferences] Josh uses a Tapo C210 camera on his network",
+          "score": 0.2505,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Locations] Josh uses an RTX PRO 6000 and RTX 5090 hardware stack.",
+          "score": 0.2291,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Personal preferences] Josh uses a hardware setup consisting of 2x RTX PRO 6000 (96GB) and 1x RTX 5090 (32GB).",
+          "score": 0.2183,
+          "source": "fact-extractor",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        2,
+        3,
+        3,
+        3,
+        2,
+        3,
+        2,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "WikiLuck revenue",
+      "category": "business",
+      "latency_ms": 176.43,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[BUSINESS] WikiLuck (WLC-155) had $85,862 MTD revenue and 58 FTDs as of March 14, 2026",
+          "score": 0.4387,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] WikiLuck brand has generated €78M in Gross Gaming Revenue (GGR)",
+          "score": 0.3822,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck DACH market deposit revenue hit €580K in February 2026, up 23% MoM. Main driver: German-speaking slots players via organic SEO.",
+          "score": 0.2871,
+          "source": "business_intel",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck is related to Josh Cartu as a owned brand under his global iGaming group, generating revenue through Delasport and Rival platforms. Context: ",
+          "score": 0.3389,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck DACH revenue hit €580K in Feb 2026, up 23% MoM",
+          "score": 0.3241,
+          "source": "test",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] UK Remote Gaming Duty increases from 21% to 40% effective April 1, 2026. Josh operates WikiLuck, BetOBet with ~10% UK market revenue (~$250k/m",
+          "score": 0.2875,
+          "source": "swarm-scout",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] On March 9, 2026, WikiLuck generated $4,573.17 in deposits with 44 signups and 1 FTD",
+          "score": 0.4035,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck is related to Josh Cartu iGaming brands because operates under INSINE KFT/NewEra B.V. with Curacao license #157707. Context: Part of multi-br",
+          "score": 0.356,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] WikiLuck brand generated €580K in DACH region in February 2026, representing a +23% month-over-month increase",
+          "score": 0.3467,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck is related to EUR market because it is the biggest revenue driver with 3,867 transaction attempts, 63% approval rate, and e150K volume on Del",
+          "score": 0.3262,
+          "source": "conversation",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Curacao license renewal",
+      "category": "business",
+      "latency_ms": 166.77,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Business details] Josh's Curacao license renewal is scheduled for October 2026, with fees potentially rising to EUR 55,000+ annually under the new LO",
+          "score": 0.3749,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu's Curacao license renewal is scheduled for October 2026",
+          "score": 0.3917,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "BetOBet is related to Curacao licensing because INSINE KFT (Budapest) / NewEra B.V. (Curacao license #157707) operates the grey-market dual platform w",
+          "score": 0.361,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[EVENT] Curacao license renewal window is scheduled for October 2026",
+          "score": 0.4074,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "NewEra BV Curacao license #157707 faces LOK full enforcement active March 2026: physical server in Curacao required for data localization, sublicense ",
+          "score": 0.3584,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh is managing a Curacao license renewal strategy scheduled for October 2026, involving INSINE KFT and NewEra B.V. dual-platform ",
+          "score": 0.3623,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "NewEra B.V. Curacao license #157707 -> LOK enforcement active: physical server requirements + director presence + Oct 2026 renewal deadline. Dutch tax",
+          "score": 0.3632,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] Curacao license framework updates March 2026. CGA portal now live for direct licensing. Application fee ~€4,600 + annual ~€24,600. All license",
+          "score": 0.3576,
+          "source": "swarm-scout",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu iGaming brands WikiLuck BetOBet 24Slots Betrophy have Curacao license renewal due October 2026 requiring compliance with new regulatory fra",
+          "score": 0.4418,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh holds Curacao license #157707 which is under the old regime and must transition to direct CGA licensing before its renewal in ",
+          "score": 0.3559,
+          "source": "fact-extractor",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "BetOBet brands",
+      "category": "business",
+      "latency_ms": 167.07,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "BetOBet is a Delasport brand (brand 44) running on our OWN payment processing gateway - NOT Rival. It has lower approval rates (~32-55%) compared to o",
+          "score": 0.3095,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "BetOBet has UK player acquisition opportunity because three major crypto competitors (Stake, BC.Game, GG.BET) simultaneously exited UK by Jan 9 2026. ",
+          "score": 0.3523,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh runs an iGaming group with brands BetOBet (whiteLabelId 44) and WikiLuck (likely whiteLabelId 87).",
+          "score": 0.2823,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "BetOBet is owned by Josh Cartu under NewEra BV Curacao license 157707 because BetOBet is part of Josh Cartu global iGaming group. Context: Also operat",
+          "score": 0.3511,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh runs iGaming group with brands including WikiLuck, BetOBet, 24Slots, Betrophy, Delasport, Insine, NewEra, Orbit-Platform, Soft",
+          "score": 0.3054,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh runs an iGaming group with brands including WikiLuck, BetOBet, Betrophy, 24 Slots, Casino Fiz, True Fortune, Paradise8, Play2W",
+          "score": 0.2685,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "BetOBet is related to Josh Cartu as a owned brand under his global iGaming group, part of the portfolio alongside WikiLuck, 24Slots, Betrophy, Pure Ca",
+          "score": 0.3113,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh's Delasport brands are: WikiLuck, BetOBet, 24Slots, Betrophy.",
+          "score": 0.2681,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brand BetObet has a 46.3% deposit approval rate with 175 total transactions and 81 approved transactions",
+          "score": 0.2925,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brand TKS-44 maps to BetOBet",
+          "score": 0.2966,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "DACH market percentage",
+      "category": "business",
+      "latency_ms": 150.27,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Josh Cartu's iGaming brands (WikiLuck, BetOBet) face intensified GGL enforcement in Germany with casino blocks and payment processor freezes as of Mar",
+          "score": 0.3014,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] DACH market accounts for 34% of revenue exposure",
+          "score": 0.3885,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] DACH/German market accounts for 34% of revenue",
+          "score": 0.3539,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] ECJ rulings C-440/23 and C-530/24 expected in Q1-Q2 2024, impacting DACH 34% market share",
+          "score": 0.3031,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] The iGaming business generates 34% of revenue from the DACH market as of March 2, 2026",
+          "score": 0.2993,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] DACH market accounts for 34% of iGaming operations revenue",
+          "score": 0.3367,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] DACH market represents 34% of Josh Cartu's business focus",
+          "score": 0.3458,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WikiLuck is related to DACH market (Germany/Austria) because DACH represents 34% of total deposit revenue (~$50K/month risk). Context: GGL Germany cou",
+          "score": 0.3182,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Curacao operators target markets include DACH (34%), Americas (22%), UK (10%), and Canada (5%)",
+          "score": 0.3165,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] German DACH market faces 34% regulatory threat involving ECJ cases C-440/23 and C-530/24",
+          "score": 0.3204,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Rival platform casinos",
+      "category": "business",
+      "latency_ms": 158.21,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Business details] The casino operation includes a dual-platform system: Rival (35+ brands) and Delasport (4 brands).",
+          "score": 0.3558,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "INSINE KFT (Budapest) + NewEra B.V. (Curacao #157707) -> Dual platform iGaming operator: Delasport + Rival platforms, 6 brands (WikiLuck, BetOBet, 24S",
+          "score": 0.3277,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Rival transaction deposit schema uses ts text field because Rival iGaming platform stores deposit timestamps as text not timestamp type. Context: Josh",
+          "score": 0.3648,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Casino data is aggregated from Delasport and Rival platforms",
+          "score": 0.3436,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu operates casino brands across Delasport and Rival platforms",
+          "score": 0.3302,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] The casino anomaly detection system queries Delasport and Rival platforms",
+          "score": 0.3347,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[Business details] BetOBet operates under the Rival platform",
+          "score": 0.3153,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] The Rival BetOBet platform has a 24.8% approval rate compared to 46.3% for the Delasport BetObet instance, indicating a potential payment pr",
+          "score": 0.3396,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Rival platform accounts for 53% of revenue while Delasport accounts for 47%, consistent with leisure/rec player base on Saturdays",
+          "score": 0.3495,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Rival platform generated $37,573 (53.3%) of total deposits on March 14, 2026",
+          "score": 0.3505,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        2,
+        3,
+        3,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Delasport brand IDs",
+      "category": "business",
+      "latency_ms": 164.21,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[BUSINESS] Delasport brand ID 44 corresponds to TKS-44",
+          "score": 0.3764,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brand ID 87 corresponds to WLC-87 (WikiLuck)",
+          "score": 0.3674,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brand ID 155 corresponds to WLC-155 (WikiLuck)",
+          "score": 0.3608,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] The delasport.transactions table uses integer brand IDs (44, 87, 105, 155) which map to names via the delasport.brands table",
+          "score": 0.3634,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brand ID 105 corresponds to WLC-105 (WikiLuck)",
+          "score": 0.3591,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] The delasport.brands table maps brand IDs to names (e.g., 44 to TKS-44, 87 to WLC-87)",
+          "score": 0.3776,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] TKS operates under brand ID TKS-44 in the Delasport system",
+          "score": 0.3164,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh's Delasport brands are: WikiLuck, BetOBet, 24Slots, Betrophy.",
+          "score": 0.3304,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] All 4 Delasport brands (Betrophy, 24Slots, BetOBet, WikiLuck) were in the top 5 depositors on March 9, 2026",
+          "score": 0.3255,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] Delasport brands (WLC-87, WLC-105, WLC-155, TKS-44) had an average approval rate of 71.8% on March 7, 2026",
+          "score": 0.3295,
+          "source": "consolidator-v4",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "ORBIT API",
+      "category": "business",
+      "latency_ms": 181.22,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "ORBIT dashboard is Josh Cartus casino data analytics platform accessible at state.rasputin.to, dash.rasputin.to, and casino.rasputin.to. Direct GraphQ",
+          "score": 0.3214,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "ORBIT Platform direct API discovered March 7: nest-api.orbit-platform.com/graphql/{operationName} bypasses Cloudflare entirely. Auth via Bearer token ",
+          "score": 0.3143,
+          "source": "session_digest",
+          "relevance": 3
+        },
+        {
+          "text_preview": "ORBIT API BREAKTHROUGH (March 9 2026): nest-api.orbit-platform.com/graphql/login mutation returns working JWT even without completing 2FA (isValidatio",
+          "score": 0.3065,
+          "source": "discovery",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] ORBIT direct API was discovered",
+          "score": 0.3569,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "CASINO DATA INFRASTRUCTURE — Full State (March 9 2026)\n\n== LOCAL POSTGRESQL (port 5433, user casino_admin, db casino) ==\n26 tables. 4,449,585 players ",
+          "score": 0.2541,
+          "source": "infrastructure",
+          "relevance": 3
+        },
+        {
+          "text_preview": "ALL ORBIT PLATFORM CREDENTIALS (March 9 2026):\n\nHost 87 (87.orbit-platform.com) — WikiLuck, 24Slots, Betrophy:\n  Account 1: Michael_24slots / #GreenPu",
+          "score": 0.2852,
+          "source": "credentials",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Orbit Platform credentials for casino data access (March 7 2026): URL: 87.orbit-platform.com, Username: Michael_24slots, Password: #GreenPurple14. Thi",
+          "score": 0.2726,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] The casino data pipeline ingests from Orbit 87 (WikiLuck), Orbit BO044 (BetObet), Rival/CasinoController, Delasport, Payment Gatewa",
+          "score": 0.2524,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Assistant notes: {'type': 'thinking', 'thinking': 'Josh is asking about the other Orbit instances. He mentioned earlier:\\n1. 87.orbit-platform.com - t",
+          "score": 0.2558,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Orbit Platform login returns JWT without completing 2FA. Token has isValidationSuccessful false but API does not check it for data queries. 24-hour du",
+          "score": 0.2887,
+          "source": "conversation",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "casino payment processors",
+      "category": "business",
+      "latency_ms": 171.1,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Josh Cartu's iGaming brands (WikiLuck, BetOBet) face intensified GGL enforcement in Germany with casino blocks and payment processor freezes as of Mar",
+          "score": 0.2878,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-09 13:14] Payment processor scan: No fresh iGaming payment news March 2026. Searches covered Trustly, Skrill, Neteller, CoinsPaid, In",
+          "score": 0.2908,
+          "source": "swarm-scout",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[EVENT] SCOUT runs ending in minute 4 or 5 focus on Payment processors including SEPA, Trustly, Skrill, Interac, PayID, and crypto",
+          "score": 0.311,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Payment processors under rotation focus include SEPA, Trustly, Skrill, Interac, PayID, and crypto",
+          "score": 0.3262,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-08_21:55] Payment processors scan (minute 55 rotation): No outages/disruptions found for Trustly, Skrill, SEPA, Interac, PayID, or cr",
+          "score": 0.3116,
+          "source": "swarm-scout",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Payment processors SEPA, Trustly, Skrill, Interac, PayID, and crypto are prioritized for minutes ending in 4 or 5",
+          "score": 0.3217,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] 2026-03-09 Payment processors: No new restrictions/terminations found in March 2026 searches. Crypto iGaming processing remains active with US",
+          "score": 0.3004,
+          "source": "swarm-scout",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-09 08:40] Payment processor scan (SEPA/Trustly/Skrill/crypto) - no breaking bans/restrictions found in last 7 days. CoinsPaid remains",
+          "score": 0.3028,
+          "source": "swarm-scout",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] Recommended payment processors include NOWPayments, PayRam, Nuvei, and Paysafe",
+          "score": 0.3277,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-08 07:24] Payment processors rotation: No critical outages detected for SEPA/Trustly/Skrill/Interac/PayID/crypto in iGaming. SEPA Ins",
+          "score": 0.2888,
+          "source": "swarm-scout",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "NewEra BV license number",
+      "category": "business",
+      "latency_ms": 168.52,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Curacao CGA requires local office and director in Curaçao by April 2026. NewEra B.V. (Josh Cartu entity, license #157707) must comply. 330+ valid lice",
+          "score": 0.2976,
+          "source": "business-intel-2026-03-24",
+          "relevance": 3
+        },
+        {
+          "text_preview": "BetOBet is related to Curacao licensing because INSINE KFT (Budapest) / NewEra B.V. (Curacao license #157707) operates the grey-market dual platform w",
+          "score": 0.2386,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Curacao LOK enforcement accelerating March 2026: sub-license model abolished since July 2025, direct CGA B2C/B2B licenses required (~€20K application ",
+          "score": 0.2464,
+          "source": "intel-gather",
+          "relevance": 2
+        },
+        {
+          "text_preview": "NewEra B.V. (Josh Cartu Curacao license #157707) is subject to Curacao LOK local office requirement by April 2026, with 330+ licenses now active under",
+          "score": 0.3928,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu brands WikiLuck BetOBet 24Slots Betrophy Pure Casino Peer Casino are related to Curacao license number 157707 owned by NewEra B.V. because ",
+          "score": 0.2536,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "ACMA (Australia) issued formal warnings March 2026 to Curacao N.V. operators offering prohibited interactive gambling services. Same corporate structu",
+          "score": 0.234,
+          "source": "consolidation",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu currently operates under NewEra B.V. with Curacao license #157707",
+          "score": 0.2698,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Curacao CGA license deadline: Dec 31, 2026. All sub-licenses must convert to direct CGA licenses. NewEra B.V. holds Curacao license #157707 for INSINE",
+          "score": 0.2334,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "NewEra B.V. (Josh Cartu Curacao license #157707) → legal risk from MostBet FSB raid Mar 2026 per Daily Brief. HIGH VALUE: NewEra operates iGaming plat",
+          "score": 0.3462,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh holds a Curacao gaming license (#157707) issued via NewEra B.V., which must comply with the fully enforced LOK regime replacin",
+          "score": 0.2401,
+          "source": "fact-extractor",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        2,
+        3,
+        3,
+        2,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "monthly revenue",
+      "category": "business",
+      "latency_ms": 158.97,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[BUSINESS] The monthly revenue forecast mid-point is $2,206,453.10 with a range of $2,118,520.09 to $2,294,386.11",
+          "score": 0.3571,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu's iGaming business generates approximately $2-2.65 million in monthly revenue",
+          "score": 0.2232,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] As of March 6, 2026, the Month-to-Date (MTD) revenue was $440,662.30 over 6 days",
+          "score": 0.292,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] INSINE KFT/NewEra BV generates approximately $2-2.65M monthly revenue across 6 brands",
+          "score": 0.2623,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh runs an iGaming business with ~$2-2.65M/month revenue showing 12% monthly growth.",
+          "score": 0.2193,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Business details] Josh runs a global iGaming group with ~$2-2.65M/month revenue and ~12% monthly growth across WikiLuck, BetOBet, 24Slots, and Betrop",
+          "score": 0.2196,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] The UK market accounts for 10% of revenue (~$200-265K per month) and faces a 40% Remote Gaming Duty starting April 1, 2026",
+          "score": 0.2535,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] BetOBet and WikiLuck UK revenue of ~$250K per month is at risk from April 1, 2026 due to UK RGD 40%",
+          "score": 0.235,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] The monthly projection high-range is $2,289,238",
+          "score": 0.2647,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Monthly projection for March 2026 is $2,208,054 with a range of $2,129,240 to $2,286,869",
+          "score": 0.2318,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "GPU setup RASPUTIN",
+      "category": "technical",
+      "latency_ms": 158.4,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Locations] Josh has a multi-GPU RASPUTIN setup consisting of 2x RTX PRO 6000 96GB and 1x RTX 5090 32GB",
+          "score": 0.3768,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Josh Cartu's RASPUTIN stack is optimized for 128GB VRAM setups according to r/LocalLLaMA consensus as of March 9, 2026 and March 12, 2026,",
+          "score": 0.3822,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] The RASPUTIN server is equipped with 2x RTX PRO 6000 Blackwell GPUs providing 192GB total VRAM",
+          "score": 0.4133,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "RASPUTIN is Josh Cartus AI inference server running 3 GPUs after March 7 upgrade: GPU0 = RTX PRO 6000 96GB, GPU1 = RTX 5090 32GB (Josh bought a separa",
+          "score": 0.3925,
+          "source": "conversation",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's RASPUTIN stack consists of 2x RTX PRO 6000 (96GB) and 1x 5090 (32GB) GPUs",
+          "score": 0.3846,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] RASPUTIN system utilizes a dual RTX PRO 6000 setup",
+          "score": 0.381,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN system is equipped with 2x RTX PRO 6000 96GB GPUs",
+          "score": 0.4155,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN inference stack hardware consists of 2x RTX 6000 + 5090 GPUs",
+          "score": 0.4117,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] Josh Cartu's RASPUTIN stack hardware configuration includes 2xRTX PRO 6000 and 1xRTX 5090",
+          "score": 0.369,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] RASPUTIN is a system equipped with dual RTX 6000 Blackwell GPUs",
+          "score": 0.4178,
+          "source": "consolidator-v4",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        2,
+        2,
+        2,
+        2,
+        3,
+        2,
+        2,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "vLLM config",
+      "category": "technical",
+      "latency_ms": 197.99,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "R&D finding 2026-03-13: vLLM v0.17.0 concrete setup for our rig — tensor-parallel-size 2, FlashAttention 4, performance-mode flag, 30.8% throughput bo",
+          "score": 0.3448,
+          "source": "rd-scan",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] 2026-03-13_14:49 — vLLM v0.17.1 Released (March 11, 2026). Major update with FlashAttention 4 backend now default on Blackwell SM100+ GPUs ",
+          "score": 0.3538,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] BREAKING: vLLM v0.17.0 released TODAY (Mar 7, 2026 00:46 UTC) with FULL Qwen3.5 model family support (PR #34110), Step3.5-Flash NVFP4 quant",
+          "score": 0.3275,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] vLLM v0.17.0 released March 11, 2026 (TODAY) - major release with 699 commits from 272 contributors (48 new). KEY UPDATES: (1) FlashAttenti",
+          "score": 0.3282,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] vLLM v0.17.0 released March 7, 2026 - massive 699-commit release from 272 contributors. BREAKING: PyTorch 2.10 upgrade (requires environmen",
+          "score": 0.3485,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Josh is considering workarounds for vLLM including --kv-cache-dtype bf16, --attention-backend triton, and disabling CUDA graphs",
+          "score": 0.3577,
+          "source": "memory-consolidator-v2",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] vLLM v0.17.0 released March 7, 2026 (699 commits): Major release with FlashAttention 4 integration, PyTorch 2.10 upgrade, Model Runner V2 m",
+          "score": 0.352,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] vLLM v0.17.0 RELEASED March 7, 2026 - Major breakthrough for multi-GPU LLM inference. PyTorch 2.10 upgrade (breaking change), FlashAttentio",
+          "score": 0.333,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] vLLM supports hierarchical KV cache offloading allowing simultaneous sustainment of 4x196K context slots",
+          "score": 0.3501,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] 2026-03-12 vLLM v0.17.0 RELEASE (Mar 7, patch Mar 11): CRITICAL FOR RASPUTIN STACK. KEY FEATURES: (1) FlashAttention 4 integration - next-g",
+          "score": 0.3314,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Qdrant vectors count",
+      "category": "technical",
+      "latency_ms": 153.39,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] Qdrant API is responding with approximately 127,000 vectors",
+          "score": 0.3692,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Qdrant contains 80,865 vectors",
+          "score": 0.4298,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Qdrant collection contains 804,497 vectors before dedup scan",
+          "score": 0.3781,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "**All in Qdrant. Confirmed:**\n\n```📊 QDRANT TOTAL: 264,646 vectors\n\ntelegram:  134,888\nchrome:        213  (with full page content)\nwithings:       95\n",
+          "score": 0.3612,
+          "source": "telegram",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Qdrant collection contains 500 vectors with importance scores distributed across 50-80 range, peaking at 75 with 423 points",
+          "score": 0.4076,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Documented. Won't happen again.\n\n**Current status looks healthy:**\n\n• ✅ Qdrant: **239,878 vectors** (way up from 157k!)\n• ✅ 2 ripper processes running",
+          "score": 0.3129,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[TECHNICAL] The memory system uses Qdrant with approximately 804K vectors",
+          "score": 0.355,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "**Second Brain Health Data: ✓**\n\n```| Source           | Records |\n| ---------------- | ------- |\n| Withings (scale) | 95      |\n| Fitbit           | ",
+          "score": 0.3086,
+          "source": "telegram",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Assistant notes: Now I see the full picture. This is massive:\n- **127,450 vectors** in Qdrant (many probably dupes/low-quality)\n- **2,053 session tran",
+          "score": 0.3695,
+          "source": "conversation",
+          "relevance": 2
+        },
+        {
+          "text_preview": "**Qdrant totals:**\n\n• **second_brain:** 68,027 (Telegram + browser)\n• **midjourney:** 5,417\n• **user_225_memories:** 2,021\n• **user_1_memories:** 479\n",
+          "score": 0.3727,
+          "source": "telegram",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        3,
+        2,
+        2,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "PM2 services list",
+      "category": "technical",
+      "latency_ms": 188.58,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] PM2 services cartu-proxy, ollama, and chrome-agent are running and healthy",
+          "score": 0.3318,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 services 'cartu-proxy', 'chrome-agent', and 'rasputin' are online",
+          "score": 0.3264,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 has 14 services online and 3 stopped (cartu-proxy-v10, comfyui-video, qwen3-coder-gpu1)",
+          "score": 0.3119,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 is managing 23 services",
+          "score": 0.3857,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] 15 PM2 services are running with 14 online",
+          "score": 0.2923,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] PM2 services 'llama-122b' and 'swarm-llama-swap' depend on the llama-server binary",
+          "score": 0.2634,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 service has 17/17 processes online as of March 7, 2026",
+          "score": 0.3157,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 shows 19 processes online including reranker-gpu1, openclaw-mem, and manus-hosting",
+          "score": 0.273,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] pm2 service matrix-monitor is online with PID 1177159 and uptime of 38 hours",
+          "score": 0.2673,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] PM2 service 'openclaw-gateway' status is online",
+          "score": 0.2807,
+          "source": "consolidator-v4",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "llama-swap routing",
+      "category": "technical",
+      "latency_ms": 164.66,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[VANGUARD] llama-swap — alternative to Ollama for multi-model serving. Reddit 364 upvotes: https://reddit.com/r/LocalLLaMA/comments/1rm7nq1/to_everyon",
+          "score": 0.3361,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] llama-swap — Ollama/LM-Studio replacement for multi-model serving. Single binary + YAML config. Supports any underlying backend (llama.cpp,",
+          "score": 0.3028,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] swarm-llama-swap process is online and managing model routing",
+          "score": 0.327,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] llama-swap — lightweight model router (single binary + config) that proxies multiple inference backends (llama.cpp, ik_llama.cpp, vLLM, etc",
+          "score": 0.3483,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] llama-swap — model router/proxy alternative to Ollama. Key advantage: wraps ANY inference engine (llama.cpp, ik_llama.cpp, vLLM, etc.) unli",
+          "score": 0.3461,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD 2026-03-07] llama-swap (mostlygeek/llama-swap) — single Go binary, single config file model-switcher that works with ANY OpenAI/Anthropic-co",
+          "score": 0.3136,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] llama-swap — lightweight model-swapping inference layer (single binary + config file). Sits in front of llama.cpp/ik_llama.cpp/any backend,",
+          "score": 0.3091,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] llama-swap — Lightweight model swapping layer for llama.cpp. Single binary + config file, runs any underlying engine (llama.cpp, ik_llama.c",
+          "score": 0.3051,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] llama-server is running on port 11435 for the Qwen3.5-122B-A10B model",
+          "score": 0.2843,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[BUSINESS] PM2 services 'llama-122b' and 'swarm-llama-swap' depend on the llama-server binary",
+          "score": 0.2819,
+          "source": "consolidator-v4",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "cartu-proxy port",
+      "category": "technical",
+      "latency_ms": 155.68,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] Cartu Proxy service is running on port 8889 and responding with HTTP 200",
+          "score": 0.3311,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Custom cartu-proxy runs on port 8889",
+          "score": 0.3709,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Port 8889 is assigned to Cartu Proxy and is healthy",
+          "score": 0.3298,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] A stopped 'cartu-proxy-v10' process was detected while 'cartu-proxy' v11 is running on port 8889",
+          "score": 0.342,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Port 8889 (Cartu Proxy) is responding with status 200",
+          "score": 0.3109,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Cartu-proxy endpoint configured at localhost:8889/v1/messages for benchmarking",
+          "score": 0.303,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Port 200 is used by Second Brain, Cartu Proxy, and Qdrant services",
+          "score": 0.3015,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] The cartu-proxy service handles HTTP requests and logs 'incomplete chunked read' errors from upstream LLM providers",
+          "score": 0.3231,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu uses proxy routing for RASPUTIN/Cartu operations",
+          "score": 0.2954,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[TECHNICAL] Josh Cartu's infrastructure uses 'cartu-proxy' to route local models to the Pi agent",
+          "score": 0.3131,
+          "source": "consolidator-v4",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "nomic-embed-text model",
+      "category": "technical",
+      "latency_ms": 207.9,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] Embedding model is nomic-embed-text v1 running on Ollama 11434",
+          "score": 0.334,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama embeddings model nomic-embed-text has 137M params and 768-dim",
+          "score": 0.3395,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama embedding service uses nomic-embed-text model on port 11434",
+          "score": 0.3104,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Embed reindex 2026-03-11: 54 memories from Feb 25-Mar 2 (v1/v1.5 embedding model mismatch window) re-embedded with correct nomic-embed-text v1 model. ",
+          "score": 0.2842,
+          "source": "session",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN uses Qwen Coder 30B and nomic-embed-text as local models",
+          "score": 0.2914,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] The AGENTS.md file specifies using Ollama nomic-embed-text for embeddings",
+          "score": 0.2528,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama nomic-embed-text embeddings run on GPU1 for RASPUTIN",
+          "score": 0.2556,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN uses nomic-embed-text for embeddings and llama.cpp (latest) for inference",
+          "score": 0.277,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Josh uses Ollama nomic-embed-text for embeddings and bge-reranker-v2-m3 as a neural reranker",
+          "score": 0.2715,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN uses nomic-embed-text for embeddings",
+          "score": 0.3125,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "CUDA version",
+      "category": "technical",
+      "latency_ms": 195.29,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] The current CUDA toolkit version is 13.1.1-1 installed via pacman package 'cuda 13.1.1-1'",
+          "score": 0.3607,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] CUDA version 13.1 (V13.1.115) is installed",
+          "score": 0.3466,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[DECISION] The assistant recommends installing CUDA 13.2 via runfile while keeping the driver at 590.48.01 to maintain stability on production servers",
+          "score": 0.304,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] CUDA 12.8 or higher is required for Blackwell stability",
+          "score": 0.2728,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] CUDA Toolkit 13.2 is available as a standalone download via NVIDIA runfile installer",
+          "score": 0.3176,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] FlashAttention issue #1987 reports CUDA error (invalid argument) on RTX PRO 6000 Blackwell (sm_120) with PyTorch 2.8 and CUDA 12.8",
+          "score": 0.2847,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] llama.cpp update enables concurrent CUDA streams for improved performance",
+          "score": 0.2916,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Fallback to cuBLAS on RTX 5090 with CUDA 13.1 results in 5-6x slower performance",
+          "score": 0.2775,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] GitHub issues from Feb-Mar 2026 report CUDA compilation failures on Blackwell architecture (sm_120)",
+          "score": 0.2785,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Free CUDA graph environment variable is a quick win for Josh's setup",
+          "score": 0.2893,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "RTX PRO 6000 specs",
+      "category": "technical",
+      "latency_ms": 197.19,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "RTX PRO 6000 Blackwell specs: 96GB VRAM each, SM120 architecture, 1,600 GB/s bandwidth. Superior to DGX Spark (128GB LPDDR5x at 273 GB/s) for models ≤",
+          "score": 0.3727,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "### RTX PRO 6000 Blackwell\n- **Utilization: 99%** ✅ (Target: ~80%, exceeded!)\n- **VRAM: 4.2GB / 98GB** (4.3%)\n- **Power: 600W** (max TDP)\n- **Temperat",
+          "score": 0.2545,
+          "source": "2026-02-09.md",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] System hardware includes 2x RTX PRO 6000 96GB Blackwell GPUs and 251GB RAM",
+          "score": 0.3293,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] GPU0 is an RTX PRO 6000 with 96GB VRAM running Qwen 122B as the primary model",
+          "score": 0.3139,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] RTX PRO 6000 NVFP4 Quantization Breakthrough - Benchmarks confirm Blackwell FP4 delivers 1.32x gain (FP8→FP4) and 1.63x vs H100 FP8. Near-l",
+          "score": 0.3366,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] Cloudrift benchmark analysis (Oct 2025, still relevant Mar 2026): Single-chip NVIDIA RTX PRO 6000 96GB confirmed optimal for Qwen3.5-122B a",
+          "score": 0.3119,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "R&D finding 2026-03-13: RTX PRO 6000 Blackwell MXFP4 benchmarks — 36.5% prompt processing boost at 4K ctx (4758→6495 t/s), requires GGML_CUDA_GRAPH_OP",
+          "score": 0.348,
+          "source": "rd-scan",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Perplexity search: How much does an RTX Pro 6000 have memory - How much does an RTX Pro 6000 have memory? The NVIDIA RTX Pro 6000 features 96 GB of ul",
+          "score": 0.2757,
+          "source": "perplexity",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PREFERENCE] Max-Q variant of RTX PRO 6000 is recommended for stacking due to better thermal dissipation and 300W power draw versus 450W at 80-95% per",
+          "score": 0.3319,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "GGML_CUDA_GRAPH_OPT=1 environment variable gives 30-36% prompt processing speedup on Blackwell RTX PRO 6000 GPUs with llama.cpp. 4k ctx: 4758 to 6495 ",
+          "score": 0.343,
+          "source": "conversation",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Ollama port",
+      "category": "technical",
+      "latency_ms": 182.47,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[TECHNICAL] Ollama instances are running on ports 11435 and 11436",
+          "score": 0.2989,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] OpenClaw major release Mar 2-3 2026: Native Ollama embeddings support added (PR #26349). Our AGENTS.md mandate for Ollama nomic-embed-text ",
+          "score": 0.2036,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama inference endpoints are running on ports 11435 and 11436",
+          "score": 0.2664,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] RASPUTIN runs Qwen 122B local LLM on port 11434 via Ollama",
+          "score": 0.2558,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh → RASPUTIN cluster (local LLM infrastructure), runs Qwen 72B + Coder 30B via Ollama, builds custom proxy/dashboard/Manus clone, Cartu Proxy port ",
+          "score": 0.1944,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama inference endpoint on port 11435 is healthy",
+          "score": 0.2692,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] 2026-03-09 06:41 | vLLM vs Ollama production benchmarks (Particula Tech, March 3, 2026). Direct relevance to RASPUTIN hardware (2x RTX PRO ",
+          "score": 0.2206,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[VANGUARD] Ollama now officially supports Kimi-K2.5, GLM-5, and MiniMax models in their model library. This directly aligns with Josh Cartu model rout",
+          "score": 0.2191,
+          "source": "swarm-vanguard",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Josh Cartu's company uses the OpenClaw gateway with the llama-server on port 11435",
+          "score": 0.2127,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[TECHNICAL] Ollama embeddings service used for semantic similarity analysis",
+          "score": 0.2076,
+          "source": "consolidator-v4",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Alexander Durandin",
+      "category": "people",
+      "latency_ms": 181.02,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] from the Shmone\n[Josh] I don't know Pharique\n[Aleksandr Durandins] Yeah thats your friend i kno",
+          "score": 0.2518,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Aleksandr Durandins] I am in golfcart\n[Josh] I have a friend in trouble\n[Josh] Oh shit\n[Aleksandr Dur",
+          "score": 0.2521,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] But since they call me Alexander I think it's already happening\n[Josh] I'm Mr Durandin when the",
+          "score": 0.2687,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Aleksandr Durandins] He is and always was an asshole i told you this 100 times\n[Aleksandr Durandins] ",
+          "score": 0.2615,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] Did you read about this guy??!!!\n[Josh] Comes from the slums in Ohio, abusive family, goes the ",
+          "score": 0.2579,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] Hey Sash!! I'm really good bro, staying healthy, working on the kids and spending NYE with Sash",
+          "score": 0.2508,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] Hey, are you up yet?\n[Aleksandr Durandins] Hey i just opened my eyes slept through everything\n[",
+          "score": 0.2522,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] also my arm doesn't heal...\n[Josh] it's torn as well\n[Josh] How's your eye?\n[Aleksandr Durandin",
+          "score": 0.2508,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Aleksandr Durandins] Will be there soon\n[Josh] https://www.stockwatch.com/News/Item?bid=Z-C:*CURRENT-",
+          "score": 0.2503,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksandr Durandins:\n[Josh] I don’t care but I am FUCKING starving\n[Aleksandr Durandins] Lets do the one next to me\n[Josh] ",
+          "score": 0.2533,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mrr": 0.3333,
+      "p_at_1": 0.0,
+      "p_at_3": 0.3333,
+      "p_at_5": 0.2,
+      "p_at_10": 0.1
+    },
+    {
+      "query": "Jonathan Cartu wife",
+      "category": "people",
+      "latency_ms": 214.29,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Jonathan Cartu is Josh Cartus brother who married Amina. They had a wedding ceremony in February 2026 in Pushkin, St Petersburg area.",
+          "score": 0.34,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu wife: Alexandra \"Sasha\" (married Jan 14, 2026). IVF planning - Orthomol Natal pre for her, Fertil Plus for him. Cats: Motya & Richard (came",
+          "score": 0.2879,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu has a brother named Jonathan who is married to Amina with a ceremony scheduled for February 2026 in Pushkin",
+          "score": 0.2946,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh Cartu's wife is Alexandra 'Sasha' Cartu (Russian), married on January 14, 2026",
+          "score": 0.3265,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Jonathan Cartu] Thanks for the motivation\n[Josh] Good man!\n[Jonathan Cartu] I got to 15.7 by adding a shor",
+          "score": 0.299,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Josh] Was gaming last night\n[Jonathan Cartu] In Moscow\n[Jonathan Cartu] Alex is fucking awesome\n[Jonathan ",
+          "score": 0.304,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Josh] 10 year gold visa\n[Josh] For free\n[Josh] No deposit\n[Josh] As a gift\n[Josh] It’s insane\n[Josh] I’m b",
+          "score": 0.2859,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Josh] That's very nice of you to say man\n[Josh] But I'll tell you what\n[Josh] I feel very lucky to have hi",
+          "score": 0.3008,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Jonathan Cartu] it's the biggest struggle for me in my philosophy of interpreting bad things as good\n[Josh",
+          "score": 0.3205,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Jonathan Cartu:\n[Jonathan Cartu] We also need five\n[Josh] Great 👍\n[Jonathan Cartu] Very sorry about that man\n[Jonathan Cart",
+          "score": 0.2937,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        2,
+        3,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Who is Sasha",
+      "category": "people",
+      "latency_ms": 191.03,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Sasha (Alexandra) is Josh Cartus wife, married January 14, 2026. She is Russian and Josh explored options for her to get a Canadian passport from Russ",
+          "score": 0.2761,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Relationships] Sasha is Josh's wife.",
+          "score": 0.2804,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Alexandra (username: peachelychee) is a contact of Josh, referred to as Sasha",
+          "score": 0.2783,
+          "source": "memory-consolidator-v2",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Sasha (likely Josh's partner) is undergoing IVF and has a supplement protocol with a fertility clinic.",
+          "score": 0.2965,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] Nice but empty\n[Josh] Just blobs of green\n[Josh] And I don't have FaceTime no iphone\n[Josh] You like ",
+          "score": 0.2629,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] Hey babe good afternoon!\n[Josh] Wow I overslept\n[Josh] Listen the internet guys need to meet someone ",
+          "score": 0.2638,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Health information] Sasha is 28 years old with an AMH (Anti-Müllerian Hormone) level of 2.25.",
+          "score": 0.3202,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Sasha Neshama] Honey \nDo you want to come with me to this birthday in Peter?\n[Sasha Neshama] It will be 21 ",
+          "score": 0.2712,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Sasha Neshama] You will show me when we come home❤️\n[Josh] Okay cool\n[Josh] Hey babe\n[Josh] You can come do",
+          "score": 0.2621,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Sasha Neshama:\n[Josh] I'll pick you up at 9\n[Sasha Neshama] Ooooo cool\n[Josh] I'm coming\n[Sasha Neshama] ❤️❤️❤️\n[Sasha Nesh",
+          "score": 0.2615,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Lazar Cartu health",
+      "category": "people",
+      "latency_ms": 182.49,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Josh's dad Lazar Cartu received double lung transplant at Toronto General Hospital. Lead surgeon is Dr. Shaf Keshavjee. IPF progression halted, FEV1 a",
+          "score": 0.2668,
+          "source": "family_health",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Lazar Cartu is Josh Cartus father who received a double lung transplant at Toronto General Hospital. The surgeon leading the transplant program is Ind",
+          "score": 0.3243,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu father Lazar Cartu received double lung transplant at Toronto General Hospital from Indian surgeon who leads transplant program. Josh activ",
+          "score": 0.2756,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's father Lazar had a lung transplant and is due for a follow-up appointment with Dr. Singh at Toronto General",
+          "score": 0.3136,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's father Lazar had a double lung transplant at Toronto General Hospital with an Indian surgeon leading the program",
+          "score": 0.2981,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "Josh -> Lazar Cartu (father): Double lung transplant at Toronto General Hospital under Indian surgeon leading transplant program. Context: Had medical",
+          "score": 0.2862,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh Cartu is related to father Lazar Cartu because tracks IPF drug research for double lung transplant patient at Toronto General. Context: Medical e",
+          "score": 0.2759,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's father is Lazar Cartu, who had a double lung transplant at Toronto General Hospital led by an Indian surgeon",
+          "score": 0.2876,
+          "source": "fact-extractor",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's father Lazar has a follow-up appointment with Dr. Singh at Toronto General",
+          "score": 0.2936,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[PERSON] Josh Cartu's father is a transplant patient being treated for Parvovirus B19 and CMV infections",
+          "score": 0.2503,
+          "source": "consolidator-v4",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 0.9
+    },
+    {
+      "query": "David Cartu",
+      "category": "people",
+      "latency_ms": 180.79,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "David Cartu is related to Josh Cartu because he requested operational analysis of WikiLuck vs BetOBet payment performance on Delasport platform. Conte",
+          "score": 0.3035,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] Yeah he’s good\n[David Cartu] very good\n[Josh] New friend\n[Josh] Hung our a bit here in israel\n[D",
+          "score": 0.2955,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] on jewish new year I like to give\n[Josh] My cinema is also quite entry level\n[Josh] I'm not happ",
+          "score": 0.2873,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] I'd pay for a kids tuition every year for his school\n[David Cartu] give a bit on the holidays\n[D",
+          "score": 0.2899,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] Are you awake?\n[David Cartu] when your available again let me know I’ve set up a lot of question",
+          "score": 0.2903,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[Josh] Sleep on it\n[David Cartu] I don’t know if im best suited for what you want and what if your not being s",
+          "score": 0.2903,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] That is a ducking insane photo Josh\n[Josh] Miss universe Hungary\n[Josh] My gf at the time\n[Josh]",
+          "score": 0.2929,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] But the way things are going between us isn’t good man. I don’t feel you care too much about the",
+          "score": 0.2919,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[Josh] I can’t fucking get ahead\n[David Cartu] Anyway Yonatan said he would make sure to let me see how the ta",
+          "score": 0.2906,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with David Cartu:\n[David Cartu] I hope one day we will all be happy with our achievements and not be held down by negativity so ",
+          "score": 0.2935,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Teddy Sagi",
+      "category": "people",
+      "latency_ms": 184.78,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Josh] and the other guy was like 2500 on probabation.\n[Josh] Zoli flies all the time with or without me, he's ",
+          "score": 0.1512,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Josh] I hope so bro\n[Josh] https://www.independent.ie/irish-news/news/wexford-techie-lifts-lid-on-186m-fraud-a",
+          "score": 0.1539,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Josh] I eat at my desk... have gym in the morning, then lots to do tomorrow\n[Shay Sabag] Man Attila made me la",
+          "score": 0.149,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Shay Sabag] Bro. It’s not easy. Take 3 3 that fucking jet leg\n[Josh] It isn’t good at our age\n[Josh] But you w",
+          "score": 0.1512,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 14803306349-1391457554@g.us:\n[Shay Sabag] Any preference?\n[Huda Mahdi] Kremlin vodka I like\n[Mel Basar] I wouldn't know sha",
+          "score": 0.164,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Shay Sabag] Dealing with medical flight for Jew\n[Shay Sabag] Thy can help\n[Josh] Thank you 🙏🙏\n[Shay Sabag] How",
+          "score": 0.1494,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Josh] Thank you\n[Josh] We should have celebrated this moment together but.. things are as they are. Anyway, ju",
+          "score": 0.148,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Shay Sabag] Shame on u Josh.\n[Shay Sabag] U got now my attention.\n[Shay Sabag] Free gumball?\n[Shay Sabag] Free",
+          "score": 0.149,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Josh] I fucked up, head is is exploding\n[Josh] I’m sick like hell and I fell asleep in guest room without my p",
+          "score": 0.1508,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Shay Sabag:\n[Shay Sabag] Thy get the good guys\n[Josh] neither of them need each other for anything\n[Josh] Zoli has finished",
+          "score": 0.1641,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mrr": 0.0,
+      "p_at_1": 0.0,
+      "p_at_3": 0.0,
+      "p_at_5": 0.0,
+      "p_at_10": 0.0
+    },
+    {
+      "query": "Nezemnoi birthday",
+      "category": "people",
+      "latency_ms": 178.55,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] Поздравляю с 23 Февраля! Пусть сила, мужество и удача всегда будут с тобой.\n[Nezemnoi] You tooooo buddyy\n[",
+          "score": 0.3137,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] insane\n[Josh] too much\n[Nezemnoi] And I'll ask you how much a remark to Mansor might cost and how much to ",
+          "score": 0.2575,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] Yeah I found a place bro but thank you\n[Nezemnoi] Where?\n[Josh] I'll show you once the deal is done bro\n[J",
+          "score": 0.2474,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] NOOOOOOO\n[Josh] 2 days\n[Nezemnoi] Ahhaha\n[Josh] why they keep doing this\n[Josh] bro I can't do this every ",
+          "score": 0.2638,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Nezemnoi] No provider you have does not hold such a speed, I'm waiting for a response from another operator\n[Nez",
+          "score": 0.2543,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] March 11, 1979\n[Nezemnoi] 11 October 16.20 eyes doctor\n[Josh] amazing thank you\n[Nezemnoi] Hotel for guys ",
+          "score": 0.271,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Nezemnoi] I didn't raise this question because I don't have an answer to it. and I'm doing it, but in a differen",
+          "score": 0.2521,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Nezemnoi] And to decide all what you want\n[Nezemnoi] And what they want\n[Nezemnoi] It's will be better\n[Nezemnoi",
+          "score": 0.2493,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] Hey bro, good afternoon\n[Nezemnoi] Yououoyoyo\n[Josh] are you coming alone or +1\n[Nezemnoi] How are you ?\n[",
+          "score": 0.2814,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Nezemnoi:\n[Josh] I think around 24th\n[Josh] 25th maybe\n[Nezemnoi] Nice ))how is piter ?\n[Josh] It's fine bro, all is good\n[",
+          "score": 0.2472,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        3,
+        3,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.3333,
+      "p_at_5": 0.4,
+      "p_at_10": 0.4
+    },
+    {
+      "query": "Mark birthday",
+      "category": "people",
+      "latency_ms": 190.4,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with 447823558312-1487158519@g.us:\n[4745496622@s.whatsapp.net] Congrats Marko 🙌🙌🙌\n[Aaron Dutta] Congrats Marko !!!\n[Manssour \"MJ",
+          "score": 0.2502,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Mark Doumler:\n[Josh] We will be there soon sorry\n[Mark Doumler] No apology needed, I’m usually the late one\n[Josh] Two ladi",
+          "score": 0.2452,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with MARK Fogerly:\n[MARK Fogerly] Happy new year brother, wish you the best❤️🤭 keep safe\n[MARK Fogerly] Happy birthday brother, ",
+          "score": 0.2245,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 447823558312-1487158519@g.us:\n[447999999444@s.whatsapp.net] Happy Birthday Markus 🥂🍾🥂🍾🥂🍾 looking forward to catching up in ",
+          "score": 0.2574,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 447464548481-1557421010@g.us:\n[Maxime LeChance] Happy Bday @36309712612 🥳\n[Shehab Gargash] @36309712612 happy birthday. Fri",
+          "score": 0.2146,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Mark L St. Petersburg:\n[Josh] Yessssssßss\n[Mark L St. Petersburg] Well Franco is not quite Emilia Romagna sort of region bu",
+          "score": 0.213,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 447823558312-1487158519@g.us:\n[4745496622@s.whatsapp.net] Congrats @46735351710 with your birthday today - You amazing lege",
+          "score": 0.2111,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Mark L St. Petersburg:\n[Josh] When do you need me in Peter? I’ll lock it up now\n[Mark L St. Petersburg] Im just finilazing ",
+          "score": 0.2104,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 447823558312-1487158519@g.us:\n[Robin Gumball] Your birthday deserves a memory ba k from Dubrovnik\n[Gil Dezer] Hbd Max!!!! 🥂",
+          "score": 0.225,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 491733604721-1622787500@g.us:\n[36309061991@s.whatsapp.net] Dolomiten\n[4915759566299@s.whatsapp.net] Dear Mike, A very happy",
+          "score": 0.219,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Vika",
+      "category": "people",
+      "latency_ms": 204.63,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] Of course , it’s your family\n[Vika (Sasha Wife)] it can't be otherwise\n[Vika (Sasha ",
+          "score": 0.2174,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] 😀 super\n[Josh] Hey good morning!\n[Josh] You know this girl?\n[Josh] https://instagram",
+          "score": 0.216,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Josh] Really\n[Vika (Sasha Wife)] https://www.instagram.com/s/aGlnaGxpZ2h0OjE4MTEwNjUyMTY5MjgxNjI4?story",
+          "score": 0.2189,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] https://svetshow.ru/ru/checkout/\n[Vika (Sasha Wife)] tomorrow evening at 20:00 the s",
+          "score": 0.2316,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] Petersburg is definitely not your city 😄🙈\n[Vika (Sasha Wife)] you are in Moscow toda",
+          "score": 0.2208,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] Now there are 2 viruses walking around - this is a rotavirus, when there is nausea a",
+          "score": 0.216,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] Serious?)\n[Josh] Vika she didn't try to speak to anyone else...\n[Josh] when we arriv",
+          "score": 0.2179,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Josh] she's so fun\n[Josh] positive\n[Josh] always smiling\n[Josh] very important for me\n[Josh] anyway, I ",
+          "score": 0.2165,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] https://www.cian.ru/rent/flat/288219876/\n[Vika (Sasha Wife)] nice, but expensive😄\n[J",
+          "score": 0.2164,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Vika (Sasha Wife):\n[Vika (Sasha Wife)] Ooo super\n[Vika (Sasha Wife)] I go in Spb tomorrow\n[Josh] And I’m leaving 🤷‍♂️\n[Vika",
+          "score": 0.2315,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Ashley",
+      "category": "people",
+      "latency_ms": 189.94,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] Only just ordering now so won't be for a bit\n[Josh] Been many times and I’m a fan\n[Josh]",
+          "score": 0.2243,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] Will make the invoice tonight and send btw\n[Josh] Need to check I even know the password",
+          "score": 0.2228,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Josh] X Ray?\n[Josh] Nothing broken ?\n[Ashley McDonald] no xray; but can walk on it in pain and movement i",
+          "score": 0.232,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Josh] You’re a dick\n[Ashley McDonald] If we get 1k cool wallets they can do FYE and TTP\n[Ashley McDonald]",
+          "score": 0.2182,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] We are waiting to see. The market might have been mirrored and is now a scam. Will expla",
+          "score": 0.2209,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] We are meeting back at your place@6?\n[Josh] Yeah that’s perfect\n[Josh] I am so sorry abo",
+          "score": 0.2226,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] Migrated my number 😉\n[Josh] Lovely!\n[Josh] Much better\n[Josh] Rest up\n[Josh] Lemme know ",
+          "score": 0.2279,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Josh] Attila\n[Ashley McDonald] Amazing. Is ketna one of the people at the dinner? The one who seemed unre",
+          "score": 0.2146,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Ashley McDonald] asked edina to order 2\n[Ashley McDonald] or 3 ?\n[Josh] Yeah grab three\n[Josh] I need my ",
+          "score": 0.2192,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with Ashley McDonald:\n[Josh] I rode all over the city\n[Josh] Was fun\n[Ashley McDonald] Welcome back 😊\n[Ashley McDonald] Going to",
+          "score": 0.2151,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "recent war updates",
+      "category": "temporal",
+      "latency_ms": 181.91,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[3939055485087@lid] Power Struggles in Gaza: \n\nA recent conflict erupted between the Jandia and Ba",
+          "score": 0.2547,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] Trump sets a 10–15 day deadline for Iran to reach a deal, warning of “really",
+          "score": 0.241,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] CNN reports: Israel has raised its state of alert over the past 24 hours.\n\n-",
+          "score": 0.2626,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] Israeli Security officials: This year’s Ramadan period is extremely tense, m",
+          "score": 0.2426,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] Lebanese Army: \n\n'Our forces were subjected to Israeli fire while establishi",
+          "score": 0.2448,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[EVENT] War-sitrep files updated at 15:03 and 15:31 UTC containing new military developments",
+          "score": 0.3085,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] WATCH 🔴\n\nMexican forces deploy a UH 60 Black Hawk armed with a minigun again",
+          "score": 0.2419,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] USAF KC-135 ZEUS76 refueling RC-135V OMAHA76 over eastern Med \n\nThis is the ",
+          "score": 0.2404,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363353060612494@g.us:\n[Josh] ### Update on Russia-Ukraine Peace Talks (as of Latest Check, Last 4 Hours on August 21, 20",
+          "score": 0.2633,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] NEW 🔴\n\nRussia has launched a criminal probe into Telegram founder Pavel Duro",
+          "score": 0.2412,
+          "source": "whatsapp_backup",
+          "relevance": 2
+        }
+      ],
+      "relevance_scores": [
+        2,
+        2,
+        0,
+        3,
+        2,
+        0,
+        0,
+        0,
+        2,
+        2
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.8,
+      "p_at_10": 0.6
+    },
+    {
+      "query": "latest model benchmarks",
+      "category": "temporal",
+      "latency_ms": 175.21,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "Auto-benchmark 2026-03-20: Zero new benchmarkable models found. Ecosystem stable. Nemotron-3-Super-120B (62.6GB) and Llama 4 Scout (65.4GB) pending Jo",
+          "score": 0.295,
+          "source": "auto-benchmark",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Auto-benchmark 2026-03-18: Zero new benchmarkable models found. Ecosystem stable. Two candidates (Nemotron-3-Super 120B, Llama 4 Scout) pending Josh a",
+          "score": 0.3308,
+          "source": "auto-benchmark",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Auto-benchmark scan 2026-03-17: No new models to benchmark. NVIDIA Nemotron-3-Super-120B-A12B (Mar 11) still pending Josh approval — minimum usable GG",
+          "score": 0.3013,
+          "source": "auto-benchmark",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Auto-benchmark 2026-03-16: No new benchmarks run. Nemotron-3-Super-120B-A12B remains top candidate awaiting Josh approval (hybrid Mamba-2+MoE+MTP arch",
+          "score": 0.2862,
+          "source": "auto-benchmark",
+          "relevance": 2
+        },
+        {
+          "text_preview": "R&D finding 2026-03-15: Open model landscape March 2026: Top performers — Kimi K2.5 (1T/32B MIT, 99% HumanEval), GLM-5 (744B/40B MIT, best SWE-bench 7",
+          "score": 0.2817,
+          "source": "rd-scan",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[VANGUARD] Qwen3.5-122B-A10B benchmark analysis (March 2026) - Our current model delivers exceptional performance for local deployment. KEY METRICS: M",
+          "score": 0.2672,
+          "source": "swarm-vanguard",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] Sarvam AI released 30B and 105B MoE models with Apache 2.0 license, achieving 98.6 Math500 and 90.6 MMLU benchmarks, featuring 2.4B active",
+          "score": 0.2881,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[TECHNICAL] Qwen model identifier in benchmark: qwen3.5-122b-a10b",
+          "score": 0.2732,
+          "source": "consolidator-v4",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[VANGUARD] SmolLM3-3B from HuggingFace - new fully open instruct+reasoning model. Outperforms Llama-3.2-3B and Qwen2.5-3B at 3B scale, competitive wit",
+          "score": 0.2671,
+          "source": "swarm-vanguard",
+          "relevance": 2
+        },
+        {
+          "text_preview": "[BUSINESS] 16 out of 17 benchmark tests resulted in tied scores of 10/10 for both models",
+          "score": 0.2899,
+          "source": "consolidator-v4",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        0,
+        0,
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        0
+      ],
+      "mrr": 0.25,
+      "p_at_1": 0.0,
+      "p_at_3": 0.0,
+      "p_at_5": 0.4,
+      "p_at_10": 0.6
+    },
+    {
+      "query": "Houthi attacks",
+      "category": "temporal",
+      "latency_ms": 182.72,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "March 28-29, 2026: Houthis officially entered the war — fired ballistic missiles and cruise missiles/drone barrage at Israel (intercepted). First Hout",
+          "score": 0.3643,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Houthis entered US-Israel-Iran war on March 28-29 2026 — fired first ballistic missiles at Israel. Hezbollah rockets from Lebanon, Iraqi militia attac",
+          "score": 0.3693,
+          "source": "war-markets-gather-2026-03-31",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Hezbollah Houthis Iraqi militias → coordinated multi-front proxy attacks March 2026 Hezbollah 150-200 rockets from Lebanon Houthis 20-30 missiles Yeme",
+          "score": 0.2424,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[EVENT] Houthis launched approximately 20 rockets at Israel",
+          "score": 0.2173,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[PERSON] Houthis were identified as a proxy group firing missiles at Israel via the Red Sea",
+          "score": 0.2437,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WAR INTEL 2026-03-29: Day 29 of Iran war. HOUTHIS ENTERED WAR — first ballistic missile + cruise missile attacks on Israel from Yemen (intercepted). 7",
+          "score": 0.3,
+          "source": "war-intel-gather",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Houthis Yemen → NOT ENGAGED Mar 11: Staying out of fight despite rhetoric, may be held in reserve or hedging if Iranian regime collapses. No Red Sea a",
+          "score": 0.2288,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[WAR] Houthis entered US-Israel-Iran war on March 28-29, 2026 — fired first ballistic missiles at Israel. Spokesperson Yahya Saree announced targeting",
+          "score": 0.3329,
+          "source": "consolidation",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Iran war intelligence March 2026: Hezbollah, Houthis, Iraqi militias conducting proxy attacks. Energy infrastructure in Bahrain, Kuwait, Qatar, Saudi ",
+          "score": 0.2179,
+          "source": "war-intel",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Houthis is related to Iran because proxy force launched 20-30 ballistic missiles at Israel. Context: Coordinated with Iranian coalition Feb-Mar 2026",
+          "score": 0.2189,
+          "source": "conversation",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        0,
+        0,
+        3,
+        3,
+        0,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 0.6,
+      "p_at_10": 0.5
+    },
+    {
+      "query": "oil price",
+      "category": "temporal",
+      "latency_ms": 155.56,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[BUSINESS] Oil price reached ~$120/barrel, a 50% increase",
+          "score": 0.3686,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WTI oil price confirmed at $90.90/bbl (+35% weekly, largest weekly gain since 1983) as of March 7, 2026. Context: US-Iran war Day 7, Hormuz effectivel",
+          "score": 0.3178,
+          "source": "consolidation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Analysts consensus: Oil price range expected $80-100 as of March 11, 2026",
+          "score": 0.3725,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Brent crude oil prices are between $101 and $114 as of March 9, 2026",
+          "score": 0.3482,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Brent crude oil price is approximately $98-100",
+          "score": 0.3432,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Brent crude oil price reached $120 per barrel, representing a 50% increase",
+          "score": 0.3438,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[BUSINESS] Brent crude oil price was approximately $83.83 per barrel on March 4, 2026, up 15% since February 28",
+          "score": 0.3557,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Oil prices increased 6-9% to $77-82/barrel due to US-Israel war on Iran",
+          "score": 0.3434,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Oil price reached $100 during US-Iran War Day 15 economic pressure",
+          "score": 0.3279,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Oil price psychological inflection at $100 Brent: market behavior changed in March 2026 when threshold effectively shifted from $120+ to $100+. Consum",
+          "score": 0.3071,
+          "source": "memory_consolidation",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 1.0,
+      "p_at_5": 1.0,
+      "p_at_10": 1.0
+    },
+    {
+      "query": "Iran situation",
+      "category": "temporal",
+      "latency_ms": 177.58,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with 120363401022044707@g.us:\n[972532282520@s.whatsapp.net] Donald Trump says the U.S. will demand external control over Iran’s ",
+          "score": 0.2901,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] WSJ: Iran has rejected a sweeping U.S. nuclear proposal that required haltin",
+          "score": 0.2896,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Iranian leadership including Supreme Leader Khamenei and President Pezeshkian status UNCONFIRMED as of March 4 2026 despite targeted strikes reported",
+          "score": 0.2832,
+          "source": "conversation",
+          "relevance": 0
+        },
+        {
+          "text_preview": "Iran reports 201 killed, 747 injured in last 24h (Mar 24-25) from Israeli-US airstrikes; cumulative war toll: 3,000+ total including 1,300+ civilians ",
+          "score": 0.3571,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[INSIGHT] Iran is in a 'wounded-animal' phase which is considered the most dangerous state",
+          "score": 0.292,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] As part of a major U.S. military buildup in the Middle East, American refuel",
+          "score": 0.2897,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Iran war cumulative casualties as of March 23 2026: Iran 1,444+ killed (official), 6,000+ military (US estimate). Israel 23 killed. Lebanon 1,029+ kil",
+          "score": 0.3249,
+          "source": "intel-consolidation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "פרשן רוסי בכיר: \nבאיראן מתחיל לילה נוסף של מחאות, שכבר מזמן מזכירות מרד רחב־היקף.\nנניח בצד את הסוגיות החברתיות-כלכליות של התפתחות איראן — זהו עניינו ה",
+          "score": 0.2883,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] CNN reports: Israel has raised its state of alert over the past 24 hours.\n\n-",
+          "score": 0.2955,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363400904396964@g.us:\n[238852375609598@lid] Israeli Security officials: This year’s Ramadan period is extremely tense, m",
+          "score": 0.2989,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        0,
+        3,
+        3,
+        3,
+        3,
+        0,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.8,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "BTC",
+      "category": "edge_cases",
+      "latency_ms": 180.25,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "BTC price March 14 2026: $70,798 after Kharg Island strike dip. Net UP vs pre-war price of ~$66K. MEMORY.md framing of BTC as failed safe-haven is cor",
+          "score": 0.2847,
+          "source": "consolidation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[EVENT] Bitcoin (BTC) traded at approximately $69,400 on March 15, 2026, up 5.5%",
+          "score": 0.3146,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[BUSINESS] BTC price is $70,906, down 2.6%",
+          "score": 0.2925,
+          "source": "consolidator-v4",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363353060612494@g.us:\n[Aaron Dutta] Create the basket of assets - commodities (gold, silver, platinum)\n[Aaron Dutta] Go ",
+          "score": 0.3067,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363353060612494@g.us:\n[Josh] and btc down 7k?\n[Anthony Ruidiaz] Essentially.. he just gave the people what the want. The",
+          "score": 0.2828,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363353060612494@g.us:\n[Anthony Ruidiaz] BTC is not a business.. therefore it can have a reserve similar to oil and gas, ",
+          "score": 0.2698,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 120363353060612494@g.us:\n[19173590732@s.whatsapp.net] Thanks. It certainly looks that way. While holding gold is nice. It’s",
+          "score": 0.2703,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 14159948573-1513101434@g.us:\n[Bobby Dey] I think it was Josh who said it early on, don’t put in anything you can’t afford t",
+          "score": 0.2684,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[EVENT] Bitcoin (BTC) crossed the $70,000 round number threshold for the first time since reaching approximately $69,876",
+          "score": 0.2847,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79099422220@s.whatsapp.net] Всегда готов!\n[Vladimir Shadrin] *Доброе утро Conclave Premium ☀️",
+          "score": 0.2703,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        0,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        0,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.8,
+      "p_at_10": 0.8
+    },
+    {
+      "query": "деньги",
+      "category": "edge_cases",
+      "latency_ms": 203.73,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79043711654@s.whatsapp.net] Доброе утро, Conclave Premium! \n\n*Сегодня понедельник, 13 Января*",
+          "score": 0.2225,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79995903010@s.whatsapp.net] Цена зависит от курса доллара\n[79995903010@s.whatsapp.net] Если в",
+          "score": 0.2213,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[Nikolai Mozenkov] Друзья, получилось мне дать рекомендацию в самое идеальное время, в 18.00 с",
+          "score": 0.2363,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79032847126@s.whatsapp.net] есть советы где мне 9млн руб поменять в € и получить € здесь нали",
+          "score": 0.2224,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[4917623176754@s.whatsapp.net] В 20-е после НЭПа за 1 рубль давали 6 долларов\n[971507028545@s.",
+          "score": 0.2604,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79060601010@s.whatsapp.net] красивое\n[79060601010@s.whatsapp.net] сдавайте доллары, иноагенты",
+          "score": 0.2317,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with Aleksei Forexei:\n[Josh] Yeah, I'll be quite unhappy if it does that\n[Josh] great time to move to Peter and live on zero mon",
+          "score": 0.2246,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[Nikolai Mozenkov] Но Индия идёт по стопам, как маленький брат Китая и подхватит все дешёвые п",
+          "score": 0.2216,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79853355452@s.whatsapp.net] Всем добрый день! \n\nВсе видим курс доллара!\n\nКак инвестировать се",
+          "score": 0.2298,
+          "source": "whatsapp_backup",
+          "relevance": 0
+        },
+        {
+          "text_preview": "WhatsApp conversation with 79647891125-1612709304@g.us:\n[79686166868@s.whatsapp.net] Вывод денег ограничен\n[79111220909@s.whatsapp.net] Класс 👍\n[79032",
+          "score": 0.2353,
+          "source": "whatsapp_backup",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        0,
+        0,
+        3,
+        3,
+        0,
+        0,
+        0,
+        3,
+        0,
+        3
+      ],
+      "mrr": 0.3333,
+      "p_at_1": 0.0,
+      "p_at_3": 0.3333,
+      "p_at_5": 0.4,
+      "p_at_10": 0.4
+    },
+    {
+      "query": "Johs wife",
+      "category": "edge_cases",
+      "latency_ms": 163.02,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[Relationships] Josh's wife is Sasha, who runs a keto drink business called 'Beauty Addicted'.",
+          "score": 0.2461,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's wife's name is Alexandra.",
+          "score": 0.2459,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Relationships] Sasha is Josh's wife.",
+          "score": 0.2123,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Family members] Josh's wife is named Alexandra, not just Sasha. They were married on January 14, 2026.",
+          "score": 0.2285,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh's wife/partner is named Alexandra 'Sasha'",
+          "score": 0.3116,
+          "source": "fact-extractor",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[Life events] Josh's wife Sasha has an IVF clinic consultation scheduled for March 15, 2026, at 15:30",
+          "score": 0.2099,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh wife Alexandra \"Sasha\" → IVF planning with fertility supplements (Orthomol Natal for her, Fertil Plus for him), married Jan 14 2026, explored Can",
+          "score": 0.2263,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "Josh's wife is Alexandra (full name Alexandra), married Jan 14, 2026. Cats Motya and Richard came when she moved in (mid-2025). Brother Jonathan's wed",
+          "score": 0.2266,
+          "source": "conversation",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Family members] Josh Cartu's wife is Alexandra 'Sasha' Cartu (Russian), married on January 14, 2026",
+          "score": 0.2375,
+          "source": "fact-extractor",
+          "relevance": 3
+        },
+        {
+          "text_preview": "[Relationships] Josh has a wife who uses the 'Opus B' OAuth account",
+          "score": 0.2353,
+          "source": "fact-extractor",
+          "relevance": 3
+        }
+      ],
+      "relevance_scores": [
+        3,
+        0,
+        0,
+        3,
+        0,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.3333,
+      "p_at_5": 0.4,
+      "p_at_10": 0.7
+    },
+    {
+      "query": "casino regulations requirements licensing jurisdictions operators must comply anti money laundering know your customer responsible gambling age verification payment processing fraud prevention data protection GDPR compliance technical standards RNG certification game fairness audit",
+      "category": "edge_cases",
+      "latency_ms": 162.78,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "[SCOUT] Germany tightening identity checks for online casino players — GlüStV enforcement expanding KYC requirements for licensed operators, March 202",
+          "score": 0.3175,
+          "source": "swarm-scout",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-08 15:26] GGL (Germany) tightened identity verification requirements for online casino players from March 5, 2026. Impact: DACH marke",
+          "score": 0.3231,
+          "source": "swarm-scout",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[SCOUT] Isle of Man GSC National Risk Assessment: gambling sector assessed as medium high money laundering risk - regulatory compliance implications f",
+          "score": 0.3215,
+          "source": "swarm-scout",
+          "relevance": 1
+        },
+        {
+          "text_preview": "[BUSINESS] ACMA and AGCO issued regulatory warnings affecting the casino sector",
+          "score": 0.3689,
+          "source": "consolidator-v4",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-10 01:37] Cybersecurity breaches and regulatory exposure are critical risks for online casino operators in 2026. EGR report highlight",
+          "score": 0.3226,
+          "source": "swarm-scout",
+          "relevance": 1
+        },
+        {
+          "text_preview": "Assistant notes: 🚨 **SCOUT Alert — Regulatory Watch**\n\n**1. Germany (DACH 34% revenue):** GGL tightened identity verification for online casino player",
+          "score": 0.3355,
+          "source": "conversation",
+          "relevance": 0
+        },
+        {
+          "text_preview": "[SCOUT] Germany GGL tightening identity verification requirements for online casino players (announced March 5, 2026): New rules create stricter links",
+          "score": 0.3184,
+          "source": "swarm-scout",
+          "relevance": 1
+        },
+        {
+          "text_preview": "[SCOUT] [2026-03-09T21:07] eegaming/Atlaslive article on cybersecurity & regulatory exposure for online casinos - highlights DDoS, account takeover, p",
+          "score": 0.3326,
+          "source": "swarm-scout",
+          "relevance": 1
+        },
+        {
+          "text_preview": "[SCOUT] 2026-03-09T16:38 — AI-driven iGaming compliance mandatory 2026. Regulators now require AI-powered responsible gambling tools as licensing requ",
+          "score": 0.3457,
+          "source": "swarm-scout",
+          "relevance": 1
+        },
+        {
+          "text_preview": "[EVENT] Curacao GFLO Law update published on March 11 establishing new regulatory framework for gambling licenses",
+          "score": 0.348,
+          "source": "consolidator-v4",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "mrr": 0.0,
+      "p_at_1": 0.0,
+      "p_at_3": 0.0,
+      "p_at_5": 0.0,
+      "p_at_10": 0.0
+    },
+    {
+      "query": "the thing",
+      "category": "edge_cases",
+      "latency_ms": 180.88,
+      "error": null,
+      "num_results": 10,
+      "results": [
+        {
+          "text_preview": "The most important thing right now",
+          "score": 0.1587,
+          "source": "telegram",
+          "relevance": 3
+        },
+        {
+          "text_preview": "the really most important thing",
+          "score": 0.1101,
+          "source": "telegram",
+          "relevance": 3
+        },
+        {
+          "text_preview": "It'",
+          "score": 0.1179,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "about this I mean",
+          "score": 0.1519,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "You made that and told me to look at it.",
+          "score": 0.1644,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "On it. 🧐",
+          "score": 0.1062,
+          "source": "telegram",
+          "relevance": 0
+        },
+        {
+          "text_preview": "",
+          "score": 0.1967,
+          "source": "matrix",
+          "relevance": 0
+        },
+        {
+          "text_preview": "",
+          "score": 0.1673,
+          "source": "matrix",
+          "relevance": 0
+        },
+        {
+          "text_preview": "",
+          "score": 0.15,
+          "source": "matrix",
+          "relevance": 0
+        },
+        {
+          "text_preview": "",
+          "score": 0.1488,
+          "source": "matrix",
+          "relevance": 0
+        }
+      ],
+      "relevance_scores": [
+        3,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mrr": 1.0,
+      "p_at_1": 1.0,
+      "p_at_3": 0.6667,
+      "p_at_5": 0.4,
+      "p_at_10": 0.2
+    }
+  ]
+}

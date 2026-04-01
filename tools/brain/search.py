@@ -10,7 +10,6 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from brain import _state
 from brain import embedding
-from brain import entities
 from brain import graph
 from brain import scoring
 

@@ -1,0 +1,19 @@
+{
+  "benchmark_date": "2026-03-31T15:53:55.130696",
+  "sample_size": 2000,
+  "threshold": 0.9,
+  "duplicate_pairs_in_sample": 148,
+  "anchor_points_with_dups": 108,
+  "duplicate_rate": 0.074,
+  "estimated_total_duplicates_in_collection": 4584,
+  "total_collection_size": 61959,
+  "score_distribution": {
+    "mean": 0.9085,
+    "median": 0.9074,
+    "min": 0.9,
+    "max": 0.935,
+    "count_090_095": 148,
+    "count_095_099": 0,
+    "count_099_100": 0
+  }
+}
