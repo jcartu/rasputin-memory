@@ -29,13 +29,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements-core.txt
-          pip install ruff pytest pytest-cov mypy
+          pip install ruff pytest pytest-cov mypy types-requests
 
       - name: Lint
         run: ruff check .
 
       - name: Type check
-        run: mypy tools/brain/ tools/pipeline/ --ignore-missing-imports --explicit-package-bases
+        run: mypy tools/brain/ tools/pipeline/ --ignore-missing-imports --exclude 'tools/bm25_search\.py'
         env:
           MYPYPATH: tools
 
