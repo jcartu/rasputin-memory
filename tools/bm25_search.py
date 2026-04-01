@@ -135,17 +135,17 @@ def hybrid_rerank(query: str, dense_results: list[dict[str, Any]], bm25_weight: 
         return []
 
     # Extract text from results for BM25 scoring
+    # Results may have text at top-level (from qdrant_search) or nested under 'payload'
     documents = []
     for r in dense_results:
-        p = r.get("payload", {})
+        p = r.get("payload") or {}
         parts = []
-        if p.get("subject"):
-            parts.append(p["subject"])
-        if p.get("title"):
-            parts.append(p["title"])
-        if p.get("question"):
-            parts.append(p["question"])
-        text = p.get("text", p.get("body", ""))
+        # Top-level fields (from qdrant_search output)
+        for field in ("title", "subject", "question"):
+            v = r.get(field) or p.get(field)
+            if v:
+                parts.append(str(v))
+        text = r.get("text") or p.get("text") or p.get("body") or ""
         if text:
             parts.append(text[:1000])
         documents.append(" ".join(parts))

@@ -38,7 +38,7 @@ def apply_temporal_decay(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
         except (ValueError, TypeError):
             importance = 50
 
-        if importance >= 80:
+        if importance >= 75:
             base_half_life = 365
         elif importance >= 40:
             base_half_life = 60

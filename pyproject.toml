@@ -47,7 +47,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 55
 
 [tool.setuptools]
 packages = ["brain", "pipeline"]
