@@ -103,9 +103,7 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
             }
         )
 
-    out = scoring.apply_temporal_decay(out)
-    out = scoring.apply_multifactor_scoring(out)
-    return out
+    return scoring.apply_temporal_decay(out)
 
 
 def hybrid_search(
@@ -145,6 +143,9 @@ def hybrid_search(
             bm25_applied = True
         except Exception as error:
             _state.logger.error("BM25 rerank error: %s", error)
+
+    if qdrant_results and any("source_weight" in row for row in qdrant_results):
+        qdrant_results = scoring.apply_multifactor_scoring(qdrant_results)
 
     graph_memory_results = [row for row in graph_results if row.get("source") in ("graph_memory", "graph_keyword")]
     graph_context_results = [row for row in graph_results if row.get("source") == "graph_context"]
