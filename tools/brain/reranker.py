@@ -6,22 +6,22 @@ Exposes a FastAPI HTTP API for reranking search results.
 Uses BAAI/bge-reranker-v2-m3 by default.
 
 Usage:
-    python3 reranker_server.py                # Start on port 8006
-    python3 reranker_server.py --port 8007    # Custom port
+    python3 tools/brain/reranker.py                # Start on port 8006
+    python3 tools/brain/reranker.py --port 8007    # Custom port
 """
 
-import os
 import asyncio
+import logging
+import os
+from typing import List
 
 os.environ["CUDA_VISIBLE_DEVICES"] = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
 
+import torch
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import uvicorn
-import logging
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,7 +31,6 @@ PORT = int(os.environ.get("RERANKER_PORT", "8006"))
 
 app = FastAPI(title="Reranker Server", version="1.0")
 
-# Global model/tokenizer
 model = None
 tokenizer = None
 device = None
@@ -47,7 +46,6 @@ class RerankResponse(BaseModel):
 
 
 def load_model():
-    """Load cross-encoder reranker model on GPU."""
     global model, tokenizer, device
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -70,10 +68,6 @@ async def startup():
 
 @app.post("/rerank", response_model=RerankResponse)
 async def rerank(req: RerankRequest):
-    """
-    Rerank passages against a query.
-    Returns normalized scores (higher = more relevant)
-    """
     if not model or not tokenizer:
         raise HTTPException(status_code=500, detail="Model not loaded")
 
@@ -108,7 +102,6 @@ async def rerank(req: RerankRequest):
 
 @app.get("/health")
 async def health():
-    """Health check"""
     mem_gb = 0
     if torch.cuda.is_available():
         try:
@@ -125,7 +118,6 @@ async def health():
 
 @app.get("/")
 async def root():
-    """Root handler for health checks."""
     return {"status": "ok", "service": "reranker", "model": MODEL_NAME}
 
 

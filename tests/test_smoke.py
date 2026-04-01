@@ -32,7 +32,7 @@ def test_import_bm25_search():
 
 
 def test_import_reranker_server():
-    _try_import("tools/reranker_server.py")
+    _try_import("tools/brain/reranker.py")
 
 
 def test_import_memory_dedup():

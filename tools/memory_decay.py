@@ -459,7 +459,15 @@ def run_decay(execute=False, stats_only=False, limit=None):
         print(f"  {bucket:>12s}: {count:>6,} {bar}")
 
     if stats_only:
-        return
+        return {
+            "ok": True,
+            "execute": execute,
+            "stats_only": True,
+            "pending_recovered": pending,
+            "stats": stats,
+            "archive_candidates": len(archive_cands),
+            "soft_delete_candidates": len(softdel_cands),
+        }
 
     # Show top archive candidates
     if archive_cands:
@@ -481,6 +489,8 @@ def run_decay(execute=False, stats_only=False, limit=None):
             )
 
     # Execute
+    archived = 0
+    deleted = 0
     if execute:
         if archive_cands:
             print(f"\n🔴 Archiving {len(archive_cands)} memories...")
@@ -498,6 +508,44 @@ def run_decay(execute=False, stats_only=False, limit=None):
         else:
             print("\n✅ All memories are healthy. No action needed.")
 
+    return {
+        "ok": True,
+        "execute": execute,
+        "stats_only": stats_only,
+        "pending_recovered": pending,
+        "stats": stats,
+        "archive_candidates": len(archive_cands),
+        "soft_delete_candidates": len(softdel_cands),
+        "archived": archived if execute else 0,
+        "soft_deleted": deleted if execute else 0,
+    }
+
+
+def decay_pass(qdrant_client, collection: str, config: dict) -> dict:
+    global qdrant, COLLECTION, ARCHIVE_DAYS, SOFT_DELETE_DAYS, LOW_IMPORTANCE_THRESHOLD
+    previous_qdrant = qdrant
+    previous_collection = COLLECTION
+    previous_archive_days = ARCHIVE_DAYS
+    previous_soft_delete_days = SOFT_DELETE_DAYS
+    previous_low_importance = LOW_IMPORTANCE_THRESHOLD
+    qdrant = qdrant_client
+    COLLECTION = collection
+    ARCHIVE_DAYS = int(config.get("archive_days", ARCHIVE_DAYS))
+    SOFT_DELETE_DAYS = int(config.get("soft_delete_days", SOFT_DELETE_DAYS))
+    LOW_IMPORTANCE_THRESHOLD = int(config.get("low_importance_threshold", LOW_IMPORTANCE_THRESHOLD))
+    try:
+        return run_decay(
+            execute=bool(config.get("execute", False)),
+            stats_only=bool(config.get("stats_only", False)),
+            limit=config.get("limit"),
+        )
+    finally:
+        qdrant = previous_qdrant
+        COLLECTION = previous_collection
+        ARCHIVE_DAYS = previous_archive_days
+        SOFT_DELETE_DAYS = previous_soft_delete_days
+        LOW_IMPORTANCE_THRESHOLD = previous_low_importance
+
 
 if __name__ == "__main__":
     try:
@@ -506,9 +554,21 @@ if __name__ == "__main__":
         print("[INFO] Another memory_decay instance is running. Exiting.")
         sys.exit(0)
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Decay Engine")
+    parser.add_argument("--qdrant-url", default=QDRANT_URL, help="Qdrant URL")
+    parser.add_argument("--collection", default=COLLECTION, help="Qdrant collection")
     parser.add_argument("--execute", action="store_true", help="Actually archive/delete (default: dry run)")
     parser.add_argument("--stats", action="store_true", help="Show age distribution only")
     parser.add_argument("--limit", type=int, default=None, help="Max memories to scan")
     args = parser.parse_args()
 
-    run_decay(execute=args.execute, stats_only=args.stats, limit=args.limit)
+    print(
+        decay_pass(
+            qdrant_client=QdrantClient(url=args.qdrant_url),
+            collection=args.collection,
+            config={
+                "execute": args.execute,
+                "stats_only": args.stats,
+                "limit": args.limit,
+            },
+        )
+    )

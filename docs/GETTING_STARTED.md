@@ -62,7 +62,7 @@ The reranker rescores search results using a cross-encoder model. Significantly 
 
 ```bash
 # Start the reranker server
-python3 tools/reranker_server.py
+python3 tools/brain/reranker.py
 # Runs on port 8006 by default
 ```
 

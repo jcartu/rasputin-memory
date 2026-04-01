@@ -70,12 +70,6 @@ def extract_entities_fast(text: str) -> list[tuple[str, str]]:
             seen.add(name)
             extracted.append((name, "Project"))
 
-    for match in re.finditer(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b", text):
-        name = match.group(1)
-        if name not in seen and len(name) > 4:
-            seen.add(name)
-            extracted.append((name, "Person"))
-
     for match in re.finditer(r"\b([А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)+)\b", text):
         name = match.group(1)
         if name not in seen and len(name) > 4:

@@ -156,7 +156,7 @@ def test_task23_brain_port_bound_to_localhost():
 
 
 def test_task24_reranker_max_length_1024():
-    source = (ROOT / "tools" / "reranker_server.py").read_text()
+    source = (ROOT / "tools" / "brain" / "reranker.py").read_text()
     assert "max_length=1024" in source
     assert "max_length=512" not in source
 

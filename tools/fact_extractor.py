@@ -26,8 +26,8 @@ safe_import = importlib.import_module("pipeline._imports").safe_import
 _locking = safe_import("pipeline.locking", "tools.pipeline.locking")
 acquire_pipeline_lock = _locking.acquire_lock
 
-WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / ".openclaw" / "workspace"))
-SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", Path.home() / ".openclaw/agents/main/sessions"))
+WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", os.path.join(os.path.dirname(__file__), ".."))).resolve()
+SESSIONS_DIR = Path(os.environ.get("SESSIONS_DIR", str(WORKSPACE / "sessions")))
 FACTS_FILE = WORKSPACE / "memory" / "facts.jsonl"
 STATE_FILE = WORKSPACE / "memory" / "fact_extractor_state.json"
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")

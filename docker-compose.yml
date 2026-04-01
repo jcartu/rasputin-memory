@@ -28,7 +28,7 @@ services:
 
   # Optional: BGE Reranker
   # Uncomment if you want the reranker as a container.
-  # Otherwise, run tools/reranker_server.py directly on the host with GPU access.
+  # Otherwise, run tools/brain/reranker.py directly on the host with GPU access.
   #
   # reranker:
   #   build:

@@ -47,7 +47,6 @@ def test_extract_entities_fast_various_inputs(monkeypatch):
     assert ("John Doe", "Person") in extracted
     assert ("OpenClaw", "Organization") in extracted
     assert ("Rasputin Memory", "Project") in extracted
-    assert ("Jane Smith", "Person") in extracted
 
 
 def test_embedding_check_duplicate_with_mocked_qdrant(monkeypatch):

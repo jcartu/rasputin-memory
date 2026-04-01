@@ -43,7 +43,7 @@ Memory Commit
 
 - API server: `tools/hybrid_brain.py`
 - BM25 fusion layer: `tools/bm25_search.py`
-- Reranker API: `tools/reranker_server.py`
+- Reranker API: `tools/brain/reranker.py`
 - Maintenance jobs:
   - `tools/memory_decay.py`
   - `tools/memory_dedup.py`

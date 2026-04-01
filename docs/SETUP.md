@@ -110,11 +110,11 @@ curl -s http://localhost:11434/api/embed \
 The system degrades gracefully without a reranker. To enable it:
 
 ```bash
-python3 tools/reranker_server.py
+python3 tools/brain/reranker.py
 # Starts BGE reranker on port 8006
 ```
 
-Requires GPU for reasonable speed. See `tools/reranker_server.py` for details.
+Requires GPU for reasonable speed. See `tools/brain/reranker.py` for details.
 
 ### LLM for A-MAC Quality Gate (Optional)
 

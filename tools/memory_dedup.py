@@ -360,6 +360,32 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
     return state
 
 
+def dedup_pass(qdrant_client, collection: str, config: dict) -> dict:
+    global qdrant, COLLECTION
+    previous_qdrant = qdrant
+    previous_collection = COLLECTION
+    qdrant = qdrant_client
+    COLLECTION = collection
+    try:
+        state = run_dedup(
+            threshold=float(config.get("threshold", 0.92)),
+            limit=config.get("limit"),
+            execute=bool(config.get("execute", False)),
+            resume=bool(config.get("resume", False)),
+            batch_size=max(1, int(config.get("batch_size", 100))),
+        )
+        return {
+            "ok": True,
+            "scanned": state.get("scanned", 0),
+            "clusters_found": state.get("clusters_found", 0),
+            "dupes_marked": state.get("dupes_marked", 0),
+            "execute": bool(config.get("execute", False)),
+        }
+    finally:
+        qdrant = previous_qdrant
+        COLLECTION = previous_collection
+
+
 if __name__ == "__main__":
     try:
         _lock_fd = acquire_pipeline_lock("memory_dedup")
@@ -367,6 +393,8 @@ if __name__ == "__main__":
         print("[INFO] Another memory_dedup instance is running. Exiting.")
         sys.exit(0)
     parser = argparse.ArgumentParser(description="RASPUTIN Memory Deduplication Engine")
+    parser.add_argument("--qdrant-url", default=QDRANT_URL, help="Qdrant URL")
+    parser.add_argument("--collection", default=COLLECTION, help="Qdrant collection")
     parser.add_argument("--threshold", type=float, default=0.92, help="Cosine similarity threshold (default: 0.92)")
     parser.add_argument("--limit", type=int, default=None, help="Max vectors to scan (default: all)")
     parser.add_argument("--execute", action="store_true", help="Actually delete duplicates (default: dry run)")
@@ -374,10 +402,15 @@ if __name__ == "__main__":
     parser.add_argument("--batch-size", type=int, default=100, help="Scroll batch size (default: 100)")
     args = parser.parse_args()
 
-    run_dedup(
-        threshold=args.threshold,
-        limit=args.limit,
-        execute=args.execute,
-        resume=args.resume,
-        batch_size=args.batch_size,
+    result = dedup_pass(
+        qdrant_client=QdrantClient(url=args.qdrant_url),
+        collection=args.collection,
+        config={
+            "threshold": args.threshold,
+            "limit": args.limit,
+            "execute": args.execute,
+            "resume": args.resume,
+            "batch_size": args.batch_size,
+        },
     )
+    print(result)

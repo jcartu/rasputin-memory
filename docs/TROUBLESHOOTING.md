@@ -118,7 +118,7 @@ curl -s http://localhost:8006/rerank \
   -d '{"query": "test", "passages": ["hello"]}'
 
 # If not running, restart it
-python3 tools/reranker_server.py &
+python3 tools/brain/reranker.py &
 
 ```
 

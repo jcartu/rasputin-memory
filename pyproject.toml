@@ -43,7 +43,7 @@ addopts = "--cov=tools --cov-report=term-missing"
 [tool.coverage.run]
 source = ["tools"]
 omit = [
-    "tools/reranker_server.py",
+    "tools/brain/reranker.py",
 ]
 
 [tool.coverage.report]
