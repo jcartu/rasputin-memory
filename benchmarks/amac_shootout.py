@@ -37,17 +37,19 @@ VARIANT_C = {
     "max_tokens": 200,
 }
 
+
 def get_memories():
     print("Fetching 200 memories from Qdrant...")
     resp = requests.post(
         "http://localhost:6333/collections/memories_v2/points/scroll",
         json={"limit": 200, "with_payload": True, "with_vector": False},
-        timeout=30
+        timeout=30,
     )
     resp.raise_for_status()
     points = resp.json()["result"]["points"]
     print(f"Got {len(points)} points")
     return points
+
 
 def extract_text(point):
     payload = point.get("payload", {})
@@ -59,20 +61,20 @@ def extract_text(point):
     parts = [str(v) for v in payload.values() if isinstance(v, str) and v]
     return " | ".join(parts) if parts else str(payload)
 
+
 def parse_json_response(text):
     """Try to extract JSON from model response."""
     # Direct parse
     text = text.strip()
     try:
         return json.loads(text)
-    except:
+    except Exception:
         pass
-    # Find JSON object
-    match = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+    match = re.search(r"\{[^{}]*\}", text, re.DOTALL)
     if match:
         try:
             return json.loads(match.group())
-        except:
+        except Exception:
             pass
     # Extract key:value pairs
     result = {}
@@ -84,14 +86,12 @@ def parse_json_response(text):
         return result
     return None
 
+
 def call_model(variant, memory_text):
     user_msg = f"Memory text: {memory_text[:1000]} /no_think"
     payload = {
         "model": variant["model"],
-        "messages": [
-            {"role": "system", "content": variant["system"]},
-            {"role": "user", "content": user_msg}
-        ],
+        "messages": [{"role": "system", "content": variant["system"]}, {"role": "user", "content": user_msg}],
         "temperature": 0.1,
         "max_tokens": variant["max_tokens"],
     }
@@ -108,30 +108,27 @@ def call_model(variant, memory_text):
         print(f"  ERROR calling {variant['name']}: {e}")
         return None, elapsed_ms, str(e)
 
+
 def main():
     points = get_memories()
-    
+
     results = []
     stats = {
         "a": {"composites": [], "latencies": [], "failures": 0},
         "b": {"composites": [], "latencies": [], "failures": 0},
         "c": {"composites": [], "latencies": [], "failures": 0},
     }
-    
+
     print(f"\nProcessing {len(points)} memories sequentially...")
-    
+
     with open(RESULTS_PATH, "w") as f_out:
         for i, point in enumerate(points):
             pid = point.get("id", i)
             text = extract_text(point)
-            print(f"[{i+1}/{len(points)}] id={pid} text_len={len(text)}")
-            
-            record = {
-                "id": pid,
-                "text_preview": text[:120],
-                "variants": {}
-            }
-            
+            print(f"[{i + 1}/{len(points)}] id={pid} text_len={len(text)}")
+
+            record = {"id": pid, "text_preview": text[:120], "variants": {}}
+
             for key, variant in [("a", VARIANT_A), ("b", VARIANT_B), ("c", VARIANT_C)]:
                 parsed, latency_ms, raw = call_model(variant, text)
                 composite = parsed.get("composite") if parsed else None
@@ -140,7 +137,7 @@ def main():
                     stats[key]["composites"].append(float(composite))
                 else:
                     stats[key]["failures"] += 1
-                
+
                 record["variants"][key] = {
                     "name": variant["name"],
                     "scores": parsed,
@@ -149,27 +146,34 @@ def main():
                     "parse_ok": parsed is not None,
                 }
                 print(f"  {variant['name']}: composite={composite} latency={latency_ms:.0f}ms")
-            
+
             results.append(record)
             f_out.write(json.dumps(record) + "\n")
             f_out.flush()
-    
+
     print("\nComputing summary...")
-    
+
     def variant_summary(key):
         c = stats[key]["composites"]
-        l = stats[key]["latencies"]
+        lats = stats[key]["latencies"]
         if not c:
-            return {"mean_composite": None, "median": None, "stdev": None, "reject_rate_at_4": None, "mean_latency_ms": None, "parse_failures": stats[key]["failures"]}
+            return {
+                "mean_composite": None,
+                "median": None,
+                "stdev": None,
+                "reject_rate_at_4": None,
+                "mean_latency_ms": None,
+                "parse_failures": stats[key]["failures"],
+            }
         return {
             "mean_composite": round(statistics.mean(c), 3),
             "median": round(statistics.median(c), 3),
             "stdev": round(statistics.stdev(c) if len(c) > 1 else 0, 3),
             "reject_rate_at_4": round(sum(1 for x in c if x < 4) / len(c), 3),
-            "mean_latency_ms": round(statistics.mean(l), 1),
+            "mean_latency_ms": round(statistics.mean(lats), 1),
             "parse_failures": stats[key]["failures"],
         }
-    
+
     def correlation(xs, ys):
         """Pearson correlation between two lists (aligned by index)."""
         pairs = [(x, y) for x, y in zip(xs, ys) if x is not None and y is not None]
@@ -180,14 +184,14 @@ def main():
         ys2 = [p[1] for p in pairs]
         mx, my = statistics.mean(xs2), statistics.mean(ys2)
         num = sum((x - mx) * (y - my) for x, y in pairs)
-        den = math.sqrt(sum((x - mx)**2 for x in xs2) * sum((y - my)**2 for y in ys2))
+        den = math.sqrt(sum((x - mx) ** 2 for x in xs2) * sum((y - my) ** 2 for y in ys2))
         return round(num / den, 4) if den else None
-    
+
     # Build composite lists aligned
     a_scores = [r["variants"]["a"]["composite"] for r in results]
     b_scores = [r["variants"]["b"]["composite"] for r in results]
     c_scores = [r["variants"]["c"]["composite"] for r in results]
-    
+
     # Find interesting disagreements (largest A vs C delta)
     disagreements = []
     for r in results:
@@ -199,10 +203,9 @@ def main():
             disagreements.append((delta, r["text_preview"], a, b, c))
     disagreements.sort(reverse=True)
     top_disagreements = [
-        {"memory_preview": d[1], "a_score": d[2], "b_score": d[3], "c_score": d[4]}
-        for d in disagreements[:5]
+        {"memory_preview": d[1], "a_score": d[2], "b_score": d[3], "c_score": d[4]} for d in disagreements[:5]
     ]
-    
+
     summary = {
         "total_memories": len(points),
         "variant_a_35b": variant_summary("a"),
@@ -215,16 +218,17 @@ def main():
         },
         "interesting_disagreements": top_disagreements,
     }
-    
+
     with open(SUMMARY_PATH, "w") as f:
         json.dump(summary, f, indent=2)
-    
+
     print("\n✅ Done!")
     print(f"Results: {RESULTS_PATH}")
     print(f"Summary: {SUMMARY_PATH}")
     print(json.dumps(summary, indent=2))
-    
+
     return summary
+
 
 if __name__ == "__main__":
     main()

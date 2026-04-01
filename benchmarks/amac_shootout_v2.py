@@ -52,10 +52,12 @@ def load_existing_samples():
             if not line:
                 continue
             r = json.loads(line)
-            samples.append({
-                "id": r["id"],
-                "text": r.get("text_preview", ""),
-            })
+            samples.append(
+                {
+                    "id": r["id"],
+                    "text": r.get("text_preview", ""),
+                }
+            )
     print(f"Loaded {len(samples)} samples from existing results")
     return samples
 
@@ -66,11 +68,11 @@ def get_full_texts_from_qdrant(ids):
     id_to_text = {}
     batch_size = 100
     for i in range(0, len(ids), batch_size):
-        batch = ids[i:i+batch_size]
+        batch = ids[i : i + batch_size]
         resp = requests.post(
             "http://localhost:6333/collections/memories_v2/points",
             json={"ids": batch, "with_payload": True, "with_vector": False},
-            timeout=30
+            timeout=30,
         )
         resp.raise_for_status()
         for point in resp.json()["result"]:
@@ -95,7 +97,7 @@ def parse_json_response(text):
         return None
 
     # Strip <think>...</think> blocks
-    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
     # Try direct parse of cleaned text
     try:
@@ -132,10 +134,7 @@ def call_model(variant, memory_text):
     user_msg = f"Memory text: {memory_text[:1000]} /no_think"
     payload = {
         "model": variant["model"],
-        "messages": [
-            {"role": "system", "content": variant["system"]},
-            {"role": "user", "content": user_msg}
-        ],
+        "messages": [{"role": "system", "content": variant["system"]}, {"role": "user", "content": user_msg}],
         "temperature": 0.1,
         "max_tokens": variant["max_tokens"],
         "chat_template_kwargs": {"enable_thinking": False},
@@ -169,7 +168,7 @@ def get_samples_from_qdrant():
     resp = requests.post(
         "http://localhost:6333/collections/memories_v2/points/scroll",
         json={"limit": 200, "with_payload": True, "with_vector": False},
-        timeout=30
+        timeout=30,
     )
     resp.raise_for_status()
     points = resp.json()["result"]["points"]
@@ -209,13 +208,9 @@ def main():
             text = sample["text"]
 
             if (i + 1) % 10 == 0 or i == 0:
-                print(f"[{i+1}/{len(samples)}] id={pid} text_len={len(text)}")
+                print(f"[{i + 1}/{len(samples)}] id={pid} text_len={len(text)}")
 
-            record = {
-                "id": pid,
-                "text_preview": text[:120],
-                "variants": {}
-            }
+            record = {"id": pid, "text_preview": text[:120], "variants": {}}
 
             for key, variant in [("a", VARIANT_A), ("b", VARIANT_B), ("c", VARIANT_C)]:
                 parsed, latency_ms, raw = call_model(variant, text)
@@ -240,7 +235,9 @@ def main():
                 }
 
                 if (i + 1) % 10 == 0 or i == 0:
-                    print(f"  {variant['name']}: composite={composite} latency={latency_ms:.0f}ms parse_ok={parsed is not None}")
+                    print(
+                        f"  {variant['name']}: composite={composite} latency={latency_ms:.0f}ms parse_ok={parsed is not None}"
+                    )
 
             results.append(record)
             f_out.write(json.dumps(record) + "\n")
@@ -250,13 +247,15 @@ def main():
 
     def variant_summary(key):
         c = stats[key]["composites"]
-        l = stats[key]["latencies"]
+        lats = stats[key]["latencies"]
         total = len(c) + stats[key]["failures"]
         if not c:
             return {
-                "mean_composite": None, "median": None, "stdev": None,
+                "mean_composite": None,
+                "median": None,
+                "stdev": None,
                 "reject_rate_at_4": None,
-                "mean_latency_ms": round(statistics.mean(l), 1) if l else None,
+                "mean_latency_ms": round(statistics.mean(lats), 1) if lats else None,
                 "parse_failures": stats[key]["failures"],
                 "parse_success_rate": 0.0,
             }
@@ -265,7 +264,7 @@ def main():
             "median": round(statistics.median(c), 3),
             "stdev": round(statistics.stdev(c) if len(c) > 1 else 0, 3),
             "reject_rate_at_4": round(sum(1 for x in c if x < 4) / len(c), 3),
-            "mean_latency_ms": round(statistics.mean(l), 1),
+            "mean_latency_ms": round(statistics.mean(lats), 1),
             "parse_failures": stats[key]["failures"],
             "parse_success_rate": round(len(c) / total, 3) if total else 0,
         }
@@ -278,7 +277,7 @@ def main():
         ys2 = [p[1] for p in pairs]
         mx, my = statistics.mean(xs2), statistics.mean(ys2)
         num = sum((x - mx) * (y - my) for x, y in pairs)
-        den = math.sqrt(sum((x - mx)**2 for x in xs2) * sum((y - my)**2 for y in ys2))
+        den = math.sqrt(sum((x - mx) ** 2 for x in xs2) * sum((y - my) ** 2 for y in ys2))
         return round(num / den, 4) if den else None
 
     a_scores = [r["variants"]["a"]["composite"] for r in results]
@@ -296,8 +295,7 @@ def main():
             disagreements.append((delta, r["text_preview"], a, b, c_val))
     disagreements.sort(reverse=True)
     top_disagreements = [
-        {"memory_preview": d[1], "a_score": d[2], "b_score": d[3], "c_score": d[4]}
-        for d in disagreements[:5]
+        {"memory_preview": d[1], "a_score": d[2], "b_score": d[3], "c_score": d[4]} for d in disagreements[:5]
     ]
 
     summary = {

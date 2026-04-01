@@ -36,17 +36,18 @@ SOURCE_WEIGHTS = {
     "benchmark_test": 0.0,
 }
 
+
 def heuristic_score(payload, text):
     """Score memory using heuristics."""
     text_len = len(text)
     source = payload.get("source", "unknown")
     importance = float(payload.get("importance", payload.get("importance_score", 50)) or 50)
-    
+
     # Relevance: based on importance score and source quality
     src_weight = SOURCE_WEIGHTS.get(source, 0.65)
     R = (importance / 100.0) * 10 * src_weight
     R = max(0, min(10, R))
-    
+
     # Novelty: based on text length and content diversity
     # Longer, more detailed memories are more likely to be novel
     if text_len < 30:
@@ -63,23 +64,29 @@ def heuristic_score(payload, text):
     dup_phrases = ["test memory", "benchmark", "lorem ipsum"]
     if any(p in text.lower() for p in dup_phrases):
         N = 1.0
-    
+
     # Specificity: based on presence of specific entities (numbers, names, dates, URLs)
     import re
-    has_numbers = bool(re.search(r'\d+', text))
-    has_names = bool(re.search(r'[A-Z][a-z]+\s+[A-Z][a-z]+', text))
-    has_dates = bool(re.search(r'\d{4}[-/]\d{1,2}', text))
-    has_urls = bool(re.search(r'https?://', text))
+
+    has_numbers = bool(re.search(r"\d+", text))
+    has_names = bool(re.search(r"[A-Z][a-z]+\s+[A-Z][a-z]+", text))
+    has_dates = bool(re.search(r"\d{4}[-/]\d{1,2}", text))
+    has_urls = bool(re.search(r"https?://", text))
     specificity_score = 4.0
-    if has_numbers: specificity_score += 1.5
-    if has_names: specificity_score += 1.5
-    if has_dates: specificity_score += 1.5
-    if has_urls: specificity_score += 1.0
+    if has_numbers:
+        specificity_score += 1.5
+    if has_names:
+        specificity_score += 1.5
+    if has_dates:
+        specificity_score += 1.5
+    if has_urls:
+        specificity_score += 1.0
     specificity_score = min(10, specificity_score)
     S = specificity_score
-    
+
     composite = (R + N + S) / 3.0
     return round(R, 2), round(N, 2), round(S, 2), round(composite, 2)
+
 
 def qdrant_post(path, body):
     url = f"{QDRANT}{path}"
@@ -87,6 +94,7 @@ def qdrant_post(path, body):
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
+
 
 print(f"Starting A-MAC heuristic audit at {datetime.now().isoformat()}")
 
@@ -121,9 +129,9 @@ with open(OUTPUT, "w") as out_f:
         source = payload.get("source", "unknown")
         date = payload.get("date", payload.get("created_at", ""))
         importance = payload.get("importance", payload.get("importance_score", 0))
-        
+
         R, N, S, composite = heuristic_score(payload, text)
-        
+
         entry = {
             "point_id": p["id"],
             "text_preview": text[:150],
@@ -148,12 +156,12 @@ if results:
     n_scores = [r["N"] for r in results]
     s_scores = [r["S"] for r in results]
     would_reject = sum(1 for r in results if r["would_reject"])
-    
-    hist = {f"{i}-{i+1}": 0 for i in range(0, 10)}
+
+    hist = {f"{i}-{i + 1}": 0 for i in range(0, 10)}
     for c in composites:
         bucket = min(int(c), 9)
-        hist[f"{bucket}-{bucket+1}"] += 1
-    
+        hist[f"{bucket}-{bucket + 1}"] += 1
+
     # By source quality
     source_stats = {}
     for r in results:
@@ -162,7 +170,7 @@ if results:
             source_stats[src] = []
         source_stats[src].append(r["composite"])
     source_summary = {src: round(statistics.mean(scores), 2) for src, scores in source_stats.items() if scores}
-    
+
     stats = {
         "benchmark_date": datetime.now().isoformat(),
         "method": "heuristic (LLM scoring not feasible - qwen3 thinking model overhead ~3s/call)",
@@ -185,16 +193,18 @@ if results:
         "score_histogram": hist,
         "mean_score_by_source": dict(sorted(source_summary.items(), key=lambda x: -x[1])),
     }
-    
+
     with open(STATS_OUTPUT, "w") as f:
         json.dump(stats, f, indent=2)
-    
+
     print("\nA-MAC Heuristic Results:")
     print(f"  Mean composite:  {stats['composite_scores']['mean']:.2f}")
     print(f"  Median:          {stats['composite_scores']['median']:.2f}")
     print(f"  Stdev:           {stats['composite_scores']['stdev']:.2f}")
     print(f"  Reject rate @{AMAC_THRESHOLD}: {stats['rejection_rate_at_4']:.1%} ({would_reject}/{len(results)})")
-    print(f"\n  Dimensions: R={stats['dimension_means']['R_relevance']:.2f}  N={stats['dimension_means']['N_novelty']:.2f}  S={stats['dimension_means']['S_specificity']:.2f}")
+    print(
+        f"\n  Dimensions: R={stats['dimension_means']['R_relevance']:.2f}  N={stats['dimension_means']['N_novelty']:.2f}  S={stats['dimension_means']['S_specificity']:.2f}"
+    )
     print("\n  Score histogram:")
     for k, v in hist.items():
         bar = "█" * (v // 5)
