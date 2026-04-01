@@ -4,28 +4,20 @@ import math
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from pipeline.dateparse import parse_date
+
 
 def _parse_date(date_str: str) -> Optional[Any]:
-    if not date_str:
-        return None
-
+    normalized = (date_str or "").strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
     try:
-        normalized = date_str
-        if normalized.endswith("Z"):
-            normalized = normalized[:-1] + "+00:00"
         parsed = datetime.fromisoformat(normalized)
         if parsed.tzinfo is None:
             return parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(timezone.utc)
     except ValueError:
-        pass
-
-    for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(date_str, fmt).replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-    return None
+        return parse_date(date_str)
 
 
 def apply_temporal_decay(results: list[dict[str, Any]]) -> list[dict[str, Any]]:

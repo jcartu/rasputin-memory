@@ -7,8 +7,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
 query_expansion = importlib.import_module("pipeline.query_expansion")
-source_tiering = importlib.import_module("pipeline.source_tiering")
-get_source_weight = source_tiering.get_source_weight
+scoring_constants = importlib.import_module("pipeline.scoring_constants")
+get_source_weight = scoring_constants.get_source_weight
 search_module = importlib.import_module("brain.search")
 graph_module = importlib.import_module("brain.graph")
 embedding_module = importlib.import_module("brain.embedding")

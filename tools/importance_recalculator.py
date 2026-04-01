@@ -10,24 +10,13 @@ from typing import Any
 
 from qdrant_client import QdrantClient
 
+from pipeline.dateparse import parse_date
+
 try:
     _config_module = importlib.import_module("config")
 except ModuleNotFoundError:
     _config_module = importlib.import_module("tools.config")
 load_config = _config_module.load_config
-
-
-def _parse_iso(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        normalized = value.replace("Z", "+00:00")
-        parsed = datetime.fromisoformat(normalized)
-        if parsed.tzinfo is None:
-            return parsed.replace(tzinfo=timezone.utc)
-        return parsed.astimezone(timezone.utc)
-    except ValueError:
-        return None
 
 
 def get_recent_commit_topics(limit: int = 30) -> set[str]:
@@ -74,7 +63,7 @@ def calculate_new_importance(payload: dict[str, Any], now: datetime, hot_topics:
     if retrieval_count > 5:
         score += 10
 
-    last_accessed = _parse_iso(payload.get("last_accessed")) or _parse_iso(payload.get("date"))
+    last_accessed = parse_date(payload.get("last_accessed")) or parse_date(payload.get("date"))
     if last_accessed and (now - last_accessed) > timedelta(days=90):
         score -= 10
 

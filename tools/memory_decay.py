@@ -21,7 +21,7 @@ import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import defaultdict
 from typing import Any, cast
 
@@ -33,6 +33,9 @@ from qdrant_client.models import (
     FieldCondition,
     MatchValue,
 )
+
+from pipeline.dateparse import parse_date
+from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
@@ -89,24 +92,10 @@ def compute_importance_score(payload):
     score += imp * 0.4  # 40% weight
 
     # Source quality
-    source_weights = {
-        "manual_commit": 25,
-        "fact_extraction": 20,
-        "fact_extractor": 20,
-        "conversation": 12,
-        "chatgpt": 10,
-        "perplexity": 8,
-        "email": 8,
-        "telegram": 8,
-        "web_page": 5,
-        "social_intel": 3,
-        "benchmark_test": 0,
-    }
-    source = payload.get("source", "")
-    source_score = source_weights.get(source, 8)
-    # Handle partial matches
-    if source_score == 8 and "social_intel" in source:
-        source_score = 3
+    source = str(payload.get("source", "")).strip().lower()
+    source_score = int(SOURCE_IMPORTANCE.get(source, 0.5) * 15)
+    if source_score == int(0.5 * 15) and "social_intel" in source:
+        source_score = int(SOURCE_IMPORTANCE["social_intel"] * 15)
     score += source_score
 
     # Content quality heuristics
@@ -146,27 +135,12 @@ def compute_importance_score(payload):
 
 def get_last_accessed(payload):
     """Get last accessed datetime — use last_accessed field or fall back to date."""
-    la = payload.get("last_accessed")
-    if la:
-        try:
-            return datetime.fromisoformat(la[:26])
-        except Exception:
-            pass
-
-    # Fall back to creation date
-    date_str = payload.get("date", "")
-    if date_str:
-        try:
-            return datetime.fromisoformat(date_str[:26])
-        except Exception:
-            pass
-
-    return None
+    return parse_date(payload.get("last_accessed")) or parse_date(payload.get("date"))
 
 
 def scan_memories(limit=None):
     """Scan all memories and categorize by decay status."""
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
 
     stats = {
         "total": 0,

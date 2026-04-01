@@ -14,10 +14,10 @@ from brain import entities
 from brain import graph
 
 try:
-    _source_tiering = importlib.import_module("pipeline.source_tiering")
+    _scoring_constants = importlib.import_module("pipeline.scoring_constants")
 except ModuleNotFoundError:
-    _source_tiering = importlib.import_module("tools.pipeline.source_tiering")
-get_source_weight = _source_tiering.get_source_weight
+    _scoring_constants = importlib.import_module("tools.pipeline.scoring_constants")
+get_source_weight = _scoring_constants.get_source_weight
 
 try:
     _contradiction = importlib.import_module("pipeline.contradiction")

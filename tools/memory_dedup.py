@@ -22,10 +22,13 @@ import json
 import os
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointIdsList
+
+from pipeline.dateparse import parse_date
+from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION = os.environ.get("QDRANT_COLLECTION", "second_brain")
@@ -87,20 +90,11 @@ def score_memory(payload):
     score += min(len(text), 2000) / 100  # max 20 points
 
     # Source quality
-    source_scores = {
-        "manual_commit": 15,
-        "fact_extraction": 12,
-        "fact_extractor": 12,
-        "conversation": 8,
-        "chatgpt": 7,
-        "perplexity": 6,
-        "email": 5,
-        "telegram": 5,
-        "web_page": 3,
-        "benchmark_test": 0,
-    }
-    source = payload.get("source", "")
-    score += source_scores.get(source, 5)
+    source = str(payload.get("source", "")).strip().lower()
+    source_priority = int(SOURCE_IMPORTANCE.get(source, 0.5) * 10)
+    if source_priority == int(0.5 * 10) and "social_intel" in source:
+        source_priority = int(SOURCE_IMPORTANCE["social_intel"] * 10)
+    score += source_priority
 
     # Importance
     imp = payload.get("importance", 50)
@@ -113,12 +107,10 @@ def score_memory(payload):
     # Recency: newer is better
     date_str = payload.get("date", "")
     if date_str:
-        try:
-            dt = datetime.fromisoformat(date_str[:26])
-            days_old = (datetime.now() - dt).total_seconds() / 86400
+        dt = parse_date(date_str)
+        if dt is not None:
+            days_old = (datetime.now(timezone.utc) - dt).total_seconds() / 86400
             score += max(0, 10 - days_old / 30)  # max 10 points, decays over months
-        except Exception:
-            pass
 
     # Retrieval count: frequently accessed = valuable
     ret_count = payload.get("retrieval_count", 0) or 0
