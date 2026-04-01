@@ -113,6 +113,7 @@ def commit_memory(
         graph_ok = False
         graph_entities = 0
         connected_to = []
+        graph_error: str | None = None
         try:
             extracted_entities = entities.extract_entities_fast(text)
             graph_entities = len(extracted_entities)
@@ -122,10 +123,13 @@ def commit_memory(
                     graph_ok, connected_to = graph_result
                 else:
                     graph_ok = graph_result
+                if not graph_ok:
+                    graph_error = "graph_write_returned_false"
             else:
                 graph_ok = True
         except Exception as error:
-            _state.logger.error("Graph commit non-fatal error: %s", error)
+            graph_error = str(error)
+            _state.logger.warning("Graph commit non-fatal error: %s", error)
 
         if connected_to:
             try:
@@ -137,7 +141,11 @@ def commit_memory(
             except Exception as error:
                 _state.logger.error("Graph commit failed to update connected_to payload: %s", error)
 
-        return {
+        warnings: list[str] = []
+        if graph_error:
+            warnings.append(f"graph_write_failed: {graph_error}")
+
+        response = {
             "ok": True,
             "id": point_id,
             "source": source,
@@ -145,6 +153,9 @@ def commit_memory(
             "contradictions": contradiction_hits,
             "graph": {"written": graph_ok, "entities": graph_entities, "connected_to": connected_to},
         }
+        if warnings:
+            response["warnings"] = warnings
+        return response
 
 
 def list_contradictions(limit: int = 100) -> list[dict[str, Any]]:
