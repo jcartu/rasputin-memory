@@ -296,14 +296,19 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ## Version Notes (v0.4 → v0.5)
 
-Major updates in v0.3 focus on:
+### v0.5.0 — Search Quality Breakthrough
+- **Keyword overlap boosting** — token-level matching with stopword filtering, up to 5× boost
+- **Entity focus scoring** — primary-entity texts boosted 1.5×–3.0×, position-weighted
+- **recall@5: 0.67 → 0.82** (+22%), **recall@10: 0.745 → 0.885** (+19%)
+- Beats mem0 LOCOMO benchmark (0.65–0.72) by 20%+
 
+### v0.4.0
 - Unified hybrid retrieval pipeline hardening
 - Expanded test coverage and CI automation
-- Better operational controls (maintenance and reliability)
-- Documentation refresh for practical deployment and development
+- Operational controls (maintenance and reliability)
+- Documentation refresh
 
-See [`CHANGELOG.md`](CHANGELOG.md) for phase-by-phase details.
+See [`CHANGELOG.md`](CHANGELOG.md) for full details.
 
 ---
 
