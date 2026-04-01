@@ -171,7 +171,7 @@ def hybrid_search(
                 row["keyword_boosted"] = True
         qdrant_results = sorted(
             qdrant_results,
-            key=lambda v: v.get("hybrid_score") if v.get("hybrid_score") is not None else v.get("score", 0),
+            key=lambda v: v.get("hybrid_score", 0) or v.get("score", 0),
             reverse=True,
         )
 
@@ -208,7 +208,7 @@ def hybrid_search(
                 row["entity_focus"] = round(focus_ratio, 2)
         qdrant_results = sorted(
             qdrant_results,
-            key=lambda v: v.get("hybrid_score") if v.get("hybrid_score") is not None else v.get("score", 0),
+            key=lambda v: v.get("hybrid_score", 0) or v.get("score", 0),
             reverse=True,
         )
 
@@ -233,7 +233,7 @@ def hybrid_search(
         # Use hybrid_score (BM25-adjusted) when available, fall back to cosine score
         all_candidates = sorted(
             all_candidates,
-            key=lambda value: value.get("hybrid_score") if value.get("hybrid_score") is not None else value.get("score", 0),
+            key=lambda value: float(value.get("hybrid_score") or value.get("score", 0)),
             reverse=True,
         )[:limit]
 
