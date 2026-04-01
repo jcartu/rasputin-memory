@@ -12,7 +12,7 @@ Every memory is scored by a local LLM before storage:
 
 **Composite score < 4.0 → rejected.** This prevents the memory system from filling up with low-value noise.
 
-The scoring is performed by `scripts/enrich_second_brain.py` as part of the enrichment pipeline. See [Enrichment Pipeline](ENRICHMENT.md) for the full details on A-MAC scoring, entity extraction, and auto-tagging.
+The scoring is performed by the commit path (`brain/amac.py`) as part of the enrichment pipeline. See [Enrichment Pipeline](ENRICHMENT.md) for full details on A-MAC scoring, entity extraction, and auto-tagging.
 
 ## Ebbinghaus Decay
 

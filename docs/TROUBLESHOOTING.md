@@ -22,7 +22,7 @@ curl -s http://localhost:11434/api/embed \
 # They'll have a cosine similarity of ~0.63 with everything — identifiable
 ```
 
-**Prevention:** The comments in `hybrid_brain.py` and `memory_engine.py` both warn about this. Never change `EMBED_URL` or `EMBED_MODEL` once the collection is populated.
+**Prevention:** Keep embedding configuration stable in `hybrid_brain.py`/`config/rasputin.toml`. Never change `EMBED_URL` or `EMBED_MODEL` once the collection is populated.
 
 ---
 
@@ -263,8 +263,8 @@ curl -s http://localhost:7777/health | python3 -m json.tool
 # Stats dashboard
 curl -s http://localhost:7777/stats | python3 -m json.tool
 
-# Memory engine recall test
-python3 tools/memory_engine.py recall "test query" 2>&1 | tail -5
+# Search API recall test
+curl -s "http://localhost:7777/search?q=test+query&limit=3" | python3 -m json.tool
 
 # Check all Docker containers
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

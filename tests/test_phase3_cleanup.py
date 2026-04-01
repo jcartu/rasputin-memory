@@ -11,7 +11,6 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 config = importlib.import_module("config")
 bm25_search = importlib.import_module("bm25_search")
-backfill_schema = importlib.import_module("scripts.backfill_schema")
 hybrid_brain = importlib.import_module("hybrid_brain")
 state = importlib.import_module("brain._state")
 embedding = importlib.import_module("brain.embedding")
@@ -144,45 +143,6 @@ def test_commit_includes_schema_version(monkeypatch):
     payload = upsert_kwargs["points"][0].payload
     assert payload["embedding_model"] == hybrid_brain.EMBED_MODEL
     assert payload["schema_version"] == "0.3"
-
-
-def test_backfill_schema_sets_payload(monkeypatch):
-    class Point:
-        def __init__(self, point_id):
-            self.id = point_id
-
-    class FakeQdrant:
-        def __init__(self):
-            self.calls = 0
-            self.payload_calls = []
-
-        def scroll(self, **_kwargs):
-            self.calls += 1
-            if self.calls == 1:
-                return [Point(1), Point(2)], "next"
-            if self.calls == 2:
-                return [Point(3)], None
-            return [], None
-
-        def set_payload(self, **kwargs):
-            self.payload_calls.append(kwargs)
-
-    fake = FakeQdrant()
-    monkeypatch.setattr(backfill_schema, "QdrantClient", lambda url: fake)
-    monkeypatch.setattr(
-        backfill_schema,
-        "load_config",
-        lambda: {
-            "qdrant": {"url": "http://localhost:6333", "collection": "second_brain"},
-            "embeddings": {"model": "nomic-embed-text"},
-        },
-    )
-
-    updated = backfill_schema.backfill_schema(batch_size=2)
-
-    assert updated == 3
-    assert len(fake.payload_calls) == 2
-    assert fake.payload_calls[0]["payload"]["schema_version"] == "0.3"
 
 
 def test_no_dead_imports():

@@ -2,10 +2,11 @@
 
 ## Latency Benchmarks
 
-Run the built-in health check for end-to-end latency measurements:
+Run a quick API round-trip for end-to-end latency measurements:
 
 ```bash
-python3 tools/memory_health_check.py
+time curl -s "http://localhost:7777/health" > /dev/null
+time curl -s "http://localhost:7777/search?q=latency+benchmark&limit=5" > /dev/null
 ```
 
 This tests commit → search round-trip latency across all pipeline stages.

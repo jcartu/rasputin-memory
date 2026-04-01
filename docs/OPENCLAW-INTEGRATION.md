@@ -93,8 +93,8 @@ At the start of every response:
 # Direct API
 curl -s "http://localhost:7777/search?q=the user+health+supplements&limit=5"
 
-# Python CLI
-python3 tools/memory_engine.py recall "What did we decide for the release timeline?"
+# Direct API search (equivalent recall)
+curl -s "http://localhost:7777/search?q=What+did+we+decide+for+the+release+timeline%3F&limit=5"
 
 # Shell helper (mem-search.sh)
 <openclaw-home>/hooks/openclaw-mem/mem-search.sh "regional rollout"
@@ -251,20 +251,20 @@ curl -X POST http://localhost:7777/commit \
   -H 'Content-Type: application/json' \
   -d '{"text": "Memory to store", "source": "manual"}'
 
-# Python CLI — full recall with multi-angle search
-python3 tools/memory_engine.py recall "What did we decide about the product affiliate deal?"
+# Search recall
+curl -s "http://localhost:7777/search?q=What+did+we+decide+about+the+product+affiliate+deal%3F&limit=5"
 
-# Deep dive on a topic
-python3 tools/memory_engine.py deep "billing migration"
+# Deep-dive style search (broader context terms)
+curl -s "http://localhost:7777/search?q=billing+migration+details+history+decisions+research+email&limit=20"
 
-# Who is this person?
-python3 tools/memory_engine.py whois "Jordan Lee"
+# Person profile search
+curl -s "http://localhost:7777/search?q=who+is+Jordan+Lee+profile+relationships+history&limit=10"
 
-# Morning briefing — surface urgent/upcoming items
-python3 tools/memory_engine.py briefing
+# Briefing-style search for urgent/upcoming items
+curl -s "http://localhost:7777/search?q=urgent+important+action+required+meeting+appointment+deadline+payment&limit=10"
 
-# Challenge a statement — find contradicting evidence
-python3 tools/memory_engine.py challenge "We should spend $50K on Google Ads"
+# Challenge a statement / contradiction search
+curl -s "http://localhost:7777/search?q=We+should+spend+%2450K+on+Google+Ads+contradictions+risks+alternatives&limit=8"
 ```
 
 ---

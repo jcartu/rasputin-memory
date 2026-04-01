@@ -90,9 +90,6 @@ Quick start — add these to your crontab (`crontab -e`):
 # Fact extraction every 4 hours
 0 */4 * * * cd /path/to/rasputin-memory && python3 tools/fact_extractor.py >> logs/fact_extractor.log 2>&1
 
-# Nightly memory regeneration
-0 2 * * * cd /path/to/rasputin-memory && python3 tools/memory_autogen.py >> logs/autogen.log 2>&1
-
 # Weekly dedup
 0 5 * * 0 cd /path/to/rasputin-memory && python3 tools/memory_dedup.py --execute >> logs/dedup.log 2>&1
 ```
@@ -137,7 +134,8 @@ requests.post("http://localhost:7777/commit", json={"text": "Important fact here
 For MCP-compatible agents:
 
 ```bash
-python3 tools/memory_mcp_server.py
+# Example: map MCP tools to HTTP API endpoints in your MCP runtime
+curl -s "http://localhost:7777/stats"
 ```
 
 ## 8. Troubleshooting

@@ -79,7 +79,7 @@ python3 tools/memory_decay.py
 Verifies all system components are operational:
 
 ```bash
-python3 tools/memory_health_check.py
+curl -s http://localhost:7777/health | python3 -m json.tool
 ```
 
 Checks: Qdrant connectivity, FalkorDB graph, Ollama embedding model, reranker (if configured).

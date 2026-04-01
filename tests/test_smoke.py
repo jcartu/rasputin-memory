@@ -27,10 +27,6 @@ def test_import_hybrid_brain():
     _try_import("tools/hybrid_brain.py")
 
 
-def test_import_memory_engine():
-    _try_import("tools/memory_engine.py")
-
-
 def test_import_bm25_search():
     _try_import("tools/bm25_search.py")
 
@@ -49,19 +45,3 @@ def test_import_memory_decay():
 
 def test_import_fact_extractor():
     _try_import("tools/fact_extractor.py")
-
-
-def test_import_memory_health_check():
-    _try_import("tools/memory_health_check.py")
-
-
-def test_import_memory_mcp_server():
-    _try_import("tools/memory_mcp_server.py")
-
-
-def test_import_embed_server():
-    _try_import("tools/embed_server_gpu1.py")
-
-
-def test_import_enrich():
-    _try_import("scripts/enrich_second_brain.py")

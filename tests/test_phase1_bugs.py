@@ -27,7 +27,6 @@ def test_bm25_available_defined():
 
 def test_bm25_tokenizer_cyrillic():
     bm25_source = (ROOT / "tools" / "bm25_search.py").read_text()
-    (ROOT / "tools" / "memory_engine.py").read_text()
     assert "\\w+" in bm25_source
     assert "findall" in bm25_source
 
@@ -81,18 +80,6 @@ def test_archive_atomicity():
     assert "pending_archive" in source
     assert "def recover_pending_archives" in source
     assert "recover_pending_archives(execute=execute)" in source
-
-
-def test_memory_engine_commit_uses_api():
-    source = (ROOT / "tools" / "memory_engine.py").read_text()
-    assert "requests.post(" in source
-    assert "http://localhost:7777/commit" in source
-
-
-def test_consolidator_uses_commit_api():
-    source = (ROOT / "scripts" / "memory_consolidator_v4.py").read_text()
-    assert "http://localhost:7777/commit" in source
-    assert "/collections/second_brain/points" not in source
 
 
 def test_handler_js_uses_process_env_urls():

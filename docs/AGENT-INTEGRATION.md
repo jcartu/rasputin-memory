@@ -45,4 +45,4 @@ Theory of Mind / psychological modeling via [Honcho](https://github.com/plastic-
 
 ## MCP Protocol
 
-The `tools/memory_mcp_server.py` provides an MCP (Model Context Protocol) adapter, allowing any MCP-compatible agent to use RASPUTIN Memory as a tool provider.
+For MCP-compatible agents, map MCP tools to the HTTP API endpoints (`/search`, `/commit`, `/proactive`, `/stats`) in your MCP gateway/runtime.

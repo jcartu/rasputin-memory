@@ -9,7 +9,7 @@ Four enrichment processes run continuously:
 1. **A-MAC Quality Gate** — scores every commit before storage
 2. **Entity Extraction** — extracts named entities on every commit, writes to FalkorDB
 3. **Fact Extractor** — mines conversation sessions every 4h for personal facts
-4. **Second Brain Enrichment** — 6x nightly, adds importance scores + tags to existing memories
+4. **Importance Recalculation** — periodic pass, adjusts importance from shared scoring inputs
 
 ---
 
@@ -215,21 +215,16 @@ Hash deduplication prevents the same fact from being stored twice across runs.
 
 ---
 
-## Second Brain Enrichment
+## Importance Recalculation
 
-`scripts/enrich_second_brain.py` runs 6 times overnight (configurable via cron). For each memory:
-
-1. Generates a quality importance score (0–100)
-2. Extracts or refines tags
-3. Identifies the memory category
-4. Updates the Qdrant payload
+`tools/importance_recalculator.py` can periodically refresh importance values for existing memories:
 
 ```bash
-# Enrich a batch of 100 memories
-python3 scripts/enrich_second_brain.py --batch 100
+# Dry run
+python3 tools/importance_recalculator.py
 
-# Cron: 6x nightly at 1am, 2am, 3am, 4am, 5am, 6am
-0 1-6 * * * python3 scripts/enrich_second_brain.py --batch 100
+# Apply updates
+python3 tools/importance_recalculator.py --execute
 ```
 
 ---

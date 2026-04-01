@@ -315,18 +315,16 @@ python3 hybrid_brain.py stats
 
 ---
 
-## memory_engine.py vs hybrid_brain.py
+## API-first usage
 
-There are two Python files — here's the difference:
+The project now uses `hybrid_brain.py` as the single entrypoint. Use the HTTP API directly for both search and commit workflows.
 
-| | `hybrid_brain.py` | `memory_engine.py` |
-|---|---|---|
-| **Role** | HTTP API server | CLI tool / library |
-| **Runs as** | Long-running server on port 7777 | Called directly or imported |
-| **A-MAC** | ✅ Full quality gate | ❌ Simpler commit |
-| **Graph** | ✅ FalkorDB integration | ❌ JSON entity graph only |
-| **BM25** | ✅ via bm25_search.py | ✅ via bm25_search.py |
-| **Reranker** | ✅ bge-reranker-v2-m3 | ✅ bge-reranker-v2-m3 |
-| **Use for** | Production API | CLI recall, briefings, whois |
+```bash
+# Recall/search
+curl -s "http://localhost:7777/search?q=release+timeline&limit=5"
 
-`memory_engine.py` is the high-level CLI that calls `hybrid_brain.py`'s HTTP API for commits, and does its own multi-angle search for recalls.
+# Commit
+curl -X POST http://localhost:7777/commit \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Decision: move launch to April","source":"conversation"}'
+```

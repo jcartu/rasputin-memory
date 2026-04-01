@@ -43,16 +43,7 @@ addopts = "--cov=tools --cov-report=term-missing"
 [tool.coverage.run]
 source = ["tools"]
 omit = [
-    "tools/memory_autogen.py",
-    "tools/embed_server_gpu1.py",
-    "tools/memory_health_check.py",
-    "tools/memory_mcp_server.py",
     "tools/reranker_server.py",
-    "scripts/consolidate_second_brain.py",
-    "scripts/memory_consolidator_v4.py",
-    "scripts/enrich_second_brain.py",
-    "scripts/migrate_graph_edges.py",
-    "scripts/backfill_schema.py",
 ]
 
 [tool.coverage.report]
