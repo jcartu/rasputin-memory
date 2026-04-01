@@ -1,0 +1,83 @@
+{
+    "date": "2026-04-02",
+    "commit": "bc98bdc",
+    "overall": {
+        "recall_at_5": 0.67,
+        "recall_at_10": 0.745,
+        "mrr_at_10": 0.5598,
+        "latency_p50_ms": 27.66,
+        "latency_p95_ms": 46.21
+    },
+    "categories": {
+        "decay": {
+            "recall_at_5": 0.2333,
+            "recall_at_10": 0.4,
+            "mrr_at_10": 0.1597,
+            "latency_p50_ms": 20.69,
+            "latency_p95_ms": 39.77
+        },
+        "contradiction": {
+            "recall_at_5": 0.48,
+            "recall_at_10": 0.6,
+            "mrr_at_10": 0.4751,
+            "latency_p50_ms": 30.52,
+            "latency_p95_ms": 67.56,
+            "supersede_rate": 0.9167
+        },
+        "multilingual": {
+            "recall_at_5": 0.9667,
+            "recall_at_10": 0.9667,
+            "mrr_at_10": 0.5472,
+            "latency_p50_ms": 29.91,
+            "latency_p95_ms": 44.93
+        },
+        "entity": {
+            "recall_at_5": 0.2,
+            "recall_at_10": 0.4333,
+            "mrr_at_10": 0.1124,
+            "latency_p50_ms": 27.66,
+            "latency_p95_ms": 46.79
+        },
+        "dedup": {
+            "recall_at_5": 1.0,
+            "recall_at_10": 1.0,
+            "mrr_at_10": 1.0,
+            "latency_p50_ms": 25.01,
+            "latency_p95_ms": 32.97,
+            "dedup_precision": 1.0
+        },
+        "source_tier": {
+            "recall_at_5": 1.0,
+            "recall_at_10": 1.0,
+            "mrr_at_10": 1.0,
+            "latency_p50_ms": 30.31,
+            "latency_p95_ms": 40.01
+        },
+        "recency": {
+            "recall_at_5": 1.0,
+            "recall_at_10": 1.0,
+            "mrr_at_10": 0.8,
+            "latency_p50_ms": 32.65,
+            "latency_p95_ms": 52.85
+        },
+        "edge_cases": {
+            "recall_at_5": 0.6667,
+            "recall_at_10": 0.6667,
+            "mrr_at_10": 0.6333,
+            "latency_p50_ms": 27.9,
+            "latency_p95_ms": 46.25
+        }
+    },
+    "config": {
+        "collection": "benchmark_20260401_212212",
+        "qdrant_url": "http://localhost:6333",
+        "embed_model": "nomic-embed-text",
+        "synthetic_embed_model": "deterministic-hash-768",
+        "fixtures": "/home/josh/.openclaw/workspace/rasputin-memory/fixtures/memory_qa.jsonl",
+        "records": 200,
+        "full": false,
+        "full_extension": {
+            "enabled": false
+        }
+    }
+}

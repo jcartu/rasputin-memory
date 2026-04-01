@@ -1,0 +1,2 @@
+date,commit,recall_at_5,recall_at_10,mrr_at_10,latency_p50_ms,latency_p95_ms
+2026-04-02,bc98bdc,0.67,0.745,0.5598,27.66,46.21
