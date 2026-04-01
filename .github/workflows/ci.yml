@@ -28,14 +28,14 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-core.txt
           pip install ruff pytest pytest-cov mypy
 
       - name: Lint
         run: ruff check .
 
       - name: Type check
-        run: mypy tools/hybrid_brain.py tools/bm25_search.py --ignore-missing-imports
+        run: mypy tools/brain/ tools/pipeline/ tools/bm25_search.py --ignore-missing-imports
 
       - name: Unit tests
         run: pytest tests/ -v --cov=tools --cov-report=xml --cov-report=term-missing -k "not integration"
