@@ -1,4 +1,4 @@
-.PHONY: setup start stop test health deps docker quickstart demo
+.PHONY: setup start stop test lint typecheck benchmark benchmark-full health deps docker quickstart demo
 
 # Install Python dependencies
 deps:
@@ -41,13 +41,21 @@ stop:
 health:
 	@curl -s http://localhost:7777/health | python3 -m json.tool
 
-# Quick test: search + commit
+# Unit tests (fast suite)
 test:
-	@echo "=== Health Check ==="
-	@curl -sf http://localhost:7777/health | python3 -m json.tool || echo "Brain API not running"
-	@echo ""
-	@echo "=== Test Search ==="
-	@curl -sf "http://localhost:7777/search?q=test&limit=1" | python3 -m json.tool || echo "Search failed"
+	pytest tests/ -q -k "not integration"
+
+lint:
+	ruff check .
+
+typecheck:
+	cd tools && mypy brain/ pipeline/ --ignore-missing-imports
+
+benchmark:
+	python3 benchmarks/run_benchmark.py --check-thresholds
+
+benchmark-full:
+	python3 benchmarks/run_benchmark.py --full --check-thresholds
 
 # One-command quickstart
 quickstart:

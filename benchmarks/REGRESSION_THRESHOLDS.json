@@ -1,0 +1,13 @@
+{
+    "overall": {
+        "recall_at_5": 0.60,
+        "recall_at_10": 0.75,
+        "mrr_at_10": 0.50
+    },
+    "contradiction": {
+        "supersede_rate": 0.70
+    },
+    "dedup": {
+        "dedup_precision": 0.60
+    }
+}
