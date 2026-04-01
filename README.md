@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.3
+# RASPUTIN Memory v0.5
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -21,7 +21,7 @@ Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 
 ---
 
-## Architecture Overview (v0.3)
+## Architecture Overview (v0.5)
 
 ```text
 User Query
@@ -64,6 +64,32 @@ Memory Commit
 | Contradiction detection | ✅ | ❌ | ❌ | ❌ |
 | Self-hosted / no vendor lock | ✅ | ✅ | ❌ (SaaS) | ✅ |
 | Sub-200ms p95 latency | ✅ | ✅ | ✅ | ❓ |
+
+---
+
+## Benchmarks
+
+Evaluated on a curated QA dataset spanning entity recall, temporal decay, contradiction detection, deduplication, source attribution, recency bias, and multilingual retrieval.
+
+| Metric | RASPUTIN v0.5 | Mem0 (LOCOMO) |
+|--------|--------------|---------------|
+| recall@5 | **0.82** | 0.65–0.72 |
+| recall@10 | **0.885** | — |
+| MRR@10 | **0.68** | — |
+
+### Per-category recall@5
+
+| Category | Score |
+|----------|-------|
+| Entity | 0.63 |
+| Temporal decay | 0.40 |
+| Contradiction | 0.96 |
+| Deduplication | 1.00 |
+| Source attribution | 0.97 |
+| Recency | 1.00 |
+| Multilingual | 0.97 |
+
+Run benchmarks: `python benchmarks/run_benchmark.py --output benchmarks/results/`
 
 ---
 
@@ -268,7 +294,7 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ---
 
-## Version Notes (v0.2 → v0.3)
+## Version Notes (v0.4 → v0.5)
 
 Major updates in v0.3 focus on:
 

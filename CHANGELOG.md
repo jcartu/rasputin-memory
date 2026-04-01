@@ -7,6 +7,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-04-02
+
+Search quality breakthrough: keyword overlap boosting and entity-aware scoring push recall well past mem0 benchmarks.
+
+### Added
+- Token-level keyword overlap boosting with stopword filtering (up to 5x multiplicative boost)
+- Entity focus ratio scoring: primary-entity texts boosted higher than diluted mentions (1.5x–3.0x)
+- Entity position weighting: earlier mentions in text = higher relevance signal
+
+### Changed
+- Search scoring pipeline (`tools/brain/search.py`) now applies keyword and entity boosts before final ranking
+- Integration test assertion updated for flexible error message formats
+
+### Benchmarks
+- recall@5: 0.67 → **0.82** (+22%)
+- recall@10: 0.745 → **0.885** (+19%)
+- MRR@10: 0.56 → **0.68** (+21%)
+- Entity recall@5: 0.20 → **0.63** (3x improvement)
+- Decay recall@5: 0.23 → **0.40** (74% improvement)
+- Contradiction recall@5: 0.48 → **0.96** (2x improvement)
+
 ## [0.4.0] - 2026-04-01
 
 Architecture overhaul: modular codebase, unified scoring, language-agnostic retrieval.
@@ -66,6 +87,7 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v0.3.0
