@@ -1,0 +1,4980 @@
+{
+  "detailed": [
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 0,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline go to the LGBTQ support group?",
+      "ground_truth": "7 May 2023",
+      "predicted": "No specific date provided in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.801
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7996
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7841
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 1,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie paint a sunrise?",
+      "ground_truth": 2022,
+      "predicted": "Never",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8227
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Melanie! I painted it after I visited the beach last week. Just see",
+          "score": 0.8145
+        },
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8129
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 2,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "What fields would Caroline be likely to pursue in her educaton?",
+      "ground_truth": "Psychology, counseling certification",
+      "predicted": "Counseling",
+      "f1": 0.5,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7864
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Gonna continue my edu and check out career options, which is pretty exciting!",
+          "score": 0.7765
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7627
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 3,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What did Caroline research?",
+      "ground_truth": "Adoption agencies",
+      "predicted": "career options",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7747
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7707
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7605
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 4,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What is Caroline's identity?",
+      "ground_truth": "Transgender woman",
+      "predicted": "Artist, aspiring mom, mental health advocate",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7995
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7866
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7824
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 5,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie run a charity race?",
+      "ground_truth": "The sunday before 25 May 2023",
+      "predicted": "12 July 2023",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7934
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7923
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7915
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 6,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When is Melanie planning on going camping?",
+      "ground_truth": "June 2023",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8184
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8151
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8116
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 7,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What is Caroline's relationship status?",
+      "ground_truth": "Single",
+      "predicted": "Not mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8007
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7902
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7887
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 8,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline give a speech at a school?",
+      "ground_truth": "The week before 9 June 2023",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.1818,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8029
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7891
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7884
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 9,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline meet up with her friends, family, and mentors?",
+      "ground_truth": "The week before 9 June 2023",
+      "predicted": "Last week before 9 June 2023",
+      "f1": 0.8333,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8141
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8077
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: Wow, Caroline! It's great you have people to support you, that's really awesome",
+          "score": 0.7986
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 10,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "How long has Caroline had her current group of friends for?",
+      "ground_truth": "4 years",
+      "predicted": "Not mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8256
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8145
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8111
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 11,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "Where did Caroline move from 4 years ago?",
+      "ground_truth": "Sweden",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7842
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: Wow, Caroline! It's great you have people to support you, that's really awesome",
+          "score": 0.77
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: That's awesome, Melanie! How have your family been supportive during your mov",
+          "score": 0.7689
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 12,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "How long ago was Caroline's 18th birthday?",
+      "ground_truth": "10 years ago",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8348
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.8196
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: It must have been special at your wedding. I wish I had known you back then!",
+          "score": 0.8178
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 13,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What career path has Caroline decided to persue?",
+      "ground_truth": "counseling or mental health for Transgender people",
+      "predicted": "Counseling",
+      "f1": 0.25,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8035
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Gonna continue my edu and check out career options, which is pretty exciting!",
+          "score": 0.8015
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7788
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 14,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Caroline still want to pursue counseling as a career if she hadn't received support growing up?",
+      "ground_truth": "Likely no",
+      "predicted": "No",
+      "f1": 0.6667,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8264
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Caroline: Thanks, Melanie. It really mattered. My own journey and the support I got ma",
+          "score": 0.8114
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: Wow, Caroline! You've gained so much from your own experience. Your passion a",
+          "score": 0.8067
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 15,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What activities does Melanie partake in?",
+      "ground_truth": "pottery, camping, painting, swimming",
+      "predicted": "Creating a family for kids, having a pup and a kitty, making art with colors and patterns, and sharing stories.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8275
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8126
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8108
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 16,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie sign up for a pottery class?",
+      "ground_truth": "2 July 2023",
+      "predicted": "Not mentioned in the context",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8288
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8182
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8158
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 17,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When is Caroline going to the transgender conference?",
+      "ground_truth": "July 2023",
+      "predicted": "No specific date mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8047
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7987
+        },
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.7944
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 18,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "Where has Melanie camped?",
+      "ground_truth": "beach, mountains, forest",
+      "predicted": "Nowhere",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7821
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.772
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7715
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 19,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What do Melanie's kids like?",
+      "ground_truth": "dinosaurs, nature",
+      "predicted": "The provided context does not contain information about what Melanie's kids like.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8058
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.8016
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7981
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 20,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie go to the museum?",
+      "ground_truth": "5 July 2023",
+      "predicted": "13 October, 2023",
+      "f1": 0.3333,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8064
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7996
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7979
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 21,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline have a picnic?",
+      "ground_truth": "The week before 6 July 2023",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8248
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Looks like you had a great day! How was it? You all look so happy!",
+          "score": 0.8149
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8082
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 22,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Caroline likely have Dr. Seuss books on her bookshelf?",
+      "ground_truth": "Yes, since she collects classic children's books",
+      "predicted": "Unknown",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7944
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7897
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7834
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 23,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What books has Melanie read?",
+      "ground_truth": "\"Nothing is Impossible\", \"Charlotte's Web\"",
+      "predicted": "Charlotte's Web",
+      "f1": 0.6667,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7952
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: Sounds great! What kind of books you got in your library?",
+          "score": 0.794
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7899
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 24,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What does Melanie do to destress?",
+      "ground_truth": "Running, pottery",
+      "predicted": "Creativity and family",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.821
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Totally agree, Mel. Relaxing and expressing ourselves is key. Well, I'm off to ",
+          "score": 0.8078
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8042
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 25,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline go to the LGBTQ conference?",
+      "ground_truth": "10 July 2023",
+      "predicted": "9 June 2023",
+      "f1": 0.3333,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.7984
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7762
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7738
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 26,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie read the book \"nothing is impossible\"?",
+      "ground_truth": 2022,
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: I loved reading \"Charlotte's Web\" as a kid. It was so cool seeing how friendshi",
+          "score": 0.807
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8036
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8033
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 27,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Caroline pursue writing as a career option?",
+      "ground_truth": "LIkely no; though she likes reading, she wants to be a counselor",
+      "predicted": "No",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7894
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Gonna continue my edu and check out career options, which is pretty exciting!",
+          "score": 0.779
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: Wow, Caroline! You've gained so much from your own experience. Your passion a",
+          "score": 0.7738
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 28,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline go to the adoption meeting?",
+      "ground_truth": "The friday before 15 July 2023",
+      "predicted": "25 May, 2023",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.796
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7843
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7831
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 29,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie go to the pottery workshop?",
+      "ground_truth": "The Friday before 15 July 2023",
+      "predicted": "The provided text does not contain information about when Melanie went to a pottery workshop.",
+      "f1": 0.0952,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7911
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7862
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7848
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 30,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Melanie be considered a member of the LGBTQ community?",
+      "ground_truth": "Likely no, she does not refer to herself as part of it",
+      "predicted": "No",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7903
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.7893
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.788
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 31,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie go camping in June?",
+      "ground_truth": "The week before 27 June 2023",
+      "predicted": "Never",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8092
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8052
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7994
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 32,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What LGBTQ+ events has Caroline participated in?",
+      "ground_truth": "Pride parade, school speech, support group",
+      "predicted": "LGBTQ+ pride parade, LGBTQ conference, LGBT pride event, school event, Pride fest, LGBTQ+ youth center volunteer work, LGBTQ art show",
+      "f1": 0.2308,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.7537
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Caroline: It was so inspiring, Mel! Check out the crowd. People of all kinds celebrat",
+          "score": 0.7492
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Caroline: Hey Mel, great to chat with you again! So much has happened since we last spo",
+          "score": 0.7445
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 33,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline go to a pride parade during the summer?",
+      "ground_truth": "The week before 3 July 2023",
+      "predicted": "15 July, 2023",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.8149
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, nice pic! You both looked amazing. One special memory for me was this pr",
+          "score": 0.8027
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7766
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 34,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What events has Caroline participated in to help children?",
+      "ground_truth": "Mentoring program, school speech",
+      "predicted": "Creating a family for those kids",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8013
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7903
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 35,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie go camping in July?",
+      "ground_truth": "two weekends before 17 July 2023",
+      "predicted": "20 July 2023",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8142
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8077
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8045
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 36,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline join a mentorship program?",
+      "ground_truth": "The weekend before 17 July 2023",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.1818,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8084
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8083
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8067
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 37,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What did Melanie paint recently?",
+      "ground_truth": "sunset",
+      "predicted": "another painting like their last one",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8223
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8191
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8176
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 38,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What activities has Melanie done with her family?",
+      "ground_truth": "Pottery, painting, camping, museum, swimming, hiking",
+      "predicted": "Having a blast with the kids",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8226
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8184
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.81
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 39,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "In what ways is Caroline participating in the LGBTQ community?",
+      "ground_truth": "Joining activist group, going to pride parades, participating in an art show, mentoring program",
+      "predicted": "Attending parades, creating art, and helping kids",
+      "f1": 0.1905,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8213
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8099
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8075
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 40,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "How many times has Melanie gone to the beach in 2023?",
+      "ground_truth": 2,
+      "predicted": "0 times",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7919
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7821
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7749
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 41,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline join a new activist group?",
+      "ground_truth": "The Tuesday before 20 July 2023",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.1818,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8031
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8027
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7922
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 42,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Melanie be more interested in going to a national park or a theme park?",
+      "ground_truth": "National park; she likes the outdoors",
+      "predicted": "Theme park",
+      "f1": 0.25,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7885
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7823
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7812
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 43,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What kind of art does Caroline make?",
+      "ground_truth": "abstract art",
+      "predicted": "Paintings",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8355
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.81
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8097
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 44,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When is Melanie's daughter's birthday?",
+      "ground_truth": "13 August",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7887
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7853
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Thanks, Melanie! That's really sweet. Is this your own painting?",
+          "score": 0.7838
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 45,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline attend a pride parade in August?",
+      "ground_truth": "The Friday before 14 August 2023",
+      "predicted": "No specific date in August is mentioned; she attended a few weeks before 15 July 2023.",
+      "f1": 0.2727,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.8126
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, nice pic! You both looked amazing. One special memory for me was this pr",
+          "score": 0.804
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Melanie: Hey Caroline! Great to hear from you. Sounds like your event was amazing! I'm s",
+          "score": 0.7665
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 46,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Melanie be considered an ally to the transgender community?",
+      "ground_truth": "Yes, she is supportive",
+      "predicted": "Yes",
+      "f1": 0.4,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.7962
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7877
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7873
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 47,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "Who supports Caroline when she has a negative experience?",
+      "ground_truth": "Her mentors, family, and friends",
+      "predicted": "Melanie",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: I felt so proud and grateful - the vibes were amazing and it was comforting t",
+          "score": 0.8162
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8138
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8072
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 48,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What types of pottery have Melanie and her kids made?",
+      "ground_truth": "bowls, cup",
+      "predicted": "pots",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.799
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7913
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7887
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 49,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline and Melanie go to a pride fesetival together?",
+      "ground_truth": 2022,
+      "predicted": "They never went to a pride festival together.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Melanie: Wow, Caroline, sounds like the parade was an awesome experience! It's great to ",
+          "score": 0.8179
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, nice pic! You both looked amazing. One special memory for me was this pr",
+          "score": 0.7869
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Melanie: Hey Caroline! Great to hear from you. Sounds like your event was amazing! I'm s",
+          "score": 0.7795
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 50,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "What would Caroline's political leaning likely be?",
+      "ground_truth": "Liberal",
+      "predicted": "LGBTQ+ supportive",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7592
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7571
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.757
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 51,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What has Melanie painted?",
+      "ground_truth": "Horse, sunset, sunrise",
+      "predicted": "Another painting like their last one",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8097
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7997
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7951
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 52,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What are Melanie's pets' names?",
+      "ground_truth": "Oliver, Luna, Bailey",
+      "predicted": "Oliver",
+      "f1": 0.5,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.8455
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.788
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7791
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 53,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline apply to adoption agencies?",
+      "ground_truth": "The week of 23 August 2023",
+      "predicted": "25 May 2023",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Caroline: Researching adoption agencies \u2014 it's been a dream to have a family and give a ",
+          "score": 0.7963
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7883
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7881
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 54,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline draw a self-portrait?",
+      "ground_truth": "The week before 23 August 2023",
+      "predicted": "16 August 2023",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8023
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.7897
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Caroline, that's great! The blue's really powerful, huh? How'd you feel whil",
+          "score": 0.7828
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 55,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What subject have Caroline and Melanie both painted?",
+      "ground_truth": "Sunsets",
+      "predicted": "A sunset",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8195
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8189
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.807
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 56,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What symbols are important to Caroline?",
+      "ground_truth": "Rainbow flag, transgender symbol",
+      "predicted": "togetherness",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8177
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8102
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7879
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 57,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline encounter people on a hike and have a negative experience?",
+      "ground_truth": "The week before 25 August 2023",
+      "predicted": "25 August, 2023",
+      "f1": 0.6667,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8026
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7966
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7915
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 58,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie make a plate in pottery class?",
+      "ground_truth": "24 August 2023",
+      "predicted": "17 August 2023",
+      "f1": 0.6667,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8357
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.835
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8227
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 59,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Caroline be considered religious?",
+      "ground_truth": "Somewhat, but not extremely religious",
+      "predicted": "No",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7969
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7888
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7878
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 60,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What instruments does Melanie play?",
+      "ground_truth": "clarinet and violin",
+      "predicted": "None mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7153
+        },
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: That's awesome! What type of guitar? Been playing long?",
+          "score": 0.7149
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7061
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 61,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What musical artists/bands has Melanie seen?",
+      "ground_truth": "Summer Sounds, Matt Patterson",
+      "predicted": "Matt Patterson",
+      "f1": 0.6667,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7339
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Thanks, Caroline! It was Matt Patterson, he is so talented! His voice and so",
+          "score": 0.7319
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.7285
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 62,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie go to the park?",
+      "ground_truth": "27 August 2023",
+      "predicted": "No date provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.807
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8038
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7989
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 63,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When is Caroline's youth center putting on a talent show?",
+      "ground_truth": "September 2023",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8017
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7986
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7943
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 64,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Melanie likely enjoy the song \"The Four Seasons\" by Vivaldi?",
+      "ground_truth": "Yes; it's classical music",
+      "predicted": "Yes",
+      "f1": 0.3333,
+      "top_results": [
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: I loved reading \"Charlotte's Web\" as a kid. It was so cool seeing how friendshi",
+          "score": 0.7093
+        },
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: I'm a fan of both classical like Bach and Mozart, as well as modern music li",
+          "score": 0.7089
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7031
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 65,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What are some changes Caroline has faced during her transition journey?",
+      "ground_truth": "Changes to her body, losing unsupportive friends",
+      "predicted": "Changing body",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Caroline: Art's allowed me to explore my transition and my changing body. It's been a",
+          "score": 0.798
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.792
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7892
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 66,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What does Melanie do with her family on hikes?",
+      "ground_truth": "Roast marshmallows, tell stories",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8399
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8286
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.821
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 67,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline go biking with friends?",
+      "ground_truth": "The weekend before 13 September 2023",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8008
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Looks like you had a great day! How was it? You all look so happy!",
+          "score": 0.7961
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: Wow, Caroline! It's great you have people to support you, that's really awesome",
+          "score": 0.796
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 68,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "How long has Melanie been practicing art?",
+      "ground_truth": "Since 2016",
+      "predicted": "Seven years",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8116
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8007
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7991
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 69,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "What personality traits might Melanie say Caroline has?",
+      "ground_truth": "Thoughtful, authentic, driven",
+      "predicted": "courageous, mature, inspiring, passionate, loving, accepting",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7992
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7884
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7867
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 70,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What transgender-specific events has Caroline attended?",
+      "ground_truth": "Poetry reading, conference",
+      "predicted": "transgender conference, LGBTQ conference, transgender poetry reading, LGBT pride event, LGBTQ+ counseling workshop",
+      "f1": 0.375,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Caroline: Thanks Mel! I'm going to a transgender conference this month. I'm so excited t",
+          "score": 0.7777
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Hey Melanie! How's it going? I wanted to tell you about my school event last w",
+          "score": 0.7618
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Caroline: I'm still figuring out the details, but I'm thinking of working with trans p",
+          "score": 0.7382
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 71,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What book did Melanie read from Caroline's suggestion?",
+      "ground_truth": "\"Becoming Nicole\"",
+      "predicted": "the book Caroline recommended a while ago",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.797
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7925
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7909
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 72,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie's friend adopt a child?",
+      "ground_truth": 2022,
+      "predicted": "25 May 2023",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8153
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.792
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.7917
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 73,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie get hurt?",
+      "ground_truth": "September 2023",
+      "predicted": "The provided text does not contain information about when Melanie got hurt.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8057
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8055
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8017
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 74,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie's family go on a roadtrip?",
+      "ground_truth": "The weekend before 20 October 2023",
+      "predicted": "19 October 2023",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8058
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8043
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7984
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 75,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "How many children does Melanie have?",
+      "ground_truth": 3,
+      "predicted": "2",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7907
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7719
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7692
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 76,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "When did Melanie go on a hike after the roadtrip?",
+      "ground_truth": "19 October 2023",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.817
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8164
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8126
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 77,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Melanie go on another roadtrip soon?",
+      "ground_truth": "Likely no; since this one went badly",
+      "predicted": "No",
+      "f1": 0.25,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8187
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8144
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8042
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 78,
+      "category": 1,
+      "category_name": "single-hop",
+      "question": "What items has Melanie bought?",
+      "ground_truth": "Figurines, shoes",
+      "predicted": "Nothing",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8341
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8194
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8096
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 79,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Caroline pass the adoption interview?",
+      "ground_truth": "The Friday before 22 October 2023",
+      "predicted": "13 October 2023",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7912
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7855
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.781
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 80,
+      "category": 2,
+      "category_name": "multi-hop",
+      "question": "When did Melanie buy the figurines?",
+      "ground_truth": "21 October 2023",
+      "predicted": "The provided text does not contain information about when Melanie bought figurines.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.805
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7747
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.7744
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 81,
+      "category": 3,
+      "category_name": "temporal",
+      "question": "Would Caroline want to move back to her home country soon?",
+      "ground_truth": "No; she's in the process of adopting children.",
+      "predicted": "No",
+      "f1": 0.2,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8087
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7956
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7937
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 82,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did the charity race raise awareness for?",
+      "ground_truth": "mental health",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7691
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7689
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.767
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 83,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Melanie realize after the charity race?",
+      "ground_truth": "self-care is important",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7872
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7825
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7817
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 84,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How does Melanie prioritize self-care?",
+      "ground_truth": "by carving out some me-time each day for activities like running, reading, or playing the violin",
+      "predicted": "Running a charity race for mental health, relaxing, expressing herself, and looking after herself to better look after her family.",
+      "f1": 0.1081,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Caroline: That's great, Mel! Taking time for yourself is so important. You're doing an a",
+          "score": 0.8026
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7845
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: Thanks, Caroline! The event was really thought-provoking. I'm starting to reali",
+          "score": 0.7812
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 85,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What are Caroline's plans for the summer?",
+      "ground_truth": "researching adoption agencies",
+      "predicted": "Gonna continue her edu and check out career options",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8126
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8064
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8037
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 86,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What type of individuals does the adoption agency Caroline is considering support?",
+      "ground_truth": "LGBTQ+ individuals",
+      "predicted": "LGBTQ+ folks",
+      "f1": 0.5,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7986
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Caroline: Researching adoption agencies \u2014 it's been a dream to have a family and give a ",
+          "score": 0.776
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7734
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 87,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Why did Caroline choose the adoption agency?",
+      "ground_truth": "because of their inclusivity and support for LGBTQ+ individuals",
+      "predicted": "It's been a dream to have a family and give a loving home to kids who need it.",
+      "f1": 0.0714,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7969
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7966
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: Wow, that agency looks great! What made you pick it?",
+          "score": 0.786
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 88,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What is Caroline excited about in the adoption process?",
+      "ground_truth": "creating a family for kids who need one",
+      "predicted": "Researching adoption agencies",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: That's great, Caroline! Loving the inclusivity and support. Anything you're exc",
+          "score": 0.8113
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.81
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8092
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 89,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What does Melanie think about Caroline's decision to adopt?",
+      "ground_truth": "she thinks Caroline is doing something amazing and will be an awesome mom",
+      "predicted": "She thinks it's amazing and that Caroline will be an awesome mom.",
+      "f1": 0.7692,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8155
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8113
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8112
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 90,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How long have Mel and her husband been married?",
+      "ground_truth": "Mel and her husband have been married for 5 years.",
+      "predicted": "Unknown",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7972
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7937
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7915
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 91,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What does Caroline's necklace symbolize?",
+      "ground_truth": "love, faith, and strength",
+      "predicted": "togetherness, to celebrate differences and be that much closer",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8177
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7979
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7923
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 92,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What country is Caroline's grandma from?",
+      "ground_truth": "Sweden",
+      "predicted": "The provided context does not contain information about Caroline's grandma or her country of origin.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7624
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7575
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7544
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 93,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What was grandma's gift to Caroline?",
+      "ground_truth": "necklace",
+      "predicted": "necklace",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8272
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.822
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8162
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 94,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What is Melanie's hand-painted bowl a reminder of?",
+      "ground_truth": "art and self-expression",
+      "predicted": "togetherness, to celebrate differences and be that much closer",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8258
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8227
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8145
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 95,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Melanie and her family do while camping?",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "explored nature, roasted marshmallows around the campfire and went on a hike",
+      "f1": 0.8571,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7969
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7958
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7944
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 96,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What kind of counseling and mental health services is Caroline interested in pursuing?",
+      "ground_truth": "working with trans people, helping them accept themselves and supporting their mental health",
+      "predicted": "Working with trans people, helping them accept themselves and supporting their mental health",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Caroline: Thanks, Melanie. It really mattered. My own journey and the support I got ma",
+          "score": 0.8252
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: I'm keen on counseling or working in mental health - I'd love to support those ",
+          "score": 0.8209
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7898
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 97,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What workshop did Caroline attend recently?",
+      "ground_truth": "LGBTQ+ counseling workshop",
+      "predicted": "No specific workshop is mentioned in the context.",
+      "f1": 0.1818,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.813
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8039
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7994
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 98,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What was discussed in the LGBTQ+ counseling workshop?",
+      "ground_truth": "therapeutic methods and how to best work with trans people",
+      "predicted": "different therapeutic methods and how to best work with trans people",
+      "f1": 0.9524,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7798
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7707
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7674
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 99,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What motivated Caroline to pursue counseling?",
+      "ground_truth": "her own journey and the support she received, and how counseling improved her life",
+      "predicted": "Her own journey and the support she received.",
+      "f1": 0.7273,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8154
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: Woah, Caroline, it sounds like you're doing some impressive work. It's inspir",
+          "score": 0.7847
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Caroline: Thanks, Melanie. It really mattered. My own journey and the support I got ma",
+          "score": 0.7753
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 100,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What kind of place does Caroline want to create for people?",
+      "ground_truth": "a safe and inviting place for people to grow",
+      "predicted": "A family",
+      "f1": 0.1818,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8454
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8254
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8224
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 101,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Did Melanie make the black and white bowl in the photo?",
+      "ground_truth": "Yes",
+      "predicted": "Yes",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8322
+        },
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Caroline: That bowl is gorgeous! The black and white design looks so fancy. Did you make",
+          "score": 0.8295
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8175
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 102,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What kind of books does Caroline have in her library?",
+      "ground_truth": "kids' books - classics, stories from different cultures, educational books",
+      "predicted": "The context does not specify what kind of books Caroline has in her library.",
+      "f1": 0.087,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8216
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8091
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8021
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 103,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What was Melanie's favorite book from her childhood?",
+      "ground_truth": "\"Charlotte's Web\"",
+      "predicted": "Charlotte's Web",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7751
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: I loved reading \"Charlotte's Web\" as a kid. It was so cool seeing how friendshi",
+          "score": 0.7712
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7711
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 104,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What book did Caroline recommend to Melanie?",
+      "ground_truth": "\"Becoming Nicole\"",
+      "predicted": "The book isn't named in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7775
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7772
+        },
+        {
+          "text": "[Date: 8:18 pm on 6 July, 2023] Melanie: I loved reading \"Charlotte's Web\" as a kid. It was so cool seeing how friendshi",
+          "score": 0.7726
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 105,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Caroline take away from the book \"Becoming Nicole\"?",
+      "ground_truth": "Lessons on self-acceptance and finding support",
+      "predicted": "The provided context does not contain information about what Caroline took away from the book \"Becoming Nicole\".",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8154
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8058
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.805
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 106,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What are the new shoes that Melanie got used for?",
+      "ground_truth": "Running",
+      "predicted": "The provided context does not contain information about new shoes Melanie got or what they are used for.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8185
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8031
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8027
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 107,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What is Melanie's reason for getting into running?",
+      "ground_truth": "To de-stress and clear her mind",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8137
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7999
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7998
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 108,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What does Melanie say running has been great for?",
+      "ground_truth": "Her mental health",
+      "predicted": "destress and clear my mind",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8137
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Thanks, Caroline! These are for running. Been running longer since our last ch",
+          "score": 0.8137
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8028
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 109,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Mel and her kids make during the pottery workshop?",
+      "ground_truth": "pots",
+      "predicted": "pots",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8103
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8051
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8028
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 110,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What kind of pot did Mel and her kids make with clay?",
+      "ground_truth": "a cup with a dog face on it",
+      "predicted": "No pot was made; they made something with clay, but the text does not specify it was a pot.",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8196
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8087
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.7911
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 111,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What creative project do Mel and her kids do together besides pottery?",
+      "ground_truth": "painting",
+      "predicted": "Painting",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8151
+        },
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8074
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.805
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 112,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Mel and her kids paint in their latest project in July 2023?",
+      "ground_truth": "a sunset with a palm tree",
+      "predicted": "nature-inspired ones",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8302
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.815
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: We love painting together lately, especially nature-inspired ones. Here's our ",
+          "score": 0.8048
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 113,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Caroline see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "predicted": "The provided context does not contain information about a council meeting for adoption or what Caroline saw there.",
+      "f1": 0.069,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8131
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.813
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8082
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 114,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What do sunflowers represent according to Caroline?",
+      "ground_truth": "warmth and happiness",
+      "predicted": "warmth and happiness",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7443
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Thanks Melanie - love the blue vase in the pic! Blue's my fave, it makes me f",
+          "score": 0.741
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7384
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 115,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Why are flowers important to Melanie?",
+      "ground_truth": "They remind her to appreciate the small moments and were a part of her wedding decor",
+      "predicted": "They bring joy, represent growth and beauty, and remind her to appreciate the small moments.",
+      "f1": 0.5806,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Flowers bring joy. They represent growth, beauty and reminding us to appreciat",
+          "score": 0.7963
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7906
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7896
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 116,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What inspired Caroline's painting for the art show?",
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "predicted": "The room was electric with energy and support, and the posters were amazing, so much pride and strength.",
+      "f1": 0.2069,
+      "top_results": [
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8313
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8135
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.7948
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 117,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How often does Melanie go to the beach with her kids?",
+      "ground_truth": "once or twice a year",
+      "predicted": "Not mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8101
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.801
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8009
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 118,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Melanie and her family see during their camping trip last year?",
+      "ground_truth": "Perseid meteor shower",
+      "predicted": "The view from the top",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Yeah, Caroline, my family's been great - their love and support really helped ",
+          "score": 0.8126
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: It was an awesome time, Caroline! We explored nature, roasted marshmallows ar",
+          "score": 0.8055
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8036
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 119,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie feel while watching the meteor shower?",
+      "ground_truth": "in awe of the universe",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8011
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8007
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7996
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 120,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Whose birthday did Melanie celebrate recently?",
+      "ground_truth": "Melanie's daughter",
+      "predicted": "No one",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8015
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7968
+        },
+        {
+          "text": "[Date: 8:56 pm on 20 July, 2023] Caroline: Wow, Melanie, what a beautiful moment! Lucky you to have such an awesome fami",
+          "score": 0.7967
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 121,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Who performed at the concert at Melanie's daughter's birthday?",
+      "ground_truth": "Matt Patterson",
+      "predicted": "No concert mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7661
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7626
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7595
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 122,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Why did Melanie choose to use colors and patterns in her pottery project?",
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "predicted": "The context does not state why Melanie chose to use colors and patterns; Caroline asks Melanie this question, but Melanie's response is not provided.",
+      "f1": 0.1714,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8427
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8145
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8136
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 123,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What pet does Caroline have?",
+      "ground_truth": "guinea pig",
+      "predicted": "No pet mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.818
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.7823
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7715
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 124,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What pets does Melanie have?",
+      "ground_truth": "Two cats and a dog",
+      "predicted": "A dog, a cat named Oliver, and a cat named Bailey",
+      "f1": 0.375,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.8185
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.7777
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Caroline: Thanks, Mel! Exciting but kinda nerve-wracking. Parenting's such a big resp",
+          "score": 0.7621
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 125,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Where did Oliver hide his bone once?",
+      "ground_truth": "In Melanie's slipper",
+      "predicted": "in Melanie's slipper",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.8211
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7266
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7251
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 126,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What activity did Caroline used to do with her dad?",
+      "ground_truth": "Horseback riding",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8206
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8203
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8133
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 127,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Caroline make for a local church?",
+      "ground_truth": "a stained glass window",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8244
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7946
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7936
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 128,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Caroline find in her neighborhood during her walk?",
+      "ground_truth": "a rainbow sidewalk",
+      "predicted": "Nothing",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8125
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.799
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7979
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 129,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Which song motivates Caroline to be courageous?",
+      "ground_truth": "Brave by Sara Bareilles",
+      "predicted": "The context does not specify which song motivates Caroline to be courageous.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8022
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7937
+        },
+        {
+          "text": "[Date: 9:55 am on 22 October, 2023] Caroline: Yeah, that's true! It's so freeing to just be yourself and live honestly. ",
+          "score": 0.7897
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 130,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Which  classical musicians does Melanie enjoy listening to?",
+      "ground_truth": "Bach and Mozart",
+      "predicted": "Bach and Mozart",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: I'm a fan of both classical like Bach and Mozart, as well as modern music li",
+          "score": 0.7798
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.6999
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Seven years now, and I've finally found my real muses: painting and pott",
+          "score": 0.6957
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 131,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "Who is Melanie a fan of in terms of modern music?",
+      "ground_truth": "Ed Sheeran",
+      "predicted": "Matt Patterson",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.7636
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7628
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7592
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 132,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How long has Melanie been creating art?",
+      "ground_truth": "7 years",
+      "predicted": "Seven years",
+      "f1": 0.5,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.815
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.8026
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8025
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 133,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What precautionary sign did Melanie see at the caf\u00e9?",
+      "ground_truth": "A sign stating that someone is not being able to leave",
+      "predicted": "No precautionary sign is mentioned in the context.",
+      "f1": 0.2105,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8061
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8061
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7941
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 134,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What advice does Caroline give for getting started with adoption?",
+      "ground_truth": "Do research, find an adoption agency or lawyer, gather necessary documents, and prepare emotionally.",
+      "predicted": "No advice provided in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8176
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8172
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8089
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 135,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What setback did Melanie face in October 2023?",
+      "ground_truth": "She got hurt and had to take a break from pottery.",
+      "predicted": "Her son was okay (implying he was not okay previously).",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Thanks, Caroline. It was tough, but I'm doing ok. Been reading that book y",
+          "score": 0.7714
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: That's awesome, Melanie! How have your family been supportive during your mov",
+          "score": 0.7661
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.765
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 136,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What does Melanie do to keep herself busy during her pottery break?",
+      "ground_truth": "Read a book and paint.",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8286
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.813
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8114
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 137,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What painting did Melanie show to Caroline on October 13, 2023?",
+      "ground_truth": "A painting inspired by sunsets with a pink sky.",
+      "predicted": "No painting was shown; Melanie mentioned reading a book and painting to keep busy.",
+      "f1": 0.1739,
+      "top_results": [
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline! This painting is awesome. Love the red and blue. What gav",
+          "score": 0.8084
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7996
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.799
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 138,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What kind of painting did Caroline share with Melanie on October 13, 2023?",
+      "ground_truth": "An abstract painting with blue streaks on a wall.",
+      "predicted": "No painting was shared on that date.",
+      "f1": 0.25,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8559
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.8505
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Caroline, that's great! The blue's really powerful, huh? How'd you feel whil",
+          "score": 0.847
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 139,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What was the poetry reading that Caroline attended about?",
+      "ground_truth": "It was a transgender poetry reading where transgender people shared their stories.",
+      "predicted": "Not specified",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8011
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7995
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.799
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 140,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did the posters at the poetry reading say?",
+      "ground_truth": "\"Trans Lives Matter\"",
+      "predicted": "The provided context does not contain information about posters at a poetry reading.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.826
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8133
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.81
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 141,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What does Caroline's drawing symbolize for her?",
+      "ground_truth": "Freedom and being true to herself.",
+      "predicted": "togetherness, to celebrate differences and be that much closer",
+      "f1": 0.2667,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8121
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.808
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8065
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 142,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How do Melanie and Caroline describe their journey through life together?",
+      "ground_truth": "An ongoing adventure of learning and growing.",
+      "predicted": "Finding happy moments and clinging to them is key; it keeps them going even when life is hard.",
+      "f1": 0.08,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8098
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.8047
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8045
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 143,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What happened to Melanie's son on their road trip?",
+      "ground_truth": "He got into an accident",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7949
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7941
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 144,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie's son handle the accident?",
+      "ground_truth": "He was scared but reassured by his family",
+      "predicted": "The provided context does not contain information about Melanie's son handling an accident.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7737
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7728
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7712
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 145,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie feel about her family after the accident?",
+      "ground_truth": "They are important and mean the world to her",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7917
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7915
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7851
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 146,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie's children handle the accident?",
+      "ground_truth": "They were scared but resilient",
+      "predicted": "The context does not contain the answer.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7625
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7563
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7555
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 147,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie feel after the accident?",
+      "ground_truth": "Grateful and thankful for her family",
+      "predicted": "The provided context does not contain information about an accident or Melanie's feelings regarding one.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7769
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7716
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7712
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 148,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What was Melanie's reaction to her children enjoying the Grand Canyon?",
+      "ground_truth": "She was happy and thankful",
+      "predicted": "No specific reaction to the Grand Canyon is mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.7943
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7929
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7908
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 149,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What do Melanie's family give her?",
+      "ground_truth": "Strength and motivation",
+      "predicted": "They brighten up her day and always make her smile.",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.815
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8081
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8054
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 150,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "How did Melanie feel about her family supporting her?",
+      "ground_truth": "She appreciated them a lot",
+      "predicted": "She felt lucky to be with her family and have their love.",
+      "f1": 0.1176,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8057
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8046
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8039
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 151,
+      "category": 4,
+      "category_name": "open-domain",
+      "question": "What did Melanie do after the road trip to relax?",
+      "ground_truth": "Went on a nature walk or hike",
+      "predicted": "did it yesterday",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8178
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8107
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8084
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 152,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Caroline realize after her charity race?",
+      "ground_truth": "self-care is important",
+      "predicted": "No answer found in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.806
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8037
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7964
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 153,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What are Melanie's plans for the summer with respect to adoption?",
+      "ground_truth": "researching adoption agencies",
+      "predicted": "No specific plans mentioned.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8218
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8185
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8016
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 154,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What type of individuals does the adoption agency Melanie is considering support?",
+      "ground_truth": "LGBTQ+ individuals",
+      "predicted": "No adoption agency is mentioned as being considered by Melanie.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8039
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: Wow, that agency looks great! What made you pick it?",
+          "score": 0.7741
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.769
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 155,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Why did Melanie choose the adoption agency?",
+      "ground_truth": "because of their inclusivity and support for LGBTQ+ individuals",
+      "predicted": "The context does not state why Melanie chose the adoption agency.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8166
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: Wow, that agency looks great! What made you pick it?",
+          "score": 0.8011
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8004
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 156,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What is Melanie excited about in her adoption process?",
+      "ground_truth": "creating a family for kids who need one",
+      "predicted": "inclusivity and support",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.82
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7978
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7968
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 157,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What does Melanie's necklace symbolize?",
+      "ground_truth": "love, faith, and strength",
+      "predicted": "togetherness, to celebrate differences and be that much closer",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8148
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.7914
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7808
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 158,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What country is Melanie's grandma from?",
+      "ground_truth": "Sweden",
+      "predicted": "Not mentioned in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7581
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7553
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7542
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 159,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What was grandma's gift to Melanie?",
+      "ground_truth": "necklace",
+      "predicted": "The provided text does not contain information about a gift from a grandma to Melanie.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8212
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8119
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8112
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 160,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What was grandpa's gift to Caroline?",
+      "ground_truth": "necklace",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8119
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8057
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8018
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 161,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What is Caroline's hand-painted bowl a reminder of?",
+      "ground_truth": "art and self-expression",
+      "predicted": "togetherness, to celebrate differences and be that much closer",
+      "f1": 0.1538,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.841
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8393
+        },
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Caroline: That bowl is gorgeous! The black and white design looks so fancy. Did you make",
+          "score": 0.8247
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 162,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Caroline and her family do while camping?",
+      "ground_truth": "explored nature, roasted marshmallows, and went on a hike",
+      "predicted": "explored nature, roasted marshmallows around the campfire and went on a hike",
+      "f1": 0.8571,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Yeah, Caroline, my family's been great - their love and support really helped ",
+          "score": 0.8051
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: It was an awesome time, Caroline! We explored nature, roasted marshmallows ar",
+          "score": 0.8047
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7999
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 163,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What kind of counseling and mental health services is Melanie interested in pursuing?",
+      "ground_truth": "working with trans people, helping them accept themselves and supporting their mental health",
+      "predicted": "None",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Caroline: Thanks, Melanie. It really mattered. My own journey and the support I got ma",
+          "score": 0.8215
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: I'm keen on counseling or working in mental health - I'd love to support those ",
+          "score": 0.8152
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Melanie: You'd be a great counselor! Your empathy and understanding will really help the ",
+          "score": 0.7832
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 164,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What kind of counseling workshop did Melanie attend recently?",
+      "ground_truth": "LGBTQ+ counseling workshop",
+      "predicted": "No specific counseling workshop is mentioned as attended by Melanie.",
+      "f1": 0.3077,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8204
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Melanie: You'd be a great counselor! Your empathy and understanding will really help the ",
+          "score": 0.8149
+        },
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: That's great. Sharing your story and support might make a difference for a l",
+          "score": 0.8103
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 165,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What motivated Melanie to pursue counseling?",
+      "ground_truth": "her own journey and the support she received, and how counseling improved her life",
+      "predicted": "Nothing; Caroline is the one pursuing counseling.",
+      "f1": 0.1905,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7939
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Melanie: You'd be a great counselor! Your empathy and understanding will really help the ",
+          "score": 0.7749
+        },
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: That's great. Sharing your story and support might make a difference for a l",
+          "score": 0.7707
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 166,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What kind of place does Melanie want to create for people?",
+      "ground_truth": "a safe and inviting place for people to grow",
+      "predicted": "No information provided",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8426
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.837
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8278
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 167,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Did Caroline make the black and white bowl in the photo?",
+      "ground_truth": "No",
+      "predicted": "No",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:36 pm on 3 July, 2023] Caroline: That bowl is gorgeous! The black and white design looks so fancy. Did you make",
+          "score": 0.8468
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8444
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8313
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 168,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What are the new shoes that Caroline got used for?",
+      "ground_truth": "Running",
+      "predicted": "The provided text does not mention Caroline getting new shoes.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8091
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8091
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.8059
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 169,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What is Caroline's reason for getting into running?",
+      "ground_truth": "To de-stress and clear her mind",
+      "predicted": "No reason provided in the context.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8118
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8061
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8042
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 170,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What does Caroline say running has been great for?",
+      "ground_truth": "Her mental health",
+      "predicted": "destress and clear my mind",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Thanks, Caroline! These are for running. Been running longer since our last ch",
+          "score": 0.8124
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.8115
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: I felt so proud and grateful - the vibes were amazing and it was comforting t",
+          "score": 0.8028
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 171,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Melanie see at the council meeting for adoption?",
+      "ground_truth": "many people wanting to create loving homes for children in need",
+      "predicted": "Nothing",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8248
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8187
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8171
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 172,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What inspired Melanie's painting for the art show?",
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "predicted": "Nature-inspired themes, specifically painting together with her kids.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8173
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7941
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7862
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 173,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What inspired Caroline's sculpture for the art show?",
+      "ground_truth": "visiting an LGBTQ center and wanting to capture unity and strength",
+      "predicted": "The room's energy, support, and posters",
+      "f1": 0.1111,
+      "top_results": [
+        {
+          "text": "[Date: 2:31 pm on 17 July, 2023] Melanie: Wow, Caroline! It really conveys unity and strength - such a gorgeous piece! M",
+          "score": 0.8
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7895
+        },
+        {
+          "text": "[Date: 12:09 am on 13 September, 2023] Melanie: Wow, Caroline, that looks awesome! I love how it shows the togetherness ",
+          "score": 0.7853
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 174,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How often does Caroline go to the beach with her kids?",
+      "ground_truth": "once or twice a year",
+      "predicted": "Not mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8101
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.8062
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Looks like you had a great day! How was it? You all look so happy!",
+          "score": 0.8029
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 175,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Caroline and her family see during their camping trip last year?",
+      "ground_truth": "Perseid meteor shower",
+      "predicted": "The context does not mention Caroline going on a camping trip or what she saw during one.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Yeah, Caroline, my family's been great - their love and support really helped ",
+          "score": 0.8191
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: It was an awesome time, Caroline! We explored nature, roasted marshmallows ar",
+          "score": 0.8155
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8015
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 176,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How did Caroline feel while watching the meteor shower?",
+      "ground_truth": "in awe of the universe",
+      "predicted": "No mention of a meteor shower in the context.",
+      "f1": 0.4286,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.811
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7941
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.793
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 177,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Why did Caroline choose to use colors and patterns in her pottery project?",
+      "ground_truth": "She wanted to catch the eye and make people smile.",
+      "predicted": "The context does not state why Caroline used colors and patterns in her pottery project; she only asks Melanie about the colors and patterns in Melanie's bowl.",
+      "f1": 0.1579,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8446
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.8201
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8198
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 178,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Is Oscar Melanie's pet?",
+      "ground_truth": "No",
+      "predicted": "No",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.7609
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Yeah, it's normal to be both excited and nervous with a big decision. And th",
+          "score": 0.7233
+        },
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Caroline: Thanks, Mel! Exciting but kinda nerve-wracking. Parenting's such a big resp",
+          "score": 0.7211
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 179,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Where did Oscar hide his bone once?",
+      "ground_truth": "In Melanie's slipper",
+      "predicted": "in Melanie's slipper",
+      "f1": 1.0,
+      "top_results": [
+        {
+          "text": "[Date: 3:31 pm on 23 August, 2023] Melanie: Oliver's hilarious! He hid his bone in my slipper once! Cute, right? Almost ",
+          "score": 0.8136
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: We've got a pup and a kitty. That's the dog, and here's our cat! They brighten",
+          "score": 0.7579
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7536
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 180,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What activity did Melanie used to do with her dad?",
+      "ground_truth": "Horseback riding",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8358
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.8191
+        },
+        {
+          "text": "[Date: 1:14 pm on 25 May, 2023] Melanie: You're doing something amazing! Creating a family for those kids is so lovely. ",
+          "score": 0.8182
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 181,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Melanie make for a local church?",
+      "ground_truth": "a stained glass window",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8251
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8023
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7935
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 182,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Melanie find in her neighborhood during her walk?",
+      "ground_truth": "a rainbow sidewalk",
+      "predicted": "Nothing",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8126
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Caroline: Thanks, Mel! Glad you like it. It's a symbol of togetherness, to celebrate ",
+          "score": 0.8105
+        },
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.7984
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 183,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Which song motivates Melanie to be courageous?",
+      "ground_truth": "Brave by Sara Bareilles",
+      "predicted": "No specific song is mentioned.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7807
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: I'm in awe of your courage as a trans person. Have you made any more art lat",
+          "score": 0.7771
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7753
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 184,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What type of instrument does Caroline play?",
+      "ground_truth": "clarinet and violin",
+      "predicted": "Guitar",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.7735
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7732
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7712
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 185,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Which classical musicians does Caroline enjoy listening to?",
+      "ground_truth": "Bach and Mozart",
+      "predicted": "None mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Melanie: I'm a fan of both classical like Bach and Mozart, as well as modern music li",
+          "score": 0.7653
+        },
+        {
+          "text": "[Date: 3:19 pm on 28 August, 2023] Caroline: That sounds great! Music brings us together and brings joy. Playing and sin",
+          "score": 0.7007
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.6886
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 186,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "Who is Caroline a fan of in terms of modern music?",
+      "ground_truth": "Ed Sheeran",
+      "predicted": "Matt Patterson",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7729
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7728
+        },
+        {
+          "text": "[Date: 1:33 pm on 25 August, 2023] Melanie: Wow Caroline, that looks amazing! Those colors are so vivid, it really looks",
+          "score": 0.7716
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 187,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What precautionary sign did Caroline see at the caf\u00e9?",
+      "ground_truth": "A sign stating that someone is not being able to leave",
+      "predicted": "No precautionary sign was mentioned.",
+      "f1": 0.125,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.798
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.7972
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7964
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 188,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What setback did Caroline face recently?",
+      "ground_truth": "She got hurt and had to take a break from pottery.",
+      "predicted": "No setback mentioned",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.81
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7954
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7889
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 189,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What does Caroline do to keep herself busy during her pottery break?",
+      "ground_truth": "Read a book and paint.",
+      "predicted": "Go do some research",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8152
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Totally agree, Mel. Relaxing and expressing ourselves is key. Well, I'm off to ",
+          "score": 0.8142
+        },
+        {
+          "text": "[Date: 1:50 pm on 17 August, 2023] Caroline: That bowl is awesome, Mel! What gave you the idea for all the colors and pa",
+          "score": 0.8116
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 190,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What was the poetry reading that Melanie attended about?",
+      "ground_truth": "It was a transgender poetry reading where transgender people shared their stories.",
+      "predicted": "Melanie did not attend a poetry reading; Caroline did.",
+      "f1": 0.2857,
+      "top_results": [
+        {
+          "text": "[Date: 10:31 am on 13 October, 2023] Melanie: Nope, never been to something like that. What was it about? What made it s",
+          "score": 0.81
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: That sounds awesome! What did you take away from it to use in your life?",
+          "score": 0.8083
+        },
+        {
+          "text": "[Date: 2:24 pm on 14 August, 2023] Melanie: Wow, that's awesome! How did it feel being part of that community?",
+          "score": 0.7991
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 191,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What happened to Caroline's son on their road trip?",
+      "ground_truth": "He got into an accident",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8033
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Looks like you had a great day! How was it? You all look so happy!",
+          "score": 0.7973
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: Wow, Mel! Sounds like you and the kids had a blast. How'd they like it?",
+          "score": 0.7932
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 192,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How did Caroline's son handle the accident?",
+      "ground_truth": "He was scared but reassured by his family",
+      "predicted": "The provided context does not contain information about Caroline having a son or an accident involving him.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.787
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7744
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7705
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 193,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How did Caroline feel about her family after the accident?",
+      "ground_truth": "They are important and mean the world to her",
+      "predicted": "The provided context does not contain information about Caroline's family or an accident.",
+      "f1": 0.087,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8033
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.794
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Caroline: I felt so proud and grateful - the vibes were amazing and it was comforting t",
+          "score": 0.7907
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 194,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How did Caroline's children handle the accident?",
+      "ground_truth": "They were scared but resilient",
+      "predicted": "The provided context does not contain information about Caroline's children or an accident.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.7771
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7695
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7675
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 195,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "How did Caroline feel after the accident?",
+      "ground_truth": "Grateful and thankful for her family",
+      "predicted": "proud and grateful",
+      "f1": 0.4444,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8064
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7939
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline! You're so inspiring for wanting to help others with their menta",
+          "score": 0.7898
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 196,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What was Caroline's reaction to her children enjoying the Grand Canyon?",
+      "ground_truth": "She was happy and thankful",
+      "predicted": "No information provided.",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.795
+        },
+        {
+          "text": "[Date: 4:33 pm on 12 July, 2023] Melanie: Wow, Caroline, that sounds awesome! So glad you felt accepted and supported. E",
+          "score": 0.7802
+        },
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: That's gorgeous, Caroline! It's awesome what items can mean so much to us, ri",
+          "score": 0.7782
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 197,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What did Caroline do after the road trip to relax?",
+      "ground_truth": "Went on a nature walk or hike",
+      "predicted": "did it with the kids",
+      "f1": 0.0,
+      "top_results": [
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Wow, Caroline! That's huge! How did it feel to be around so much love and acce",
+          "score": 0.8233
+        },
+        {
+          "text": "[Date: 7:55 pm on 9 June, 2023] Caroline: Looks like you had a great day! How was it? You all look so happy!",
+          "score": 0.8163
+        },
+        {
+          "text": "[Date: 1:56 pm on 8 May, 2023] Caroline: Totally agree, Mel. Relaxing and expressing ourselves is key. Well, I'm off to ",
+          "score": 0.816
+        }
+      ]
+    },
+    {
+      "conv_idx": 0,
+      "sample_id": "conv-26",
+      "qa_idx": 198,
+      "category": 5,
+      "category_name": "adversarial",
+      "question": "What does Caroline love most about camping with her family?",
+      "ground_truth": "Being present and bonding with her family",
+      "predicted": "The context does not state what Caroline loves most about camping with her family; it describes Melanie's camping experiences.",
+      "f1": 0.2222,
+      "top_results": [
+        {
+          "text": "[Date: 10:37 am on 27 June, 2023] Melanie: It was an awesome time, Caroline! We explored nature, roasted marshmallows ar",
+          "score": 0.8331
+        },
+        {
+          "text": "[Date: 1:51 pm on 15 July, 2023] Melanie: Yeah, Caroline, my family's been great - their love and support really helped ",
+          "score": 0.8227
+        },
+        {
+          "text": "[Date: 6:55 pm on 20 October, 2023] Caroline: Wow, that's awesome! What do you love most about camping with your fam?",
+          "score": 0.797
+        }
+      ]
+    }
+  ],
+  "completed_through_conv": 0
+}

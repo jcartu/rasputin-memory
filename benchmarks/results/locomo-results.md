@@ -1,41 +1,38 @@
 # LoCoMo Benchmark Results — RASPUTIN Memory
 
-**Date:** 2026-04-02 02:03 UTC
+**Date:** 2026-04-02 02:28 UTC
 **Total QA pairs:** 1986
-**Embedding:** nomic-embed-text (768-dim) via Ollama
-**LLM:** Qwen 3.5 122B-A10B via cartu-proxy
-**Retrieval:** Vector search (cosine), top-20
 
-## Overall Score
+## All Runs Comparison
 
-| Metric | Score |
-|--------|-------|
-| **F1** | **0.4144** |
+| Config | Overall F1 | single-hop | multi-hop | temporal | open-domain | adversarial |
+|--------|-----------|------------|-----------|----------|-------------|-------------|
+| nomic-embed 768d (v1) | 0.4144 | 0.3956 | 0.4651 | 0.2031 | 0.5841 | 0.1153 |
+| nomic-embed 768d (v2, improved prompt) | 0.4417 | 0.4003 | 0.4479 | 0.2089 | 0.6042 | 0.2073 |
+| qwen3-embed 4096d | ~0.18 | — | — | — | — | — |
+| qwen3-embed 1024d (Matryoshka) | ~0.26 | — | — | — | — | — |
 
-## Per-Category Scores
-
-| Category | Count | F1 |
-|----------|-------|----|
-| single-hop | 282 | 0.3956 |
-| multi-hop | 321 | 0.4651 |
-| temporal | 96 | 0.2031 |
-| open-domain | 841 | 0.5841 |
-| adversarial | 446 | 0.1153 |
-
-## Leaderboard Comparison
+## Leaderboard
 
 | System | F1 Score |
 |--------|----------|
 | memmachine | 0.8487 |
 | zep | 0.7514 |
 | mem0 | 0.6688 |
-| rasputin | 0.4144 ⬅️ |
+| rasputin-nomic-v2 | 0.4417 ⬅️ |
+| rasputin-nomic-v1 | 0.4144 |
+| rasputin-qwen3embed-1024d | 0.2564 |
+| rasputin-qwen3embed-4096d | 0.1824 |
 
-## Methodology
+## Key Findings
 
-- Each conversation ingested as individual turns into isolated Qdrant collection
-- Turns formatted as `[date] Speaker: text` for temporal context
-- Embeddings: Ollama nomic-embed-text (768-dim)
-- Vector search with cosine similarity, top-10 retrieval
-- Answer generation via Qwen 3.5 122B (local, via cartu-proxy)
-- F1 computed as token-level overlap (same as LoCoMo paper)
+### Qwen3-Embedding is BAD for asymmetric retrieval
+- nomic-embed-text (768d): relevant/irrelevant cosine diff = 0.22
+- qwen3-embedding (4096d): relevant/irrelevant cosine diff = -0.006 (ZERO discrimination)
+- qwen3-embedding (1024d Matryoshka): diff = 0.03 (slightly better but still awful)
+- Qwen3-Embedding appears optimized for symmetric similarity, not query→passage retrieval
+
+### Prompt improvements
+- Removed 'say unknown' instruction → adversarial should improve
+- Added temporal sorting + explicit date prefix → temporal should improve
+- Changed to 'make your best inference' prompt
