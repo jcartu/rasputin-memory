@@ -6,7 +6,7 @@ requests==2.31.0
 python-dotenv==1.0.0
 
 # Reranker (optional — system degrades gracefully without it)
-fastapi==0.110.0
+fastapi==0.135.2
 uvicorn==0.29.0
 pydantic>=2.4.0
 transformers>=4.40.0
