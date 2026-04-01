@@ -166,7 +166,7 @@ def hybrid_search(
             overlap = query_content_tokens & text_tokens
             if overlap:
                 overlap_ratio = len(overlap) / len(query_content_tokens)
-                boost = 1.0 + 4.0 * overlap_ratio  # up to 5x for full overlap
+                boost = 1.0 + 9.0 * (overlap_ratio ** 3)  # up to 10x for full overlap, steep falloff for partial
                 row[score_key] = row.get(score_key, row.get("score", 0)) * boost
                 row["keyword_boosted"] = True
         qdrant_results = sorted(
@@ -200,8 +200,8 @@ def hybrid_search(
                         # Normalize position: 0.0 at end, 1.0 at start
                         text_len = max(len(text_lower), 1)
                         position_bonus = max(position_bonus, 1.0 - (pos / text_len))
-                # Boost scales with focus and position
-                boost = 1.5 + 1.0 * focus_ratio + 0.5 * position_bonus
+                # Boost scales with focus and position — aggressive to separate primary vs mentioned
+                boost = 2.0 + 5.0 * (focus_ratio ** 0.5) + 2.0 * position_bonus
                 current = row.get(score_key, row.get("score", 0))
                 row[score_key] = current * boost
                 row["entity_boosted"] = True
