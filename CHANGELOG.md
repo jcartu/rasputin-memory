@@ -7,8 +7,40 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-01
+
+Architecture overhaul: modular codebase, unified scoring, language-agnostic retrieval.
+
+### Added
+- `brain/` package: 11 focused modules extracted from 1800-line god class (`hybrid_brain.py` is now a 93-line facade)
+- Structured JSON logging with per-request IDs
+- Shared utilities: `pipeline/locking.py`, `pipeline/qdrant_batch.py`, `pipeline/dateparse.py`
+- `pipeline/scoring_constants.py`: single source of truth for source importance weights
+- Cyrillic NER pattern for entity extraction
+- Cypher injection guard on MCP graph queries
+- Auth warning at startup when no API token is configured
+- PR template and Dependabot config
+
 ### Changed
-- Ongoing hardening and operational improvements.
+- **Scoring unified**: 5 competing source-weight systems replaced by one `SOURCE_IMPORTANCE` dict
+- **English-only string layer deleted**: keyword routing, stop words, supersedes token check — all removed in favor of the language-agnostic embedding layer
+- **Source weight stamped at ingest**: stored on payload once, never re-derived at search time
+- **Score ordering fixed**: multifactor scoring now runs before neural reranking
+- **Graph failures surfaced**: commit response includes `warnings` list instead of burying `graph.written: false`
+- **Async I/O fixed**: embedding and reranker servers no longer block the event loop
+- **Batch embedding**: `consolidate_second_brain.py` sends full batch instead of one-at-a-time HTTP calls
+- Migration scripts moved to `scripts/` directory
+- Redundant Redis container removed from docker-compose (FalkorDB is Redis-compatible)
+- Dead code and unused references cleaned up across all modules
+
+### Fixed
+- Broken bash-style `${VAR:-default}` URLs in MCP server and health check (Python doesn't expand these)
+- `IndexError` crash in consolidator when workers > endpoints
+- Hardcoded GPU device string in embed server response
+- Redundant `os.environ.get()` nesting in fact extractor
+- `import re` inside function body in memory decay (called per-point during full scan)
+- Archive recovery now checks for existence before re-upserting (idempotent)
+- Fragile double-import pattern replaced with `safe_import()` helper
 
 ## [0.3.0] - 2026-03-31
 
@@ -34,5 +66,6 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v0.3.0

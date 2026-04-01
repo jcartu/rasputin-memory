@@ -159,7 +159,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             health = {
                 "status": "ok",
                 "engine": "hybrid-brain",
-                "version": "0.3.0",
+                "version": "0.4.0",
                 "components": {
                     "qdrant": "unknown",
                     "falkordb": "unknown",
