@@ -14,8 +14,6 @@ from brain import entities
 from brain import graph
 from brain import scoring
 
-_ = entities
-
 try:
     from bm25_search import hybrid_rerank as bm25_rerank
 except ModuleNotFoundError:

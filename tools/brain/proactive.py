@@ -3,11 +3,8 @@ from __future__ import annotations
 import time
 from typing import Any, Optional
 
-from brain import _state
 from brain import entities
 from brain import search
-
-_ = _state
 
 
 def proactive_surface(

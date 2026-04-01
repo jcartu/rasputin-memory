@@ -51,9 +51,10 @@ omit = [
     "tools/memory_mcp_server.py",
     "tools/reranker_server.py",
     "tools/fact_extractor.py",
-    "tools/consolidate_second_brain.py",
+    "scripts/consolidate_second_brain.py",
     "tools/enrich_second_brain.py",
-    "tools/migrate_graph_edges.py",
+    "scripts/migrate_graph_edges.py",
+    "scripts/backfill_schema.py",
 ]
 
 [tool.coverage.report]

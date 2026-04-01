@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 config = importlib.import_module("config")
 bm25_search = importlib.import_module("bm25_search")
-backfill_schema = importlib.import_module("backfill_schema")
+backfill_schema = importlib.import_module("scripts.backfill_schema")
 hybrid_brain = importlib.import_module("hybrid_brain")
 state = importlib.import_module("brain._state")
 embedding = importlib.import_module("brain.embedding")
