@@ -1,5 +1,5 @@
 # Core dependencies
-qdrant-client==1.9.0
+qdrant-client==1.17.1
 redis>=5.0.1,<6.0.0
 FalkorDB>=1.0.0
 requests==2.31.0
