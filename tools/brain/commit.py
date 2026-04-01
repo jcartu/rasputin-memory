@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import importlib
 import math
+import importlib
 import uuid
 from datetime import datetime
 from typing import Any, Optional
@@ -13,16 +13,12 @@ from brain import embedding
 from brain import entities
 from brain import graph
 
-try:
-    _scoring_constants = importlib.import_module("pipeline.scoring_constants")
-except ModuleNotFoundError:
-    _scoring_constants = importlib.import_module("tools.pipeline.scoring_constants")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_scoring_constants = safe_import("pipeline.scoring_constants", "tools.pipeline.scoring_constants")
 get_source_weight = _scoring_constants.get_source_weight
 
-try:
-    _contradiction = importlib.import_module("pipeline.contradiction")
-except ModuleNotFoundError:
-    _contradiction = importlib.import_module("tools.pipeline.contradiction")
+_contradiction = safe_import("pipeline.contradiction", "tools.pipeline.contradiction")
 check_contradictions = _contradiction.check_contradictions
 
 

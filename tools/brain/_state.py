@@ -9,13 +9,12 @@ import redis
 import requests
 from qdrant_client import QdrantClient
 
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("hybrid_brain")
 
-try:
-    _config_module = importlib.import_module("config")
-except ModuleNotFoundError:
-    _config_module = importlib.import_module("tools.config")
+_config_module = safe_import("config", "tools.config")
 load_config = _config_module.load_config
 
 try:

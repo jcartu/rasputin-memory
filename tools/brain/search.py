@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import importlib
 import threading
 import time
+import importlib
 from datetime import datetime
 from typing import Any, Optional
 
@@ -14,15 +14,14 @@ from brain import entities
 from brain import graph
 from brain import scoring
 
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
 try:
     from bm25_search import hybrid_rerank as bm25_rerank
 except ModuleNotFoundError:
     from tools.bm25_search import hybrid_rerank as bm25_rerank
 
-try:
-    _query_expansion = importlib.import_module("pipeline.query_expansion")
-except ModuleNotFoundError:
-    _query_expansion = importlib.import_module("tools.pipeline.query_expansion")
+_query_expansion = safe_import("pipeline.query_expansion", "tools.pipeline.query_expansion")
 expand_queries = _query_expansion.expand_queries
 
 

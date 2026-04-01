@@ -7,16 +7,12 @@ from typing import Any, cast
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointIdsList
 
-try:
-    _qdrant_batch = importlib.import_module("pipeline.qdrant_batch")
-except ModuleNotFoundError:
-    _qdrant_batch = importlib.import_module("tools.pipeline.qdrant_batch")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_qdrant_batch = safe_import("pipeline.qdrant_batch", "tools.pipeline.qdrant_batch")
 scroll_all = _qdrant_batch.scroll_all
 
-try:
-    _config_module = importlib.import_module("config")
-except ModuleNotFoundError:
-    _config_module = importlib.import_module("tools.config")
+_config_module = safe_import("config", "tools.config")
 load_config = _config_module.load_config
 
 

@@ -37,16 +37,12 @@ from qdrant_client.models import (
 from pipeline.dateparse import parse_date
 from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
-try:
-    _locking = importlib.import_module("pipeline.locking")
-except ModuleNotFoundError:
-    _locking = importlib.import_module("tools.pipeline.locking")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_locking = safe_import("pipeline.locking", "tools.pipeline.locking")
 acquire_pipeline_lock = _locking.acquire_lock
 
-try:
-    _qdrant_batch = importlib.import_module("pipeline.qdrant_batch")
-except ModuleNotFoundError:
-    _qdrant_batch = importlib.import_module("tools.pipeline.qdrant_batch")
+_qdrant_batch = safe_import("pipeline.qdrant_batch", "tools.pipeline.qdrant_batch")
 scroll_all = _qdrant_batch.scroll_all
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")

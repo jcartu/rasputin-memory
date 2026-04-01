@@ -11,10 +11,9 @@ from typing import Any, Callable
 import requests
 from qdrant_client import QdrantClient
 
-try:
-    _config_module = importlib.import_module("config")
-except ModuleNotFoundError:
-    _config_module = importlib.import_module("tools.config")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_config_module = safe_import("config", "tools.config")
 load_config = _config_module.load_config
 
 

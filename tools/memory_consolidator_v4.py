@@ -19,10 +19,9 @@ import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-try:
-    _locking = importlib.import_module("pipeline.locking")
-except ModuleNotFoundError:
-    _locking = importlib.import_module("tools.pipeline.locking")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_locking = safe_import("pipeline.locking", "tools.pipeline.locking")
 acquire_pipeline_lock = _locking.acquire_lock
 
 # === CONFIG ===

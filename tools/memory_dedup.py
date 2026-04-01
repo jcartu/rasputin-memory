@@ -30,10 +30,9 @@ from qdrant_client.models import PointIdsList
 from pipeline.dateparse import parse_date
 from pipeline.scoring_constants import SOURCE_IMPORTANCE
 
-try:
-    _locking = importlib.import_module("pipeline.locking")
-except ModuleNotFoundError:
-    _locking = importlib.import_module("tools.pipeline.locking")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_locking = safe_import("pipeline.locking", "tools.pipeline.locking")
 acquire_pipeline_lock = _locking.acquire_lock
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")

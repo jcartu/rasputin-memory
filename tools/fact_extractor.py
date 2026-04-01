@@ -21,10 +21,9 @@ import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
-try:
-    _locking = importlib.import_module("pipeline.locking")
-except ModuleNotFoundError:
-    _locking = importlib.import_module("tools.pipeline.locking")
+safe_import = importlib.import_module("pipeline._imports").safe_import
+
+_locking = safe_import("pipeline.locking", "tools.pipeline.locking")
 acquire_pipeline_lock = _locking.acquire_lock
 
 WORKSPACE = Path(os.environ.get("WORKSPACE_PATH", Path.home() / ".openclaw" / "workspace"))
