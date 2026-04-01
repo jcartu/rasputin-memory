@@ -35,9 +35,7 @@ jobs:
         run: ruff check .
 
       - name: Type check
-        run: mypy tools/brain/ tools/pipeline/ --ignore-missing-imports --exclude 'tools/bm25_search\.py'
-        env:
-          MYPYPATH: tools
+        run: cd tools && mypy brain/ pipeline/ --ignore-missing-imports
 
       - name: Unit tests
         run: pytest tests/ -v --cov=tools --cov-report=xml --cov-report=term-missing -k "not integration"
