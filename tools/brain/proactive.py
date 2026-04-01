@@ -68,7 +68,7 @@ def proactive_surface(
                 }
             )
 
-    unique = {}
+    unique: dict[str, dict[str, Any]] = {}
     for item in suggestions:
         key = item["text"][:120]
         if key not in unique or item["relevance"] > unique[key]["relevance"]:

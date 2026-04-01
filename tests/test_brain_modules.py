@@ -111,7 +111,7 @@ def test_apply_multifactor_scoring_composite():
 
 def test_graph_write_to_graph_with_mocked_redis(monkeypatch, mock_redis):
     monkeypatch.setattr(state, "FALKORDB_DISABLED", False)
-    monkeypatch.setattr(state, "get_redis", lambda: mock_redis)
+    monkeypatch.setattr(state, "get_falkordb", lambda: mock_redis)
 
     ok, connected = graph.write_to_graph(
         point_id=42,

@@ -143,6 +143,22 @@ def find_duplicates_for_point(point_id, vector, threshold=0.92, limit=10):
         return []
 
 
+def mark_pending_delete(point_ids):
+    if not point_ids:
+        return
+    try:
+        qdrant.set_payload(
+            collection_name=COLLECTION,
+            points=point_ids,
+            payload={
+                "pending_delete": True,
+                "pending_delete_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+    except Exception as e:
+        print(f"  [WARN] Failed to mark pending_delete for batch: {e}")
+
+
 def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_size=100):
     """Main deduplication loop."""
     print(f"{'=' * 60}")
@@ -317,6 +333,7 @@ def run_dedup(threshold=0.92, limit=None, execute=False, resume=False, batch_siz
         for i in range(0, len(delete_list), batch_size_del):
             batch = delete_list[i : i + batch_size_del]
             try:
+                mark_pending_delete(batch)
                 qdrant.delete(
                     collection_name=COLLECTION,
                     points_selector=PointIdsList(points=batch),

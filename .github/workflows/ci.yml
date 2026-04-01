@@ -35,7 +35,7 @@ jobs:
         run: ruff check .
 
       - name: Type check
-        run: cd tools && mypy brain/ pipeline/ --ignore-missing-imports || true
+        run: cd tools && mypy brain/ pipeline/ --ignore-missing-imports
 
       - name: Unit tests
         run: pytest tests/ -v --cov=tools --cov-report=xml --cov-report=term-missing -k "not integration"

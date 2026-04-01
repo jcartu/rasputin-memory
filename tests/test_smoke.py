@@ -64,4 +64,4 @@ def test_import_embed_server():
 
 
 def test_import_enrich():
-    _try_import("tools/enrich_second_brain.py")
+    _try_import("scripts/enrich_second_brain.py")

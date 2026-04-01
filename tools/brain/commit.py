@@ -108,7 +108,7 @@ def commit_memory(
 
         graph_ok = False
         graph_entities = 0
-        connected_to = []
+        connected_to: list[str] = []
         graph_error: str | None = None
         try:
             extracted_entities = entities.extract_entities_fast(text)

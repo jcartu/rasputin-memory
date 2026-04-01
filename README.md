@@ -48,7 +48,7 @@ Memory Commit
   - `tools/memory_decay.py`
   - `tools/memory_dedup.py`
   - `tools/fact_extractor.py`
-  - `tools/memory_consolidator_v4.py`
+  - `scripts/memory_consolidator_v4.py`
 
 ---
 

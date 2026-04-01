@@ -22,7 +22,7 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
     if _state.FALKORDB_DISABLED:
         return True, []
     try:
-        redis_client = _state.get_redis()
+        redis_client = _state.get_falkordb()
         redis_client.ping()
     except Exception as error:
         _state.logger.error("Graph commit FalkorDB connection error: %s", error)
@@ -69,7 +69,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
     if _state.FALKORDB_DISABLED:
         return []
     try:
-        redis_client = _state.get_redis()
+        redis_client = _state.get_falkordb()
         redis_client.ping()
     except Exception as error:
         _state.logger.error("Graph connection error: %s", error)
@@ -100,7 +100,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         for label in labels:
             try:
                 safe_label = _safe_graph_label(label)
-                params = {"name": entity_name}
+                params: dict[str, Any] = {"name": entity_name}
                 memory_result = redis_client.execute_command(
                     "GRAPH.QUERY",
                     _state.GRAPH_NAME,
@@ -137,7 +137,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
             for label in labels:
                 try:
                     safe_label = _safe_graph_label(label)
-                    params = {"name": entity_name, "seen": list(seen_memory_ids)}
+                    two_hop_params: dict[str, Any] = {"name": entity_name, "seen": list(seen_memory_ids)}
                     two_hop = redis_client.execute_command(
                         "GRAPH.QUERY",
                         _state.GRAPH_NAME,
@@ -152,7 +152,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                             limit=limit,
                         ),
                         "--params",
-                        json.dumps(params),
+                        json.dumps(two_hop_params),
                     )
                     for row in two_hop[1] or []:
                         memory_id = _decode(row[0])
@@ -209,7 +209,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         for label in labels:
             try:
                 safe_label = _safe_graph_label(label)
-                params = {"name": entity_name}
+                context_params: dict[str, Any] = {"name": entity_name}
                 context_result = redis_client.execute_command(
                     "GRAPH.QUERY",
                     _state.GRAPH_NAME,
@@ -218,7 +218,7 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
                     "AND NOT labels(connected)[0] = 'Memory' "
                     "RETURN labels(connected)[0], connected.name, type(rel), n.name LIMIT 8".format(label=safe_label),
                     "--params",
-                    json.dumps(params),
+                    json.dumps(context_params),
                 )
                 for row in context_result[1] or []:
                     connected_type = _decode(row[0])

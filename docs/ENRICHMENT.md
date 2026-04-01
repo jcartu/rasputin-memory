@@ -217,7 +217,7 @@ Hash deduplication prevents the same fact from being stored twice across runs.
 
 ## Second Brain Enrichment
 
-`tools/enrich_second_brain.py` runs 6 times overnight (configurable via cron). For each memory:
+`scripts/enrich_second_brain.py` runs 6 times overnight (configurable via cron). For each memory:
 
 1. Generates a quality importance score (0–100)
 2. Extracts or refines tags
@@ -226,10 +226,10 @@ Hash deduplication prevents the same fact from being stored twice across runs.
 
 ```bash
 # Enrich a batch of 100 memories
-python3 tools/enrich_second_brain.py --batch 100
+python3 scripts/enrich_second_brain.py --batch 100
 
 # Cron: 6x nightly at 1am, 2am, 3am, 4am, 5am, 6am
-0 1-6 * * * python3 tools/enrich_second_brain.py --batch 100
+0 1-6 * * * python3 scripts/enrich_second_brain.py --batch 100
 ```
 
 ---

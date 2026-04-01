@@ -7,7 +7,7 @@ Recommended cron schedules for keeping the memory system healthy and up to date.
 | Job | Frequency | Script | Purpose |
 |-----|-----------|--------|---------|
 | Memory Autogen | Nightly (2am) | `tools/memory_autogen.py` | Regenerates MEMORY.md from top Qdrant results |
-| Consolidator v4 | Weekly (Sun 3am) | `tools/memory_consolidator_v4.py` | Extracts facts from session transcripts |
+| Consolidator v4 | Weekly (Sun 3am) | `scripts/memory_consolidator_v4.py` | Extracts facts from session transcripts |
 | Fact Extractor | Every 4 hours | `tools/fact_extractor.py` | Structures facts from recent conversations |
 | Memory Decay | Weekly (Sat 4am) | `tools/memory_decay.py` | Applies Ebbinghaus time decay to old memories |
 | Dedup | Monthly (1st, 5am) | `tools/memory_dedup.py` | Removes near-duplicate vectors |
@@ -20,7 +20,7 @@ Recommended cron schedules for keeping the memory system healthy and up to date.
 0 2 * * * cd /path/to/rasputin-memory && python3 tools/memory_autogen.py >> logs/autogen.log 2>&1
 
 # Consolidator v4 — weekly transcript processing
-0 3 * * 0 cd /path/to/rasputin-memory && python3 tools/memory_consolidator_v4.py >> logs/consolidator.log 2>&1
+0 3 * * 0 cd /path/to/rasputin-memory && python3 scripts/memory_consolidator_v4.py >> logs/consolidator.log 2>&1
 
 # Fact Extractor — every 4 hours
 0 */4 * * * cd /path/to/rasputin-memory && python3 tools/fact_extractor.py >> logs/fact_extractor.log 2>&1

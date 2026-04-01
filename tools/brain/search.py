@@ -18,7 +18,7 @@ safe_import = importlib.import_module("pipeline._imports").safe_import
 try:
     from bm25_search import hybrid_rerank as bm25_rerank
 except ModuleNotFoundError:
-    from tools.bm25_search import hybrid_rerank as bm25_rerank
+    from tools.bm25_search import hybrid_rerank as bm25_rerank  # type: ignore[no-redef]
 
 _query_expansion = safe_import("pipeline.query_expansion", "tools.pipeline.query_expansion")
 expand_queries = _query_expansion.expand_queries
@@ -74,7 +74,7 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
     if source_filter:
         search_filter = Filter(must=[FieldCondition(key="source", match=MatchValue(value=source_filter))])
 
-    results = _state.qdrant.query_points(
+    results = _state.qdrant.query_points(  # type: ignore[attr-defined]  # qdrant-client>=1.9.0
         collection_name=_state.COLLECTION,
         query=vector,
         limit=limit,
@@ -123,7 +123,7 @@ def hybrid_search(
     for expanded_query in queries:
         all_qdrant_results.extend(qdrant_search(expanded_query, limit=fetch_limit, source_filter=source_filter))
 
-    deduped_by_text = {}
+    deduped_by_text: dict[str, dict[str, Any]] = {}
     for item in all_qdrant_results:
         text_key = (item.get("text") or "").strip().lower()
         if not text_key:

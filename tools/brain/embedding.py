@@ -59,7 +59,7 @@ def get_embedding(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[fl
 
 def check_duplicate(vector: list[float], text: str, threshold: float = 0.92) -> tuple[bool, Optional[Any], float]:
     try:
-        results = _state.qdrant.query_points(
+        results = _state.qdrant.query_points(  # type: ignore[attr-defined]  # qdrant-client>=1.9.0
             collection_name=_state.COLLECTION,
             query=vector,
             limit=3,

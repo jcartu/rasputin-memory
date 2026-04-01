@@ -38,6 +38,32 @@ LLM_PROXY_URL = os.environ.get("LLM_API_URL", "http://localhost:11434/v1/chat/co
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
 
 
+def parse_llm_response(text):
+    text = (text or "").strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+
+    start = text.find("[")
+    end = text.rfind("]") + 1
+    if start >= 0 and end > start:
+        try:
+            parsed = json.loads(text[start:end])
+            if isinstance(parsed, list):
+                return parsed
+        except Exception:
+            pass
+    return []
+
+
 def load_state():
     """Load extractor state (last run time, processed lines, fact hashes)"""
     if STATE_FILE.exists():
@@ -206,34 +232,7 @@ JSON (empty array if nothing specific):"""
 
     try:
         response = llm_call(prompt, max_tokens=1500, temp=0.1)
-
-        # Parse JSON from response
-        text = response.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-
-        # Try direct parsing first
-        try:
-            facts = json.loads(text)
-            if isinstance(facts, list):
-                return facts
-        except json.JSONDecodeError:
-            pass
-
-        # Try to extract JSON array
-        start = text.find("[")
-        end = text.rfind("]") + 1
-        if start >= 0 and end > start:
-            try:
-                facts = json.loads(text[start:end])
-                if isinstance(facts, list):
-                    return facts
-            except Exception:
-                pass
-
-        return []
+        return parse_llm_response(response)
     except Exception as e:
         print(f"  Pass 1 error: {e}")
         return []

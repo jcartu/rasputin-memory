@@ -38,11 +38,11 @@ class BM25Scorer:
         avg_dl = sum(doc_lens) / len(doc_lens) if doc_lens else 1
 
         # Document frequency
-        df = Counter()
+        df: dict[str, int] = {}
         for tokens in doc_tokens:
             unique = set(tokens)
             for t in unique:
-                df[t] += 1
+                df[t] = df.get(t, 0) + 1
 
         N = len(documents)
         scores = []

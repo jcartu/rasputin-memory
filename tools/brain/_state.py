@@ -57,7 +57,7 @@ load_config = _config_module.load_config
 try:
     from bm25_search import hybrid_rerank as bm25_rerank
 except ModuleNotFoundError:
-    from tools.bm25_search import hybrid_rerank as bm25_rerank
+    from tools.bm25_search import hybrid_rerank as bm25_rerank  # type: ignore[no-redef]
 
 logger.info("BM25 reranking enabled")
 BM25_AVAILABLE = True
@@ -89,7 +89,7 @@ _commit_lock = threading.Lock()
 _redis_pool = redis.ConnectionPool(host=FALKOR_HOST, port=FALKOR_PORT, max_connections=10)
 
 
-def get_redis() -> redis.Redis:
+def get_falkordb() -> redis.Redis:
     return redis.Redis(connection_pool=_redis_pool)
 
 
@@ -143,7 +143,7 @@ __all__ = [
     "_commit_lock",
     "_redis_pool",
     "bm25_rerank",
-    "get_redis",
+    "get_falkordb",
     "load_config",
     "logger",
     "qdrant",

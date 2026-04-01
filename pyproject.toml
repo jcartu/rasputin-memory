@@ -45,20 +45,18 @@ source = ["tools"]
 omit = [
     "tools/memory_autogen.py",
     "tools/embed_server_gpu1.py",
-    "tools/memory_consolidator_v4.py",
-    "tools/memory_dedup.py",
     "tools/memory_health_check.py",
     "tools/memory_mcp_server.py",
     "tools/reranker_server.py",
-    "tools/fact_extractor.py",
     "scripts/consolidate_second_brain.py",
-    "tools/enrich_second_brain.py",
+    "scripts/memory_consolidator_v4.py",
+    "scripts/enrich_second_brain.py",
     "scripts/migrate_graph_edges.py",
     "scripts/backfill_schema.py",
 ]
 
 [tool.coverage.report]
-fail_under = 50
+fail_under = 60
 
 [tool.setuptools]
 packages = ["brain", "pipeline"]

@@ -136,7 +136,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 qdrant_count = -1
 
             try:
-                redis_client = _state.get_redis()
+                redis_client = _state.get_falkordb()
                 node_count = redis_client.execute_command(
                     "GRAPH.QUERY", _state.GRAPH_NAME, "MATCH (n) RETURN count(n)"
                 )[1][0][0]
@@ -156,7 +156,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             )
 
         elif parsed.path == "/health":
-            health = {
+            health: dict[str, Any] = {
                 "status": "ok",
                 "engine": "hybrid-brain",
                 "version": "0.4.0",
@@ -175,7 +175,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 health["components"]["qdrant"] = "down"
                 health["status"] = "degraded"
             try:
-                redis_client = _state.get_redis()
+                redis_client = _state.get_falkordb()
                 redis_client.ping()
                 health["components"]["falkordb"] = "up"
             except Exception:
@@ -396,7 +396,7 @@ def serve(port: int = _state.SERVER_PORT) -> None:
         _state.qdrant.get_collection(_state.COLLECTION).points_count,
     )
     try:
-        redis_client = _state.get_redis()
+        redis_client = _state.get_falkordb()
         node_count = redis_client.execute_command("GRAPH.QUERY", _state.GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][
             0
         ]

@@ -58,7 +58,7 @@ Memory strength degrades over time following an Ebbinghaus-inspired forgetting c
 
 Weekly fact extraction from daily logs:
 - 5-pass extraction via `memory_consolidate.py`
-- Parallel variant via `memory_consolidator_v4.py` for session transcripts
+- Parallel variant via `scripts/memory_consolidator_v4.py` for session transcripts
 - Produces 7K+ structured facts per run
 
 ## Deduplicate
