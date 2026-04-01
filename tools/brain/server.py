@@ -4,6 +4,7 @@ import json
 import signal
 import threading
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -81,6 +82,8 @@ class HybridHandler(BaseHTTPRequestHandler):
         return False
 
     def do_GET(self) -> None:
+        request_id = str(uuid.uuid4())
+        token = _state.set_request_id(request_id)
         try:
             self._handle_get()
         except Exception as error:
@@ -89,6 +92,8 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Internal server error"}, 500)
             except Exception:
                 pass
+        finally:
+            _state.reset_request_id(token)
 
     def _handle_get(self) -> None:
         if not self._check_auth():
@@ -222,6 +227,8 @@ class HybridHandler(BaseHTTPRequestHandler):
             self._send_json({"error": f"Unknown path: {parsed.path}"}, 404)
 
     def do_POST(self) -> None:
+        request_id = str(uuid.uuid4())
+        token = _state.set_request_id(request_id)
         try:
             self._handle_post()
         except Exception as error:
@@ -230,6 +237,8 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Internal server error"}, 500)
             except Exception:
                 pass
+        finally:
+            _state.reset_request_id(token)
 
     def _handle_post(self) -> None:
         if not self._check_auth():

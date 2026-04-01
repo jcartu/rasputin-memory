@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import contextvars
+import json
 import logging
 import os
 import threading
@@ -11,8 +13,43 @@ from qdrant_client import QdrantClient
 
 safe_import = importlib.import_module("pipeline._imports").safe_import
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+_request_id_ctx: contextvars.ContextVar[str | None] = contextvars.ContextVar("request_id", default=None)
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = _request_id_ctx.get()
+        return True
+
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "ts": self.formatTime(record),
+            "level": record.levelname,
+            "msg": record.getMessage(),
+            "module": record.module,
+            "request_id": getattr(record, "request_id", None),
+        }
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def set_request_id(request_id: str | None):
+    return _request_id_ctx.set(request_id)
+
+
+def reset_request_id(token) -> None:
+    _request_id_ctx.reset(token)
+
+
 logger = logging.getLogger("hybrid_brain")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(JSONFormatter())
+    handler.addFilter(RequestIdFilter())
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+logger.propagate = False
 
 _config_module = safe_import("config", "tools.config")
 load_config = _config_module.load_config
@@ -111,5 +148,7 @@ __all__ = [
     "logger",
     "qdrant",
     "redis",
+    "reset_request_id",
     "requests",
+    "set_request_id",
 ]
