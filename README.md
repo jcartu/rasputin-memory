@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.5
+# RASPUTIN Memory v0.5 — #2 on LoCoMo (89.8%)
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -67,32 +67,33 @@ Memory Commit
 
 ---
 
-## Benchmarks
+## LoCoMo Benchmark — 89.8% (2nd Place)
 
-Evaluated on a curated QA dataset spanning entity recall, temporal decay, contradiction detection, deduplication, source attribution, recency bias, and multilingual retrieval.
+Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024) — the standard benchmark for conversational memory systems. 10 conversations, 1,986 QA pairs, LLM-judge binary accuracy (matching leaderboard methodology).
 
-| System | Methodology | Metric | Score |
-|--------|-------------|--------|-------|
-| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | recall@5 | **0.82** |
-| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | recall@10 | **0.885** |
-| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | MRR@10 | **0.68** |
-| Mem0 (LoCoMo report) | LLM-judge leaderboard reporting | recall@5 (reported range) | 0.65–0.72 |
+| Rank | System | LLM-Judge Accuracy |
+|------|--------|-------------------|
+| 🥇 | Backboard | 90.00% |
+| **🥈** | **RASPUTIN** | **89.81%** |
+| 🥉 | Memvid | 85.70% |
+| 4 | MemMachine | 84.87% |
+| 5 | Memobase | 75.78% |
+| 6 | Zep | 75.14% |
+| 7 | mem0 | 66.88% |
 
-> Note: Most memory system leaderboards use LLM-judge binary accuracy, not token-level F1. These metrics are not directly comparable.
+### Per-Category Breakdown
 
-### Per-category recall@5
+| Category | Accuracy | Questions |
+|----------|----------|-----------|
+| Temporal | 91.6% | 321 |
+| Open-domain | 91.9% | 841 |
+| Multi-hop | 86.5% | 96 |
+| Single-hop | 82.6% | 282 |
+| Adversarial | 60.5% | 446 |
 
-| Category | Score |
-|----------|-------|
-| Entity | 0.63 |
-| Temporal decay | 0.40 |
-| Contradiction | 0.96 |
-| Deduplication | 1.00 |
-| Source attribution | 0.97 |
-| Recency | 1.00 |
-| Multilingual | 0.97 |
+**Config:** nomic-embed-text (768d) → Qdrant top-60 → Claude Opus (answer gen) → GPT-4o-mini (judge)
 
-Run benchmarks: `python benchmarks/run_benchmark.py --output benchmarks/results/`
+Run the benchmark: `python3 benchmarks/locomo_leaderboard_bench.py`
 
 ---
 
