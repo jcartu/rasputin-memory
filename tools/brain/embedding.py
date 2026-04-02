@@ -35,6 +35,8 @@ def get_embedding(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[fl
             data = response.json()
             if "embeddings" in data:
                 return data["embeddings"][0]
+            if "data" in data and isinstance(data["data"], list):
+                return data["data"][0]["embedding"]
             if "embedding" in data:
                 return data["embedding"]
             raise ValueError(f"Unexpected embedding response: {list(data.keys())}")
