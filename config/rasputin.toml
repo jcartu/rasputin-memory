@@ -23,6 +23,8 @@ prefix_doc = "search_document: "
 url = "http://localhost:8006/rerank"
 timeout = 15
 enabled = true
+llm_reranker = true
+llm_reranker_model = "claude-haiku-4-20250414"
 
 [amac]
 threshold = 4.0

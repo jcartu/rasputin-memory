@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 import time
 import importlib
@@ -66,6 +67,73 @@ def _neural_rerank(query: str, results: list[dict[str, Any]], top_k: Optional[in
     except Exception as error:
         _state.logger.error("Reranker error: %s", error)
         return results
+
+
+def _llm_rerank(query: str, results: list[dict[str, Any]], top_k: int = 10) -> list[dict[str, Any]]:
+    if not _state.ANTHROPIC_API_KEY or not results:
+        return results[:top_k]
+
+    passages = []
+    candidate_pool = results[:30]
+    for i, row in enumerate(candidate_pool):
+        text = (row.get("text") or "")[:500]
+        source = row.get("source", "")
+        date = row.get("date", "")
+        passages.append(f"[{i}] ({source}, {date}) {text}")
+
+    prompt = f"""You are ranking memory search results by relevance to a query.
+
+Query: {query}
+
+Passages:
+{chr(10).join(passages)}
+
+Return a JSON array of passage indices ordered by relevance (most relevant first). Include only passages that are actually relevant to the query. Example: [3, 0, 7, 12]
+
+Respond with ONLY the JSON array, nothing else."""
+
+    try:
+        import urllib.request
+
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=json.dumps(
+                {
+                    "model": _state.LLM_RERANKER_MODEL,
+                    "max_tokens": 200,
+                    "temperature": 0.0,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+            ).encode(),
+            method="POST",
+        )
+        req.add_header("Content-Type", "application/json")
+        req.add_header("x-api-key", _state.ANTHROPIC_API_KEY)
+        req.add_header("anthropic-version", "2023-06-01")
+
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        text = data["content"][0]["text"].strip()
+        indices = json.loads(text)
+
+        reranked = []
+        seen = set()
+        for idx in indices:
+            if isinstance(idx, int) and 0 <= idx < len(candidate_pool) and idx not in seen:
+                row = candidate_pool[idx].copy()
+                row["llm_rerank_position"] = len(reranked)
+                reranked.append(row)
+                seen.add(idx)
+
+        for i, row in enumerate(results):
+            if i not in seen and len(reranked) < top_k:
+                reranked.append(row)
+
+        return reranked[:top_k]
+    except Exception as error:
+        _state.logger.warning("LLM reranker failed, falling back to original order: %s", error)
+        return results[:top_k]
 
 
 def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = None) -> list[dict[str, Any]]:
@@ -161,19 +229,36 @@ def hybrid_search(
     all_candidates = list(qdrant_results[: limit * 2]) + graph_memory_results
 
     neural_applied = False
-    reranker_up = embedding.is_reranker_available()
-    if reranker_up and all_candidates:
-        pre_count = len(all_candidates)
-        all_candidates = _neural_rerank(query, all_candidates[: limit * 3], top_k=limit)
-        neural_applied = len(all_candidates) <= pre_count and any(
-            row.get("rerank_score") is not None for row in all_candidates
-        )
-    else:
-        all_candidates = sorted(
-            all_candidates,
-            key=lambda value: float(value.get("hybrid_score") or value.get("score", 0)),
-            reverse=True,
-        )[:limit]
+    llm_applied = False
+    ranking_score_key = "hybrid_score" if any("hybrid_score" in row for row in all_candidates) else "score"
+    if all_candidates:
+        rerank_pool = all_candidates[: limit * 3]
+        if _state.LLM_RERANKER_ENABLED and _state.ANTHROPIC_API_KEY:
+            all_candidates = _llm_rerank(query, rerank_pool, top_k=limit)
+            llm_applied = any(row.get("llm_rerank_position") is not None for row in all_candidates)
+            if llm_applied:
+                top_span = max(len(all_candidates), 1)
+                for idx, row in enumerate(all_candidates):
+                    llm_position = row.get("llm_rerank_position")
+                    if llm_position is None:
+                        llm_position = idx + top_span
+                        row["llm_rerank_position"] = llm_position
+                    row["llm_rerank_score"] = float((2 * top_span) - int(llm_position))
+                ranking_score_key = "llm_rerank_score"
+        elif embedding.is_reranker_available():
+            pre_count = len(all_candidates)
+            all_candidates = _neural_rerank(query, rerank_pool, top_k=limit)
+            neural_applied = len(all_candidates) <= pre_count and any(
+                row.get("rerank_score") is not None for row in all_candidates
+            )
+            if neural_applied:
+                ranking_score_key = "rerank_score"
+        else:
+            all_candidates = sorted(
+                all_candidates,
+                key=lambda value: float(value.get(ranking_score_key) or value.get("score", 0)),
+                reverse=True,
+            )[:limit]
 
     query_tokens = set(_TOKEN_RE.findall(query.lower()))
     _stopwords = {
@@ -226,27 +311,17 @@ def hybrid_search(
     }
     query_content_tokens = query_tokens - _stopwords
     if query_content_tokens:
-        score_key = (
-            "rerank_score"
-            if neural_applied
-            else ("hybrid_score" if any("hybrid_score" in r for r in all_candidates) else "score")
-        )
         for row in all_candidates:
             text_tokens = set(_TOKEN_RE.findall((row.get("text") or "").lower()))
             overlap = query_content_tokens & text_tokens
             if overlap:
                 overlap_ratio = len(overlap) / len(query_content_tokens)
                 boost = 1.0 + 9.0 * (overlap_ratio**3)
-                row[score_key] = row.get(score_key, row.get("score", 0)) * boost
+                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) * boost
                 row["keyword_boosted"] = True
 
     query_entities = [name for name, _type in entities_module.extract_entities_fast(query)]
     if query_entities:
-        score_key = (
-            "rerank_score"
-            if neural_applied
-            else ("hybrid_score" if any("hybrid_score" in r for r in all_candidates) else "score")
-        )
         query_entity_names_lower = {e.lower() for e in query_entities}
         for row in all_candidates:
             text = row.get("text") or ""
@@ -264,14 +339,20 @@ def hybrid_search(
                         text_len = max(len(text_lower), 1)
                         position_bonus = max(position_bonus, 1.0 - (pos / text_len))
                 boost = 2.0 + 5.0 * (focus_ratio**0.5) + 2.0 * position_bonus
-                current = row.get(score_key, row.get("score", 0))
-                row[score_key] = current * boost
+                current = row.get(ranking_score_key, row.get("score", 0))
+                row[ranking_score_key] = current * boost
                 row["entity_boosted"] = True
                 row["entity_focus"] = round(focus_ratio, 2)
 
     all_candidates = sorted(
         all_candidates,
-        key=lambda v: float(v.get("rerank_score", 0) or v.get("hybrid_score", 0) or v.get("score", 0)),
+        key=lambda v: float(
+            v.get(ranking_score_key, 0)
+            or v.get("llm_rerank_score", 0)
+            or v.get("rerank_score", 0)
+            or v.get("hybrid_score", 0)
+            or v.get("score", 0)
+        ),
         reverse=True,
     )
 
@@ -303,6 +384,7 @@ def hybrid_search(
             "graph_merged": len([row for row in merged if row.get("origin") == "graph"]),
             "graph_enriched_entities": len(graph_enrichment),
             "bm25_reranked": bm25_applied,
+            "llm_reranked": llm_applied,
             "neural_reranked": neural_applied,
         },
     }

@@ -75,6 +75,9 @@ EMBED_PREFIX_DOC = os.environ.get("EMBED_PREFIX_DOC", CONFIG["embeddings"]["pref
 RERANKER_URL = CONFIG["reranker"]["url"]
 RERANKER_TIMEOUT = int(CONFIG["reranker"]["timeout"])
 RERANKER_ENABLED = bool(CONFIG["reranker"]["enabled"])
+LLM_RERANKER_ENABLED = os.environ.get("LLM_RERANKER", "true").lower() == "true"
+LLM_RERANKER_MODEL = os.environ.get("LLM_RERANKER_MODEL", "claude-haiku-4-20250414")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 FALKOR_HOST = CONFIG["graph"]["host"]
 FALKOR_PORT = int(CONFIG["graph"]["port"])
 GRAPH_NAME = CONFIG["graph"]["graph_name"]
@@ -118,6 +121,7 @@ __all__ = [
     "AMAC_REJECT_LOG",
     "AMAC_THRESHOLD",
     "AMAC_TIMEOUT",
+    "ANTHROPIC_API_KEY",
     "BM25_AVAILABLE",
     "COLLECTION",
     "CONFIG",
@@ -130,6 +134,8 @@ __all__ = [
     "FALKOR_PORT",
     "GRAPH_NAME",
     "KNOWN_ENTITIES_PATH",
+    "LLM_RERANKER_ENABLED",
+    "LLM_RERANKER_MODEL",
     "MAX_BODY_SIZE",
     "MEMORY_API_TOKEN",
     "QDRANT_URL",
