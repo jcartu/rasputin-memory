@@ -1,11 +1,8 @@
 {
-    "overall_f1": {
+    "overall": {
         "recall_at_5": 0.60,
         "recall_at_10": 0.75,
         "mrr_at_10": 0.50
-    },
-    "overall_judge": {
-        "accuracy": 0.55
     },
     "contradiction": {
         "supersede_rate": 0.70

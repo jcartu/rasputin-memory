@@ -117,8 +117,8 @@ Respond with ONLY the JSON array, nothing else."""
         text = data["content"][0]["text"].strip()
         indices = json.loads(text)
 
-        reranked = []
-        seen = set()
+        reranked: list[dict[str, Any]] = []
+        seen: set[int] = set()
         for idx in indices:
             if isinstance(idx, int) and 0 <= idx < len(candidate_pool) and idx not in seen:
                 row = candidate_pool[idx].copy()
