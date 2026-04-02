@@ -71,11 +71,14 @@ Memory Commit
 
 Evaluated on a curated QA dataset spanning entity recall, temporal decay, contradiction detection, deduplication, source attribution, recency bias, and multilingual retrieval.
 
-| Metric | RASPUTIN v0.5 | Mem0 (LOCOMO) |
-|--------|--------------|---------------|
-| recall@5 | **0.82** | 0.65–0.72 |
-| recall@10 | **0.885** | — |
-| MRR@10 | **0.68** | — |
+| System | Methodology | Metric | Score |
+|--------|-------------|--------|-------|
+| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | recall@5 | **0.82** |
+| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | recall@10 | **0.885** |
+| RASPUTIN v0.5 | Token-level benchmark (`benchmarks/run_benchmark.py`) | MRR@10 | **0.68** |
+| Mem0 (LoCoMo report) | LLM-judge leaderboard reporting | recall@5 (reported range) | 0.65–0.72 |
+
+> Note: Most memory system leaderboards use LLM-judge binary accuracy, not token-level F1. These metrics are not directly comparable.
 
 ### Per-category recall@5
 
@@ -300,7 +303,7 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 - **Keyword overlap boosting** — token-level matching with stopword filtering, up to 5× boost
 - **Entity focus scoring** — primary-entity texts boosted 1.5×–3.0×, position-weighted
 - **recall@5: 0.67 → 0.82** (+22%), **recall@10: 0.745 → 0.885** (+19%)
-- Beats mem0 LOCOMO benchmark (0.65–0.72) by 20%+
+- Reported improvements are based on RASPUTIN's internal token-level benchmark methodology.
 
 ### v0.4.0
 - Unified hybrid retrieval pipeline hardening

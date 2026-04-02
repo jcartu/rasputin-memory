@@ -35,6 +35,14 @@ VLLM_MODEL = os.environ.get("VLLM_MODEL", "")
 LLM_BACKEND = os.environ.get("LLM_BACKEND", "openai")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-20250514")
+JUDGE_BACKEND = os.environ.get("JUDGE_BACKEND", LLM_BACKEND)
+JUDGE_MODEL = os.environ.get(
+    "JUDGE_MODEL",
+    ANTHROPIC_MODEL if JUDGE_BACKEND == "anthropic" else "gpt-4o-mini",
+)
+EMBED_URL = os.environ.get("BENCH_EMBED_URL", "http://localhost:11434/api/embed")
+EMBED_MODEL = os.environ.get("BENCH_EMBED_MODEL", "nomic-embed-text")
+EMBED_DIM = int(os.environ.get("BENCH_EMBED_DIM", "768"))
 BENCH_PORT = 7778
 
 # LoCoMo category names
@@ -74,7 +82,9 @@ def detect_vllm_model():
     return "qwen3.5-122b-a10b"
 
 
-def create_qdrant_collection(name, dim=768):
+def create_qdrant_collection(name, dim=None):
+    if dim is None:
+        dim = EMBED_DIM
     """Create a fresh Qdrant collection."""
     # Delete if exists
     try:
@@ -106,7 +116,13 @@ def start_bench_server(collection, port=BENCH_PORT):
     env = os.environ.copy()
     env["QDRANT_COLLECTION"] = collection
     env["PORT"] = str(port)
-    env["DISABLE_FALKORDB"] = "true"  # Don't need graph for benchmark
+    env["DISABLE_FALKORDB"] = "true"
+    env["DISABLE_RERANKER"] = "true"
+    env["RERANKER_ENABLED"] = "false"
+    env["EMBED_URL"] = os.environ.get("BENCH_EMBED_URL", EMBED_URL)
+    env["EMBED_MODEL"] = os.environ.get("BENCH_EMBED_MODEL", EMBED_MODEL)
+    env["EMBED_PREFIX_QUERY"] = os.environ.get("BENCH_EMBED_PREFIX_QUERY", "search_query: ")
+    env["EMBED_PREFIX_DOC"] = os.environ.get("BENCH_EMBED_PREFIX_DOC", "search_document: ")
     env["PYTHONPATH"] = str(REPO / "tools")
 
     proc = subprocess.Popen(
@@ -127,8 +143,8 @@ def start_bench_server(collection, port=BENCH_PORT):
             return proc
         except Exception:
             if proc.poll() is not None:
-                stdout = proc.stdout.read().decode()[-500:]
-                stderr = proc.stderr.read().decode()[-500:]
+                stdout = proc.stdout.read().decode()[-500:] if proc.stdout else ""
+                stderr = proc.stderr.read().decode()[-500:] if proc.stderr else ""
                 print(f"  Server died! stdout: {stdout}")
                 print(f"  stderr: {stderr}")
                 raise RuntimeError("Bench server died during startup")
@@ -148,14 +164,20 @@ def kill_server(proc):
             proc.wait()
 
 
-def get_embedding(text, prefix="search_document: "):
-    """Get embedding from Ollama nomic-embed-text."""
+def get_embedding(text, prefix=None):
+    if prefix is None:
+        prefix = os.environ.get("EMBED_PREFIX_DOC", "search_document: ")
+    prefixed = f"{prefix}{text}" if prefix else text
     result = http_json(
-        "http://localhost:11434/api/embed",
-        data={"model": "nomic-embed-text", "input": prefix + text},
+        EMBED_URL,
+        data={"model": EMBED_MODEL, "input": prefixed},
         timeout=30,
     )
-    return result["embeddings"][0]
+    if "embeddings" in result:
+        return result["embeddings"][0]
+    if "data" in result:
+        return result["data"][0]["embedding"]
+    raise ValueError(f"Unexpected embed response: {list(result.keys())}")
 
 
 def commit_conversation_direct(conv, collection):
@@ -243,7 +265,7 @@ def commit_conversation_direct(conv, collection):
     return committed
 
 
-def search_query(query, port=BENCH_PORT, limit=25):
+def search_query(query, port=BENCH_PORT, limit=60):
     """Search the benchmark server."""
     url = f"http://localhost:{port}/search"
     params = urllib.parse.urlencode({"q": query, "limit": limit})
@@ -273,12 +295,12 @@ Q: {question}
 A:"""
 
 
-def _generate_anthropic(prompt):
+def _generate_anthropic(prompt, model):
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(
             {
-                "model": ANTHROPIC_MODEL,
+                "model": model,
                 "max_tokens": 50,
                 "temperature": 0.0,
                 "messages": [{"role": "user", "content": prompt}],
@@ -316,11 +338,34 @@ def generate_answer(question, context_chunks, model):
     prompt = _build_extraction_prompt(question, context_chunks)
     try:
         if LLM_BACKEND == "anthropic" and ANTHROPIC_API_KEY:
-            return _generate_anthropic(prompt)
+            return _generate_anthropic(prompt, ANTHROPIC_MODEL)
         return _generate_openai_compat(prompt, model)
     except Exception as e:
         print(f"    LLM error: {e}")
         return ""
+
+
+def llm_judge_score(question, prediction, ground_truth):
+    prompt = f"""You are evaluating an AI memory system's answer to a question about a conversation.
+
+Question: {question}
+Ground Truth Answer: {ground_truth}
+System Answer: {prediction}
+
+Is the system's answer correct? Be generous — if the answer captures the essential information from the ground truth, even if phrased differently, score it as CORRECT.
+
+Reply with exactly one word: CORRECT or WRONG"""
+
+    try:
+        if JUDGE_BACKEND == "anthropic" and ANTHROPIC_API_KEY:
+            result = _generate_anthropic(prompt, JUDGE_MODEL)
+        else:
+            result = _generate_openai_compat(prompt, JUDGE_MODEL)
+    except Exception as e:
+        print(f"    Judge LLM error: {e}")
+        return 0.0
+
+    return 1.0 if "CORRECT" in result.upper() else 0.0
 
 
 def compute_f1(prediction, ground_truth):
@@ -403,6 +448,7 @@ def run_benchmark(conversations, conv_indices=None, port=BENCH_PORT):
 
                 # Score
                 f1 = compute_f1(prediction, ground_truth)
+                judge = llm_judge_score(question, prediction, ground_truth)
 
                 qa_results.append(
                     {
@@ -410,6 +456,7 @@ def run_benchmark(conversations, conv_indices=None, port=BENCH_PORT):
                         "ground_truth": ground_truth,
                         "prediction": prediction,
                         "f1": f1,
+                        "judge": judge,
                         "category": category,
                         "n_chunks": len(chunks),
                     }
@@ -420,30 +467,69 @@ def run_benchmark(conversations, conv_indices=None, port=BENCH_PORT):
 
                 if (qi + 1) % 20 == 0:
                     avg_so_far = sum(r["f1"] for r in qa_results) / len(qa_results)
-                    print(f"    Progress: {qi + 1}/{len(qa_list)} questions, running F1={avg_so_far:.4f}")
+                    avg_judge_so_far = sum(r["judge"] for r in qa_results) / len(qa_results)
+                    print(
+                        f"    Progress: {qi + 1}/{len(qa_list)} questions, "
+                        f"running F1={avg_so_far:.4f}, Judge={avg_judge_so_far:.4f}"
+                    )
 
             # Compute stats
-            conv_f1 = sum(r["f1"] for r in qa_results) / len(qa_results) if qa_results else 0
+            qa_non_adversarial = [r for r in qa_results if r["category"] != 5]
+            qa_adversarial = [r for r in qa_results if r["category"] == 5]
+            score_pool = qa_non_adversarial if qa_non_adversarial else qa_results
+
+            conv_f1 = sum(r["f1"] for r in score_pool) / len(score_pool) if score_pool else 0
+            conv_judge = sum(r["judge"] for r in score_pool) / len(score_pool) if score_pool else 0
+            conv_adversarial_f1 = sum(r["f1"] for r in qa_adversarial) / len(qa_adversarial) if qa_adversarial else 0
+            conv_adversarial_judge = (
+                sum(r["judge"] for r in qa_adversarial) / len(qa_adversarial) if qa_adversarial else 0
+            )
 
             cat_scores = defaultdict(list)
+            cat_judge_scores = defaultdict(list)
             for r in qa_results:
                 cat_scores[r["category"]].append(r["f1"])
+                cat_judge_scores[r["category"]].append(r["judge"])
 
-            cat_f1 = {cat: sum(scores) / len(scores) for cat, scores in sorted(cat_scores.items())}
+            cat_metrics = {
+                cat: {
+                    "f1": sum(scores) / len(scores),
+                    "judge": sum(cat_judge_scores[cat]) / len(cat_judge_scores[cat]),
+                    "n_questions": len(scores),
+                }
+                for cat, scores in sorted(cat_scores.items())
+            }
 
             all_results[conv_id] = {
                 "conv_id": conv_id,
                 "n_questions": len(qa_results),
+                "n_questions_scored": len(score_pool),
+                "n_questions_adversarial": len(qa_adversarial),
                 "n_committed": n_committed,
                 "mean_f1": conv_f1,
-                "category_f1": cat_f1,
+                "mean_judge": conv_judge,
+                "adversarial_mean_f1": conv_adversarial_f1,
+                "adversarial_mean_judge": conv_adversarial_judge,
+                "category_metrics": cat_metrics,
                 "details": qa_results,
             }
 
-            print(f"  ✅ {conv_id}: F1={conv_f1:.4f} ({len(qa_results)} questions)")
-            for cat, score in sorted(cat_f1.items()):
+            print(
+                f"  ✅ {conv_id}: F1={conv_f1:.4f}, Judge={conv_judge:.4f} "
+                f"({len(score_pool)} non-adversarial scored, {len(qa_results)} total questions)"
+            )
+            if qa_adversarial:
+                print(
+                    f"     adversarial (excluded from overall): "
+                    f"F1={conv_adversarial_f1:.4f}, Judge={conv_adversarial_judge:.4f} "
+                    f"({len(qa_adversarial)} Qs)"
+                )
+            for cat, metrics in sorted(cat_metrics.items()):
                 cat_name = CATEGORY_NAMES.get(cat, f"cat-{cat}")
-                print(f"     {cat_name}: {score:.4f} ({len(cat_scores[cat])} Qs)")
+                print(
+                    f"     {cat_name}: F1={metrics['f1']:.4f}, Judge={metrics['judge']:.4f} "
+                    f"({metrics['n_questions']} Qs)"
+                )
 
             # Save checkpoint
             checkpoint["results"] = all_results
@@ -471,63 +557,62 @@ def generate_report(all_results):
     if not all_results:
         return "No results."
 
-    # Overall stats
     all_f1s = []
-    cat_all = defaultdict(list)
+    all_judges = []
+    all_f1s_adversarial = []
+    all_judges_adversarial = []
+    cat_all_f1 = defaultdict(list)
+    cat_all_judge = defaultdict(list)
 
-    for conv_id, data in all_results.items():
+    for _, data in all_results.items():
         for r in data.get("details", []):
-            all_f1s.append(r["f1"])
-            cat_all[r["category"]].append(r["f1"])
+            cat_all_f1[r["category"]].append(r["f1"])
+            cat_all_judge[r["category"]].append(r["judge"])
+            if r["category"] == 5:
+                all_f1s_adversarial.append(r["f1"])
+                all_judges_adversarial.append(r["judge"])
+            else:
+                all_f1s.append(r["f1"])
+                all_judges.append(r["judge"])
 
     overall_f1 = sum(all_f1s) / len(all_f1s) if all_f1s else 0
-
-    # Leaderboard
-    leaderboard = [
-        ("Backboard", 90.00),
-        ("Memvid", 85.70),
-        ("MemMachine", 84.87),
-        ("Memobase", 75.78),
-        ("Zep", 75.14),
-        ("mem0", 66.88),
-        ("RASPUTIN raw vector", 41.44),
-    ]
-
-    # Insert RASPUTIN full pipeline
-    rasputin_score = round(overall_f1 * 100, 2)
-    leaderboard.append(("RASPUTIN full pipeline", rasputin_score))
-    leaderboard.sort(key=lambda x: x[1], reverse=True)
+    overall_judge = sum(all_judges) / len(all_judges) if all_judges else 0
+    adversarial_f1 = sum(all_f1s_adversarial) / len(all_f1s_adversarial) if all_f1s_adversarial else 0
+    adversarial_judge = sum(all_judges_adversarial) / len(all_judges_adversarial) if all_judges_adversarial else 0
 
     lines = []
     lines.append("# RASPUTIN Memory — LoCoMo Full Pipeline Benchmark Results")
     lines.append(f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append("**Pipeline:** BM25 + vector + reranker + entity boost + keyword overlap")
     lines.append(f"**Conversations:** {len(all_results)}")
-    lines.append(f"**Total questions:** {len(all_f1s)}")
-    lines.append(f"\n## Overall F1: {rasputin_score:.2f}")
+    lines.append(f"**Total questions (all categories):** {len(all_f1s) + len(all_f1s_adversarial)}")
+    lines.append(f"**Questions in overall score (excluding adversarial):** {len(all_f1s)}")
+    lines.append("\n## Overall (excluding adversarial / category 5)")
+    lines.append(f"- Mean F1: {overall_f1 * 100:.2f}")
+    lines.append(f"- LLM-judge accuracy: {overall_judge * 100:.2f}")
 
-    lines.append("\n### Improvement over raw vector")
-    lines.append("- Raw vector: 41.44")
-    lines.append(f"- Full pipeline: {rasputin_score:.2f}")
-    improvement = rasputin_score - 41.44
-    lines.append(f"- **Improvement: +{improvement:.2f} ({improvement / 41.44 * 100:.1f}%)**")
-
-    lines.append("\n## Leaderboard")
-    for i, (name, score) in enumerate(leaderboard, 1):
-        marker = " ← **YOU ARE HERE**" if "full pipeline" in name else ""
-        lines.append(f"{i}. **{name}**: {score:.2f}{marker}")
+    lines.append("\n## Adversarial category (reported separately)")
+    lines.append(f"- Mean F1: {adversarial_f1 * 100:.2f}")
+    lines.append(f"- LLM-judge accuracy: {adversarial_judge * 100:.2f}")
 
     lines.append("\n## Per-Category Breakdown")
-    for cat in sorted(cat_all.keys()):
-        scores = cat_all[cat]
+    for cat in sorted(cat_all_f1.keys()):
+        scores_f1 = cat_all_f1[cat]
+        scores_judge = cat_all_judge[cat]
         cat_name = CATEGORY_NAMES.get(cat, f"category-{cat}")
-        avg = sum(scores) / len(scores) if scores else 0
-        lines.append(f"- **{cat_name}** (cat {cat}): {avg * 100:.2f} ({len(scores)} questions)")
+        avg_f1 = sum(scores_f1) / len(scores_f1) if scores_f1 else 0
+        avg_judge = sum(scores_judge) / len(scores_judge) if scores_judge else 0
+        lines.append(
+            f"- **{cat_name}** (cat {cat}): "
+            f"F1={avg_f1 * 100:.2f}, Judge={avg_judge * 100:.2f} ({len(scores_f1)} questions)"
+        )
 
     lines.append("\n## Per-Conversation Results")
     for conv_id, data in sorted(all_results.items()):
         lines.append(
-            f"- **{conv_id}**: F1={data['mean_f1'] * 100:.2f} ({data['n_questions']} Qs, {data['n_committed']} committed)"
+            f"- **{conv_id}**: "
+            f"F1={data['mean_f1'] * 100:.2f}, Judge={data['mean_judge'] * 100:.2f} "
+            f"({data['n_questions_scored']} non-adversarial Qs, {data['n_questions']} total, {data['n_committed']} committed)"
         )
 
     return "\n".join(lines)
