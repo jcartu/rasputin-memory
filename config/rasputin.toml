@@ -15,6 +15,7 @@ disabled = false
 [embeddings]
 url = "http://localhost:11434/api/embed"
 model = "nomic-embed-text"
+dimensions = 768
 prefix_query = "search_query: "
 prefix_doc = "search_document: "
 

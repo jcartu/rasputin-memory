@@ -25,10 +25,10 @@ import requests
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-EMBED_MODEL = "nomic-embed-text"
-EMBED_DIM = 768
-LLM_URL = os.environ.get("LLM_URL", "http://localhost:11438/v1/chat/completions")
-LLM_MODEL = os.environ.get("LLM_MODEL", "qwen3.5-122b-a10b")
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
+EMBED_DIM = int(os.environ.get("EMBED_DIM", "768"))
+LLM_URL = os.environ.get("LLM_URL", "http://localhost:11434/v1/chat/completions")
+LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
 # Use a unique collection per run to avoid collision if multiple runs happen
 _default_collection = f"locomo_bench_{int(time.time())}" if not os.environ.get("BENCH_COLLECTION") else "locomo_bench"
 COLLECTION = os.environ.get("BENCH_COLLECTION", _default_collection)
@@ -46,6 +46,7 @@ CATEGORY_NAMES = {
 
 
 # ── Embedding via Ollama nomic-embed-text ───────────────────────────────
+
 
 def embed(text: str) -> list[float]:
     """Embed text using Ollama nomic-embed-text (768-dim)."""
@@ -65,7 +66,7 @@ def embed_batch(texts: list[str], batch_size: int = 64) -> list[list[float]]:
     """Embed a batch of texts via Ollama (supports batch input)."""
     all_embs = []
     for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
+        batch = texts[i : i + batch_size]
         resp = requests.post(
             f"{OLLAMA_URL}/api/embed",
             json={"model": EMBED_MODEL, "input": batch},
@@ -78,6 +79,7 @@ def embed_batch(texts: list[str], batch_size: int = 64) -> list[list[float]]:
 
 
 # ── Qdrant helpers ──────────────────────────────────────────────────────
+
 
 def create_collection():
     """Create a fresh benchmark collection."""
@@ -131,20 +133,22 @@ def ingest_conversation(conv: dict, conv_idx: int):
 
     points = []
     for i, (turn, vec) in enumerate(zip(turns, vectors)):
-        points.append({
-            "id": str(uuid.uuid4()),
-            "vector": vec,
-            "payload": {
-                "text": turn["text"],
-                "dia_id": turn["dia_id"],
-                "session": turn["session"],
-                "conv_idx": conv_idx,
-            },
-        })
+        points.append(
+            {
+                "id": str(uuid.uuid4()),
+                "vector": vec,
+                "payload": {
+                    "text": turn["text"],
+                    "dia_id": turn["dia_id"],
+                    "session": turn["session"],
+                    "conv_idx": conv_idx,
+                },
+            }
+        )
 
     batch_size = 100
     for i in range(0, len(points), batch_size):
-        batch = points[i:i + batch_size]
+        batch = points[i : i + batch_size]
         resp = requests.put(
             f"{QDRANT_URL}/collections/{COLLECTION}/points?wait=true",
             json={"points": batch},
@@ -170,7 +174,8 @@ def search_qdrant(query: str, limit: int = SEARCH_LIMIT, retries: int = 3) -> li
         )
         if resp.status_code == 404 and attempt < retries - 1:
             import time
-            print(f"  [WARN] Collection 404 on search, retrying in 2s (attempt {attempt+1})...")
+
+            print(f"  [WARN] Collection 404 on search, retrying in 2s (attempt {attempt + 1})...")
             time.sleep(2)
             continue
         resp.raise_for_status()
@@ -178,14 +183,17 @@ def search_qdrant(query: str, limit: int = SEARCH_LIMIT, retries: int = 3) -> li
     data = resp.json()
     results = []
     for point in data.get("result", {}).get("points", []):
-        results.append({
-            "text": point["payload"]["text"],
-            "score": point["score"],
-        })
+        results.append(
+            {
+                "text": point["payload"]["text"],
+                "score": point["score"],
+            }
+        )
     return results
 
 
 # ── LLM helpers (cartu-proxy → Qwen 122B) ──────────────────────────────
+
 
 def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.1) -> str:
     """Generate text using Qwen 122B via cartu-proxy."""
@@ -220,23 +228,26 @@ def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.1) -
 
 
 def generate_answer(question: str, context: list[dict]) -> str:
-    """Generate answer using retrieved context."""
-    ctx_text = "\n".join(f"- {r['text']}" for r in context[:SEARCH_LIMIT])
-    prompt = f"""Based on the following conversation memories, answer the question as briefly as possible.
-Give ONLY the specific answer — no explanation, no reasoning, no full sentences.
-Examples: "7 May 2023", "Psychology, counseling", "Paris", "3 times", "mental health"
-Infer from context when possible. Only say "unknown" if truly no relevant info exists.
+    ctx_text = "\n".join(f"- {r['text']}" for r in context[:25])
+    prompt = f"""Extract the answer from these memories. Reply with ONLY the answer — no explanation, no reasoning, no preamble. 1-10 words maximum.
+
+Examples:
+Q: "Where did they go?" → "Paris"
+Q: "When is the meeting?" → "May 7, 2023"
+Q: "What does she study?" → "Psychology and counseling"
+
+If the answer requires inference from multiple memories, combine them. Only say "unknown" if truly zero relevant information exists.
 
 Memories:
 {ctx_text}
 
-Question: {question}
-
-Answer:"""
-    return llm_generate(prompt, max_tokens=60)
+Q: {question}
+A:"""
+    return llm_generate(prompt, max_tokens=50)
 
 
 # ── Metrics ─────────────────────────────────────────────────────────────
+
 
 def normalize_answer(text) -> str:
     """Normalize answer for F1 computation."""
@@ -262,6 +273,7 @@ def compute_f1(prediction: str, ground_truth: str) -> float:
 
 
 # ── Main benchmark ──────────────────────────────────────────────────────
+
 
 def run_benchmark(
     data_path: str = str(DATA_PATH),
@@ -301,9 +313,9 @@ def run_benchmark(
         sample_id = sample.get("sample_id", conv_idx)
         display_idx = conv_idx + start_conv
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Conversation {display_idx + 1}/{display_idx + total_convs - conv_idx} (sample_id={sample_id})")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Create fresh collection for each conversation
         create_collection()
@@ -346,7 +358,7 @@ def run_benchmark(
 
             if (qi + 1) % 10 == 0:
                 avg_so_far = sum(r["f1"] for r in all_results) / len(all_results)
-                print(f"  [{qi+1}/{len(qa_subset)}] running avg F1={avg_so_far:.4f}")
+                print(f"  [{qi + 1}/{len(qa_subset)}] running avg F1={avg_so_far:.4f}")
 
         print(f"  Done: {len(qa_subset)} QA pairs for conversation {conv_idx + 1}")
 
@@ -395,9 +407,9 @@ def run_benchmark(
     with open(RESULTS_DIR / "locomo-results.md", "w") as f:
         f.write(md)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("RESULTS SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Overall F1: {summary['overall_f1']}")
     for cat_name, scores in summary["per_category"].items():
         print(f"  {cat_name}: F1={scores['f1']} (n={scores['count']})")
@@ -447,6 +459,7 @@ def generate_report(summary: dict) -> str:
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Run LoCoMo benchmark on RASPUTIN Memory")
     parser.add_argument("--max-conv", type=int, help="Max conversations to process")
     parser.add_argument("--max-qa", type=int, help="Max QA pairs per conversation")
