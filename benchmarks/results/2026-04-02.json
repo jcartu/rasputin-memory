@@ -1,75 +1,75 @@
 {
     "date": "2026-04-02",
-    "commit": "d4bb277",
+    "commit": "1076546",
     "overall": {
-        "recall_at_5": 0.82,
-        "recall_at_10": 0.885,
-        "mrr_at_10": 0.6802,
-        "latency_p50_ms": 28.53,
-        "latency_p95_ms": 49.04
+        "recall_at_5": 0.915,
+        "recall_at_10": 0.965,
+        "mrr_at_10": 0.7532,
+        "latency_p50_ms": 29.02,
+        "latency_p95_ms": 48.7
     },
     "categories": {
         "decay": {
-            "recall_at_5": 0.4,
-            "recall_at_10": 0.5,
-            "mrr_at_10": 0.3554,
-            "latency_p50_ms": 23.23,
-            "latency_p95_ms": 40.4
+            "recall_at_5": 1.0,
+            "recall_at_10": 1.0,
+            "mrr_at_10": 0.8333,
+            "latency_p50_ms": 22.0,
+            "latency_p95_ms": 42.51
         },
         "contradiction": {
-            "recall_at_5": 0.96,
-            "recall_at_10": 0.96,
-            "mrr_at_10": 0.7133,
-            "latency_p50_ms": 30.16,
-            "latency_p95_ms": 63.6,
+            "recall_at_5": 1.0,
+            "recall_at_10": 1.0,
+            "mrr_at_10": 0.7233,
+            "latency_p50_ms": 29.5,
+            "latency_p95_ms": 58.17,
             "supersede_rate": 1.0
         },
         "multilingual": {
             "recall_at_5": 0.9667,
             "recall_at_10": 0.9667,
             "mrr_at_10": 0.6,
-            "latency_p50_ms": 30.34,
-            "latency_p95_ms": 48.49
+            "latency_p50_ms": 30.4,
+            "latency_p95_ms": 43.94
         },
         "entity": {
             "recall_at_5": 0.6333,
             "recall_at_10": 0.9667,
             "mrr_at_10": 0.3182,
-            "latency_p50_ms": 28.27,
-            "latency_p95_ms": 54.9
+            "latency_p50_ms": 28.05,
+            "latency_p95_ms": 51.23
         },
         "dedup": {
             "recall_at_5": 1.0,
             "recall_at_10": 1.0,
             "mrr_at_10": 1.0,
-            "latency_p50_ms": 23.28,
-            "latency_p95_ms": 39.81,
+            "latency_p50_ms": 24.48,
+            "latency_p95_ms": 41.19,
             "dedup_precision": 1.0
         },
         "source_tier": {
             "recall_at_5": 1.0,
             "recall_at_10": 1.0,
             "mrr_at_10": 1.0,
-            "latency_p50_ms": 30.62,
-            "latency_p95_ms": 49.04
+            "latency_p50_ms": 31.03,
+            "latency_p95_ms": 50.26
         },
         "recency": {
             "recall_at_5": 1.0,
             "recall_at_10": 1.0,
             "mrr_at_10": 1.0,
-            "latency_p50_ms": 30.45,
-            "latency_p95_ms": 47.09
+            "latency_p50_ms": 29.31,
+            "latency_p95_ms": 48.7
         },
         "edge_cases": {
             "recall_at_5": 0.6667,
             "recall_at_10": 0.6667,
             "mrr_at_10": 0.6667,
-            "latency_p50_ms": 31.89,
-            "latency_p95_ms": 43.47
+            "latency_p50_ms": 32.7,
+            "latency_p95_ms": 45.83
         }
     },
     "config": {
-        "collection": "benchmark_20260401_215047",
+        "collection": "benchmark_20260401_221910",
         "qdrant_url": "http://localhost:6333",
         "embed_model": "nomic-embed-text",
         "synthetic_embed_model": "deterministic-hash-768",
