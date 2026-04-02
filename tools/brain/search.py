@@ -136,7 +136,12 @@ Respond with ONLY the JSON array, nothing else."""
         return results[:top_k]
 
 
-def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = None) -> list[dict[str, Any]]:
+def qdrant_search(
+    query: str,
+    limit: int = 10,
+    source_filter: Optional[str] = None,
+    collection: Optional[str] = None,
+) -> list[dict[str, Any]]:
     try:
         vector = embedding.get_embedding(query)
     except Exception as error:
@@ -147,8 +152,10 @@ def qdrant_search(query: str, limit: int = 10, source_filter: Optional[str] = No
     if source_filter:
         search_filter = Filter(must=[FieldCondition(key="source", match=MatchValue(value=source_filter))])
 
+    target_collection = collection or _state.COLLECTION
+
     results = _state.qdrant.query_points(  # type: ignore[attr-defined]  # qdrant-client>=1.9.0
-        collection_name=_state.COLLECTION,
+        collection_name=target_collection,
         query=vector,
         limit=limit,
         query_filter=search_filter,
@@ -184,6 +191,7 @@ def hybrid_search(
     graph_hops: int = 2,
     source_filter: Optional[str] = None,
     expand: bool = True,
+    collection: Optional[str] = None,
 ) -> dict[str, Any]:
     start = time.time()
 
@@ -194,7 +202,13 @@ def hybrid_search(
     fetch_limit = limit * 4
     all_qdrant_results = []
     for expanded_query in queries:
-        all_qdrant_results.extend(qdrant_search(expanded_query, limit=fetch_limit, source_filter=source_filter))
+        qdrant_kwargs: dict[str, Any] = {
+            "limit": fetch_limit,
+            "source_filter": source_filter,
+        }
+        if collection:
+            qdrant_kwargs["collection"] = collection
+        all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
 
     deduped_by_text: dict[str, dict[str, Any]] = {}
     for item in all_qdrant_results:
@@ -367,7 +381,7 @@ def hybrid_search(
 
     elapsed = time.time() - start
 
-    _update_access_tracking([row for row in merged if row.get("origin") != "graph"])
+    _update_access_tracking([row for row in merged if row.get("origin") != "graph"], collection=collection)
 
     return {
         "query": query,
@@ -390,8 +404,9 @@ def hybrid_search(
     }
 
 
-def _update_access_tracking(results: list[dict[str, Any]]) -> None:
+def _update_access_tracking(results: list[dict[str, Any]], collection: Optional[str] = None) -> None:
     now = datetime.now().isoformat()
+    target_collection = collection or _state.COLLECTION
 
     def _do_update() -> None:
         for row in results:
@@ -400,7 +415,7 @@ def _update_access_tracking(results: list[dict[str, Any]]) -> None:
                 continue
             try:
                 points = _state.qdrant.retrieve(
-                    collection_name=_state.COLLECTION,
+                    collection_name=target_collection,
                     ids=[point_id],
                     with_payload=True,
                 )
@@ -408,7 +423,7 @@ def _update_access_tracking(results: list[dict[str, Any]]) -> None:
                     payload = points[0].payload or {}
                     current_count = payload.get("retrieval_count", 0) or 0
                     _state.qdrant.set_payload(
-                        collection_name=_state.COLLECTION,
+                        collection_name=target_collection,
                         points=[point_id],
                         payload={
                             "last_accessed": now,

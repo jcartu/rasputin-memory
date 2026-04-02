@@ -32,7 +32,7 @@ REPO = Path(__file__).resolve().parent.parent
 BENCH_DIR = REPO / "benchmarks"
 RESULTS_DIR = BENCH_DIR / "results"
 LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
-CHECKPOINT_FILE = RESULTS_DIR / "locomo-leaderboard-checkpoint.json"
+CHECKPOINT_FILE = RESULTS_DIR / os.environ.get("BENCH_CHECKPOINT", "locomo-leaderboard-checkpoint.json")
 OUTPUT_FILE = RESULTS_DIR / "locomo-leaderboard-v1.json"
 COMPARISON_FILE = RESULTS_DIR / "locomo-leaderboard-comparison.md"
 
@@ -47,7 +47,7 @@ BENCH_PORT = 7779
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPUS_MODEL = "claude-opus-4-20250514"
+OPUS_MODEL = "claude-opus-4-6"
 JUDGE_MODEL = "gpt-4o-mini"
 
 CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domain", 5: "adversarial"}
@@ -69,6 +69,7 @@ def http_json(url, data=None, method=None, timeout=60, headers=None):
 
 # ─── Embedding ───────────────────────────────────────────────
 
+
 def get_embedding(text, prefix="search_document: "):
     prefixed = f"{prefix}{text}" if prefix else text
     result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
@@ -80,6 +81,7 @@ def get_embedding(text, prefix="search_document: "):
 
 
 # ─── LLM: Opus for answers ──────────────────────────────────
+
 
 def generate_opus_answer(question, context_chunks):
     context = "\n".join(f"- {c.get('text', c) if isinstance(c, dict) else c}" for c in context_chunks[:30])
@@ -95,12 +97,14 @@ Answer:"""
 
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
-        data=json.dumps({
-            "model": OPUS_MODEL,
-            "max_tokens": 150,
-            "temperature": 0.0,
-            "messages": [{"role": "user", "content": prompt}],
-        }).encode(),
+        data=json.dumps(
+            {
+                "model": OPUS_MODEL,
+                "max_tokens": 150,
+                "temperature": 0.0,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        ).encode(),
         method="POST",
     )
     req.add_header("Content-Type", "application/json")
@@ -112,6 +116,7 @@ Answer:"""
 
 
 # ─── LLM: GPT-4o-mini for judging ───────────────────────────
+
 
 def judge_gpt4o_mini(question, prediction, ground_truth):
     prompt = f"""You are evaluating an AI memory system's answer to a question about a conversation.
@@ -142,6 +147,7 @@ Reply with exactly one word: CORRECT or WRONG"""
 
 # ─── Qdrant operations ──────────────────────────────────────
 
+
 def create_collection(name):
     try:
         req = urllib.request.Request(f"{QDRANT_URL}/collections/{name}", method="DELETE")
@@ -149,10 +155,14 @@ def create_collection(name):
     except Exception:
         pass
     time.sleep(0.3)
-    http_json(f"{QDRANT_URL}/collections/{name}", data={
-        "vectors": {"size": EMBED_DIM, "distance": "Cosine"},
-        "optimizers_config": {"indexing_threshold": 0},
-    }, method="PUT")
+    http_json(
+        f"{QDRANT_URL}/collections/{name}",
+        data={
+            "vectors": {"size": EMBED_DIM, "distance": "Cosine"},
+            "optimizers_config": {"indexing_threshold": 0},
+        },
+        method="PUT",
+    )
 
 
 def delete_collection(name):
@@ -183,36 +193,42 @@ def commit_conversation(conv, collection):
             try:
                 vec = get_embedding(commit_text[:2000], prefix="search_document: ")
                 point_id = int(hashlib.md5(commit_text.encode()).hexdigest()[:15], 16)
-                points.append({
-                    "id": point_id,
-                    "vector": vec,
-                    "payload": {
-                        "text": commit_text[:4000],
-                        "source": "locomo_bench",
-                        "source_weight": 1.0,
-                        "date": datetime.now().isoformat(),
-                        "importance": 70,
-                        "retrieval_count": 0,
-                    },
-                })
+                points.append(
+                    {
+                        "id": point_id,
+                        "vector": vec,
+                        "payload": {
+                            "text": commit_text[:4000],
+                            "source": "locomo_bench",
+                            "source_weight": 1.0,
+                            "date": datetime.now().isoformat(),
+                            "importance": 70,
+                            "retrieval_count": 0,
+                        },
+                    }
+                )
                 committed += 1
                 if len(points) >= 50:
-                    http_json(f"{QDRANT_URL}/collections/{collection}/points",
-                              data={"points": points}, method="PUT", timeout=30)
+                    http_json(
+                        f"{QDRANT_URL}/collections/{collection}/points",
+                        data={"points": points},
+                        method="PUT",
+                        timeout=30,
+                    )
                     points = []
             except Exception as e:
                 if committed < 5:
                     print(f"    Embed error: {e}")
         session_idx += 1
     if points:
-        http_json(f"{QDRANT_URL}/collections/{collection}/points",
-                  data={"points": points}, method="PUT", timeout=30)
+        http_json(f"{QDRANT_URL}/collections/{collection}/points", data={"points": points}, method="PUT", timeout=30)
     time.sleep(2)
     print(f"  Committed {committed} turns across {session_idx - 1} sessions")
     return committed
 
 
 # ─── Server management ───────────────────────────────────────
+
 
 def start_bench_server(collection, port=BENCH_PORT):
     env = os.environ.copy()
@@ -229,8 +245,10 @@ def start_bench_server(collection, port=BENCH_PORT):
 
     proc = subprocess.Popen(
         [sys.executable, str(REPO / "tools" / "hybrid_brain.py"), "--port", str(port)],
-        cwd=str(REPO / "tools"), env=env,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        cwd=str(REPO / "tools"),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     url = f"http://localhost:{port}/health"
     for _ in range(30):
@@ -270,6 +288,7 @@ def search_query(query, port=BENCH_PORT, limit=60):
 
 # ─── F1 scoring ──────────────────────────────────────────────
 
+
 def compute_f1(prediction, ground_truth):
     pred_tokens = re.findall(r"\w+", prediction.lower())
     truth_tokens = re.findall(r"\w+", str(ground_truth).lower())
@@ -286,11 +305,12 @@ def compute_f1(prediction, ground_truth):
 
 # ─── Rescore mode ────────────────────────────────────────────
 
+
 def rescore_existing(checkpoint_path):
     """Re-judge existing results with GPT-4o-mini."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("RESCORE MODE: Re-judging existing results with GPT-4o-mini")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     with open(checkpoint_path) as f:
         data = json.load(f)
@@ -331,30 +351,40 @@ def rescore_existing(checkpoint_path):
             cat_scores[cat_name]["correct"] += 1
 
         if (i + 1) % 10 == 0:
-            print(f"  Rescored {i+1}/{len(results)}, running accuracy: {correct/total*100:.1f}%")
+            print(f"  Rescored {i + 1}/{len(results)}, running accuracy: {correct / total * 100:.1f}%")
         time.sleep(0.1)  # rate limit
 
-    print(f"\n{'='*60}")
-    print(f"RESCORE RESULTS (GPT-4o-mini judge on existing Qwen answers)")
-    print(f"{'='*60}")
-    print(f"Overall (all): {correct}/{total} = {correct/total*100:.2f}%")
+    print(f"\n{'=' * 60}")
+    print("RESCORE RESULTS (GPT-4o-mini judge on existing Qwen answers)")
+    print(f"{'=' * 60}")
+    print(f"Overall (all): {correct}/{total} = {correct / total * 100:.2f}%")
     if total_no_adv:
-        print(f"Overall (excl. adversarial): {correct_no_adv}/{total_no_adv} = {correct_no_adv/total_no_adv*100:.2f}%")
+        print(
+            f"Overall (excl. adversarial): {correct_no_adv}/{total_no_adv} = {correct_no_adv / total_no_adv * 100:.2f}%"
+        )
     for cat_name, s in sorted(cat_scores.items()):
-        print(f"  {cat_name}: {s['correct']}/{s['total']} = {s['correct']/s['total']*100:.1f}%")
+        print(f"  {cat_name}: {s['correct']}/{s['total']} = {s['correct'] / s['total'] * 100:.1f}%")
 
     # Save rescored
     rescore_path = RESULTS_DIR / "locomo-rescore-gpt4omini.json"
     with open(rescore_path, "w") as f:
-        json.dump({"results": results, "overall_accuracy": correct / total if total else 0,
-                    "accuracy_excl_adversarial": correct_no_adv / total_no_adv if total_no_adv else 0,
-                    "category_scores": {k: v["correct"] / v["total"] for k, v in cat_scores.items()},
-                    "date": datetime.now().isoformat()}, f, indent=2)
+        json.dump(
+            {
+                "results": results,
+                "overall_accuracy": correct / total if total else 0,
+                "accuracy_excl_adversarial": correct_no_adv / total_no_adv if total_no_adv else 0,
+                "category_scores": {k: v["correct"] / v["total"] for k, v in cat_scores.items()},
+                "date": datetime.now().isoformat(),
+            },
+            f,
+            indent=2,
+        )
     print(f"Saved to {rescore_path}")
     return correct / total if total else 0, correct_no_adv / total_no_adv if total_no_adv else 0
 
 
 # ─── Full pipeline ───────────────────────────────────────────
+
 
 def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
     """Run full pipeline: embed → search (top-60, no reranker) → Opus answer → GPT-4o-mini judge."""
@@ -380,12 +410,12 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
         # Check how many already done for this conv
         done_for_conv = sum(1 for k in checkpoint["completed_keys"] if k.startswith(f"{conv_id}_"))
         if done_for_conv >= len(qa_list):
-            print(f"\n[{idx+1}] Skipping {conv_id} (all {len(qa_list)} QA done)")
+            print(f"\n[{idx + 1}] Skipping {conv_id} (all {len(qa_list)} QA done)")
             continue
 
-        print(f"\n{'='*60}")
-        print(f"[{idx+1}/{len(conv_indices)}] {conv_id} — {len(qa_list)} QA ({done_for_conv} already done)")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print(f"[{idx + 1}/{len(conv_indices)}] {conv_id} — {len(qa_list)} QA ({done_for_conv} already done)")
+        print(f"{'=' * 60}")
 
         collection = f"locomo_lb_{conv_id.replace('-', '_')}"
         proc = None
@@ -393,7 +423,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
         try:
             create_collection(collection)
             proc = start_bench_server(collection, port)
-            n = commit_conversation(conv_data["conversation"], collection)
+            commit_conversation(conv_data["conversation"], collection)
 
             for qi, qa in enumerate(qa_list):
                 key = f"{conv_id}_{qi}"
@@ -426,28 +456,31 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
 
                 f1 = compute_f1(prediction, ground_truth)
 
-                checkpoint["results"].append({
-                    "conv_id": conv_id,
-                    "qi": qi,
-                    "question": question,
-                    "gold": ground_truth,
-                    "predicted": prediction,
-                    "category": category,
-                    "cat_name": CATEGORY_NAMES.get(category, f"cat-{category}"),
-                    "correct": bool(judge),
-                    "judge_score": judge,
-                    "f1": f1,
-                    "n_chunks": len(chunks),
-                })
+                checkpoint["results"].append(
+                    {
+                        "conv_id": conv_id,
+                        "qi": qi,
+                        "question": question,
+                        "gold": ground_truth,
+                        "predicted": prediction,
+                        "category": category,
+                        "cat_name": CATEGORY_NAMES.get(category, f"cat-{category}"),
+                        "correct": bool(judge),
+                        "judge_score": judge,
+                        "f1": f1,
+                        "n_chunks": len(chunks),
+                    }
+                )
                 checkpoint["completed_keys"].add(key)
 
                 # Progress
                 if (qi + 1) % 10 == 0 or qi == len(qa_list) - 1:
                     done_now = sum(1 for r in checkpoint["results"] if r["conv_id"] == conv_id)
-                    conv_correct = sum(1 for r in checkpoint["results"]
-                                       if r["conv_id"] == conv_id and r["correct"])
-                    print(f"    Q{qi+1}/{len(qa_list)}: {conv_correct}/{done_now} correct "
-                          f"({conv_correct/done_now*100:.0f}%)")
+                    conv_correct = sum(1 for r in checkpoint["results"] if r["conv_id"] == conv_id and r["correct"])
+                    print(
+                        f"    Q{qi + 1}/{len(qa_list)}: {conv_correct}/{done_now} correct "
+                        f"({conv_correct / done_now * 100:.0f}%)"
+                    )
 
                 # Save checkpoint every 5 questions
                 if (qi + 1) % 5 == 0:
@@ -462,11 +495,12 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
             conv_no_adv = [r for r in conv_results if r["category"] != 5]
             if conv_no_adv:
                 acc = sum(1 for r in conv_no_adv if r["correct"]) / len(conv_no_adv)
-                print(f"  ✅ {conv_id}: {acc*100:.1f}% (excl. adversarial, {len(conv_no_adv)} Qs)")
+                print(f"  ✅ {conv_id}: {acc * 100:.1f}% (excl. adversarial, {len(conv_no_adv)} Qs)")
 
         except Exception as e:
             print(f"  ❌ Error on {conv_id}: {e}")
             import traceback
+
             traceback.print_exc()
             save_checkpoint(checkpoint)
 
@@ -481,14 +515,19 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
 def save_checkpoint(checkpoint):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(CHECKPOINT_FILE, "w") as f:
-        json.dump({
-            "results": checkpoint["results"],
-            "completed_keys": list(checkpoint["completed_keys"]),
-            "last_updated": datetime.now().isoformat(),
-        }, f, indent=2)
+        json.dump(
+            {
+                "results": checkpoint["results"],
+                "completed_keys": list(checkpoint["completed_keys"]),
+                "last_updated": datetime.now().isoformat(),
+            },
+            f,
+            indent=2,
+        )
 
 
 # ─── Reporting ───────────────────────────────────────────────
+
 
 def generate_report(results):
     all_results = results
@@ -532,33 +571,33 @@ def generate_report(results):
         "**Pipeline:** Vector search (nomic-embed-text) → Top-60 → Claude Opus 4 → GPT-4o-mini judge",
         "**Improvements:** LLM judge, Opus answers, exclude adversarial, no reranker, nomic prefixes, top-K 60",
         f"**Total questions:** {total} ({len(non_adv)} non-adversarial, {len(adv)} adversarial)",
-        f"\n## Headline Score (excluding adversarial)",
+        "\n## Headline Score (excluding adversarial)",
         f"**LLM-Judge Accuracy: {acc_no_adv:.2f}%**",
         f"- Token F1: {f1_no_adv:.2f}%",
-        f"\n## Including adversarial",
+        "\n## Including adversarial",
         f"- All categories: {acc_all:.2f}%",
         f"- Adversarial only: {acc_adv:.2f}%",
-        f"\n## Per-Category Breakdown",
+        "\n## Per-Category Breakdown",
     ]
     for cat_name, s in sorted(cat_stats.items()):
         acc = s["correct"] / s["total"] * 100 if s["total"] else 0
         f1 = s["f1_sum"] / s["total"] * 100 if s["total"] else 0
         lines.append(f"- **{cat_name}**: {acc:.1f}% judge, {f1:.1f}% F1 ({s['total']} Qs)")
 
-    lines.append(f"\n## Per-Conversation")
+    lines.append("\n## Per-Conversation")
     for cid, s in sorted(conv_stats.items()):
         acc = s["correct_no_adv"] / s["total_no_adv"] * 100 if s["total_no_adv"] else 0
         lines.append(f"- **{cid}**: {acc:.1f}% ({s['correct_no_adv']}/{s['total_no_adv']} excl. adv)")
 
-    lines.append(f"\n## Leaderboard Comparison")
-    lines.append(f"| System | LLM-Judge Accuracy |")
-    lines.append(f"|--------|-------------------|")
-    lines.append(f"| Backboard | 90.00% |")
-    lines.append(f"| MemMachine | 84.87% |")
+    lines.append("\n## Leaderboard Comparison")
+    lines.append("| System | LLM-Judge Accuracy |")
+    lines.append("|--------|-------------------|")
+    lines.append("| Backboard | 90.00% |")
+    lines.append("| MemMachine | 84.87% |")
     lines.append(f"| **RASPUTIN** | **{acc_no_adv:.2f}%** |")
-    lines.append(f"| Memobase | 75.78% |")
-    lines.append(f"| Zep | 75.14% |")
-    lines.append(f"| mem0 | 66.88% |")
+    lines.append("| Memobase | 75.78% |")
+    lines.append("| Zep | 75.14% |")
+    lines.append("| mem0 | 66.88% |")
 
     return "\n".join(lines)
 
@@ -586,7 +625,7 @@ def main():
         CHECKPOINT_FILE.unlink()
         print("Checkpoint cleared.")
 
-    print(f"Loading LoCoMo dataset...")
+    print("Loading LoCoMo dataset...")
     with open(LOCOMO_FILE) as f:
         conversations = json.load(f)
     print(f"Loaded {len(conversations)} conversations")
@@ -606,7 +645,7 @@ def main():
     with open(OUTPUT_FILE, "w") as f:
         json.dump({"results": results, "date": datetime.now().isoformat()}, f, indent=2)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(report)
     print(f"\nResults: {OUTPUT_FILE}")
     print(f"Report: {COMPARISON_FILE}")

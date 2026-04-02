@@ -108,12 +108,19 @@ class HybridHandler(BaseHTTPRequestHandler):
             limit = min(max(int(params.get("limit", ["10"])[0]), 1), 100)
             source = params.get("source", [None])[0]
             expand = params.get("expand", ["true"])[0].lower() != "false"
+            collection_override = params.get("collection", [None])[0]
 
             if not query:
                 self._send_json({"error": "Missing q parameter"}, 400)
                 return
 
-            result = search.hybrid_search(query, limit=limit, source_filter=source, expand=expand)
+            result = search.hybrid_search(
+                query,
+                limit=limit,
+                source_filter=source,
+                expand=expand,
+                collection=collection_override,
+            )
             self._send_json(result)
 
         elif parsed.path == "/graph":
@@ -183,7 +190,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 health["status"] = "degraded"
             try:
                 test_resp = _state.requests.post(
-                    _state.EMBED_URL,
+                    str(_state.EMBED_URL),
                     json={"model": _state.EMBED_MODEL, "input": "health check"},
                     timeout=5,
                 )
@@ -263,6 +270,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             query = data.get("q", data.get("query", ""))
             limit = min(max(int(data.get("limit", 10)), 1), 100)
             source = data.get("source", None)
+            collection_override = data.get("collection", None)
             expand_raw = data.get("expand", True)
             if isinstance(expand_raw, str):
                 expand = expand_raw.lower() != "false"
@@ -273,7 +281,13 @@ class HybridHandler(BaseHTTPRequestHandler):
                 self._send_json({"error": "Missing query"}, 400)
                 return
 
-            result = search.hybrid_search(query, limit=limit, source_filter=source, expand=expand)
+            result = search.hybrid_search(
+                query,
+                limit=limit,
+                source_filter=source,
+                expand=expand,
+                collection=collection_override,
+            )
             self._send_json(result)
 
         elif parsed.path == "/proactive":
