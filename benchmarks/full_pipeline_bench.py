@@ -31,7 +31,10 @@ LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
 
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 VLLM_URL = os.environ.get("VLLM_URL", "http://localhost:11435")
-VLLM_MODEL = os.environ.get("VLLM_MODEL", "")  # auto-detect if empty
+VLLM_MODEL = os.environ.get("VLLM_MODEL", "")
+LLM_BACKEND = os.environ.get("LLM_BACKEND", "openai")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-20250514")
 BENCH_PORT = 7778
 
 # LoCoMo category names
@@ -252,10 +255,9 @@ def search_query(query, port=BENCH_PORT, limit=25):
         return []
 
 
-def generate_answer(question, context_chunks, model):
+def _build_extraction_prompt(question, context_chunks):
     context = "\n".join(f"- {c.get('text', '')}" for c in context_chunks[:25])
-
-    prompt = f"""Extract the answer from these memories. Reply with ONLY the answer — no explanation, no reasoning, no preamble. 1-10 words maximum.
+    return f"""Extract the answer from these memories. Reply with ONLY the answer — no explanation, no reasoning, no preamble. 1-10 words maximum.
 
 Examples:
 Q: "Where did they go?" → "Paris"
@@ -270,23 +272,52 @@ Memories:
 Q: {question}
 A:"""
 
-    try:
-        result = http_json(
-            f"{VLLM_URL}/v1/chat/completions",
-            data={
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.0,
+
+def _generate_anthropic(prompt):
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(
+            {
+                "model": ANTHROPIC_MODEL,
                 "max_tokens": 50,
-                "chat_template_kwargs": {"enable_thinking": False},
-            },
-            timeout=60,
-        )
-        msg = result["choices"][0]["message"]
-        content = msg.get("content") or msg.get("reasoning") or ""
-        content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
-        content = content.split("\n")[0].strip()
-        return content
+                "temperature": 0.0,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        ).encode(),
+        method="POST",
+    )
+    req.add_header("Content-Type", "application/json")
+    req.add_header("x-api-key", ANTHROPIC_API_KEY)
+    req.add_header("anthropic-version", "2023-06-01")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.loads(resp.read().decode())
+    return data["content"][0]["text"].strip().split("\n")[0].strip()
+
+
+def _generate_openai_compat(prompt, model):
+    result = http_json(
+        f"{VLLM_URL}/v1/chat/completions",
+        data={
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.0,
+            "max_tokens": 50,
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
+        timeout=60,
+    )
+    msg = result["choices"][0]["message"]
+    content = msg.get("content") or msg.get("reasoning") or ""
+    content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+    return content.split("\n")[0].strip()
+
+
+def generate_answer(question, context_chunks, model):
+    prompt = _build_extraction_prompt(question, context_chunks)
+    try:
+        if LLM_BACKEND == "anthropic" and ANTHROPIC_API_KEY:
+            return _generate_anthropic(prompt)
+        return _generate_openai_compat(prompt, model)
     except Exception as e:
         print(f"    LLM error: {e}")
         return ""

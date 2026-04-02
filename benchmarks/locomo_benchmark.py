@@ -29,6 +29,9 @@ EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 EMBED_DIM = int(os.environ.get("EMBED_DIM", "768"))
 LLM_URL = os.environ.get("LLM_URL", "http://localhost:11434/v1/chat/completions")
 LLM_MODEL = os.environ.get("LLM_MODEL", "qwen2.5:14b")
+LLM_BACKEND = os.environ.get("LLM_BACKEND", "openai")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-opus-4-20250514")
 # Use a unique collection per run to avoid collision if multiple runs happen
 _default_collection = f"locomo_bench_{int(time.time())}" if not os.environ.get("BENCH_COLLECTION") else "locomo_bench"
 COLLECTION = os.environ.get("BENCH_COLLECTION", _default_collection)
@@ -195,8 +198,26 @@ def search_qdrant(query: str, limit: int = SEARCH_LIMIT, retries: int = 3) -> li
 # ── LLM helpers (cartu-proxy → Qwen 122B) ──────────────────────────────
 
 
-def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.1) -> str:
-    """Generate text using Qwen 122B via cartu-proxy."""
+def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.0) -> str:
+    if LLM_BACKEND == "anthropic" and ANTHROPIC_API_KEY:
+        resp = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()["content"][0]["text"].strip().split("\n")[0].strip()
+
     resp = requests.post(
         LLM_URL,
         json={
@@ -212,10 +233,8 @@ def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.1) -
     data = resp.json()
     msg = data["choices"][0]["message"]
     content = msg.get("content") or ""
-    # Strip thinking tags if present
     content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
     if not content:
-        # Fallback: check reasoning field
         reasoning = msg.get("reasoning", "")
         if reasoning:
             lines = reasoning.strip().split("\n")
@@ -224,7 +243,7 @@ def llm_generate(prompt: str, max_tokens: int = 256, temperature: float = 0.1) -
                 if line and not line.startswith("*"):
                     content = line
                     break
-    return content or "I don't know"
+    return content or "unknown"
 
 
 def generate_answer(question: str, context: list[dict]) -> str:
