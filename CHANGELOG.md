@@ -7,6 +7,33 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-03
+
+**LoCoMo Benchmark: 89.81% — #2 on the leaderboard.**
+
+### Added
+- LLM reranker using Claude Haiku — replaces broken BGE cross-encoder on conversational turns
+- Professional LoCoMo benchmark harness (`benchmarks/locomo_leaderboard_bench.py`) with Claude Opus answer generation + GPT-4o-mini judge
+- Collection override on `/search` endpoint for benchmark isolation
+- LLM-judge scoring alongside token-level F1 in benchmark output
+
+### Changed
+- Scoring: removed double decay penalty (recency_bonus eliminated from multifactor scoring — temporal decay already handles age)
+- Search pipeline: keyword and entity boosting moved after neural reranking (deterministic adjustments are final, not inputs to reranker)
+- Benchmark fixtures: 30 templated decay records replaced with semantically diverse records
+
+### Removed
+- 15 dead files: scripts/, memory_engine.py, embed_server_gpu1.py, memory_autogen.py, memory_health_check.py, memory_mcp_server.py, empty experiment dirs
+- 7 stale benchmark scripts (consolidated to 2)
+- Capitalisation regex fallback from entity extraction (config-only path now)
+
+### Fixed
+- F1 computation corrected from set-based to Counter-based (matching LoCoMo paper)
+- Extraction prompt tightened: max_tokens 200→50, temperature 0.0, few-shot examples
+- Context increased from 10→60 chunks per query
+- Embed config now supports env var overrides (EMBED_URL, EMBED_MODEL, EMBED_PREFIX_*)
+- vLLM /v1/embeddings response format supported alongside Ollama
+
 ## [0.5.0] - 2026-04-02
 
 Search quality breakthrough: keyword overlap boosting and entity-aware scoring push recall well past mem0 benchmarks.
@@ -87,7 +114,8 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jcartu/rasputin-memory/releases/tag/v0.3.0
