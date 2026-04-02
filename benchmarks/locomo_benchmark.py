@@ -11,10 +11,8 @@ Uses:
 """
 
 import json
-import math
 import os
 import re
-import sys
 import time
 import uuid
 from collections import Counter, defaultdict
@@ -414,12 +412,12 @@ def generate_report(summary: dict) -> str:
     md = "# LoCoMo Benchmark Results — RASPUTIN Memory\n\n"
     md += f"**Date:** {time.strftime('%Y-%m-%d %H:%M UTC')}\n"
     md += f"**Total QA pairs:** {summary['total_qa']}\n"
-    md += f"**Embedding:** nomic-embed-text (768-dim) via Ollama\n"
-    md += f"**LLM:** Qwen 3.5 122B-A10B via cartu-proxy\n"
+    md += "**Embedding:** nomic-embed-text (768-dim) via Ollama\n"
+    md += "**LLM:** Qwen 3.5 122B-A10B via cartu-proxy\n"
     md += f"**Retrieval:** Vector search (cosine), top-{SEARCH_LIMIT}\n\n"
 
     md += "## Overall Score\n\n"
-    md += f"| Metric | Score |\n|--------|-------|\n"
+    md += "| Metric | Score |\n|--------|-------|\n"
     md += f"| **F1** | **{summary['overall_f1']}** |\n\n"
 
     md += "## Per-Category Scores\n\n"

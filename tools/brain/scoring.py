@@ -75,17 +75,7 @@ def apply_multifactor_scoring(results: list[dict[str, Any]]) -> list[dict[str, A
         retrieval_count = row.get("retrieval_count", 0) or 0
         retrieval_boost = min(retrieval_count / 10.0, 1.0)
 
-        days_old = row.get("days_old", 30)
-        if days_old is not None and days_old < 7:
-            recency_bonus = 1.0
-        elif days_old is not None and days_old < 30:
-            recency_bonus = 0.7
-        else:
-            recency_bonus = 0.4
-
-        multiplier = (
-            0.35 + 0.25 * importance_norm + 0.20 * recency_bonus + 0.10 * source_weight + 0.10 * retrieval_boost
-        )
+        multiplier = 0.45 + 0.30 * importance_norm + 0.15 * source_weight + 0.10 * retrieval_boost
 
         row["pre_multifactor_score"] = row["score"]
         row["score"] = round(row["score"] * multiplier, 4)

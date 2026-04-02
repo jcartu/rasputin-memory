@@ -8,10 +8,8 @@ Same as v1 but with improved answer generation:
 """
 
 import json
-import math
 import os
 import re
-import sys
 import time
 import uuid
 from collections import Counter, defaultdict
@@ -271,7 +269,7 @@ def run_benchmark(
     partial_results_path: Optional[str] = None,
 ):
     print(f"Config: embed={EMBED_MODEL} dim={EMBED_DIM} | LLM={LLM_MODEL}")
-    print(f"Improvements: better adversarial prompt, temporal sorting, date prefix")
+    print("Improvements: better adversarial prompt, temporal sorting, date prefix")
     print(f"Loading data from {data_path}...")
     with open(data_path) as f:
         data = json.load(f)
@@ -391,7 +389,7 @@ def run_benchmark(
     print(f"Overall F1: {summary['overall_f1']}")
     for cat_name, scores in summary["per_category"].items():
         print(f"  {cat_name}: F1={scores['f1']} (n={scores['count']})")
-    print(f"\nComparison:")
+    print("\nComparison:")
     for name, score in sorted(summary["comparison"].items(), key=lambda x: x[1], reverse=True):
         print(f"  {name}: {score}")
 

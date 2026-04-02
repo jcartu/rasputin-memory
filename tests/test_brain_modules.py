@@ -103,7 +103,7 @@ def test_apply_multifactor_scoring_composite():
     ]
     out = scoring.apply_multifactor_scoring(rows)
 
-    multiplier = 0.35 + 0.25 * 0.8 + 0.20 * 1.0 + 0.10 * 0.95 + 0.10 * 0.5
+    multiplier = 0.45 + 0.30 * 0.8 + 0.15 * 0.95 + 0.10 * 0.5
     assert out[0]["multifactor"] == round(multiplier, 3)
     assert out[0]["score"] == round(0.8 * multiplier, 4)
 

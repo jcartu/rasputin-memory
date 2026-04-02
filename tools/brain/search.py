@@ -151,67 +151,6 @@ def hybrid_search(
     if qdrant_results and any("source_weight" in row for row in qdrant_results):
         qdrant_results = scoring.apply_multifactor_scoring(qdrant_results)
 
-    # Keyword overlap boosting: boost results that share distinctive tokens with the query
-    query_tokens = set(_TOKEN_RE.findall(query.lower()))
-    _stopwords = {"the", "a", "an", "is", "was", "are", "were", "do", "does", "did",
-                  "what", "where", "when", "how", "who", "which", "that", "this",
-                  "in", "on", "at", "to", "for", "of", "with", "by", "from", "and",
-                  "or", "not", "it", "we", "he", "she", "they", "i", "you", "my",
-                  "about", "know", "now", "has", "have", "had", "be", "been"}
-    query_content_tokens = query_tokens - _stopwords
-    if query_content_tokens:
-        score_key = "hybrid_score" if any("hybrid_score" in r for r in qdrant_results) else "score"
-        for row in qdrant_results:
-            text_tokens = set(_TOKEN_RE.findall((row.get("text") or "").lower()))
-            overlap = query_content_tokens & text_tokens
-            if overlap:
-                overlap_ratio = len(overlap) / len(query_content_tokens)
-                boost = 1.0 + 9.0 * (overlap_ratio ** 3)  # up to 10x for full overlap, steep falloff for partial
-                row[score_key] = row.get(score_key, row.get("score", 0)) * boost
-                row["keyword_boosted"] = True
-        qdrant_results = sorted(
-            qdrant_results,
-            key=lambda v: v.get("hybrid_score", 0) or v.get("score", 0),
-            reverse=True,
-        )
-
-    # Entity boosting: when query mentions known entities, boost results that contain those entities
-    # Higher boost when the queried entity is the PRIMARY entity in the text (entity focus ratio)
-    query_entities = [name for name, _type in entities_module.extract_entities_fast(query)]
-    if query_entities:
-        score_key = "hybrid_score" if any("hybrid_score" in r for r in qdrant_results) else "score"
-        query_entity_names_lower = {e.lower() for e in query_entities}
-        for row in qdrant_results:
-            text = row.get("text") or ""
-            text_lower = text.lower()
-            matched = [e for e in query_entities if e.lower() in text_lower]
-            if matched:
-                # Count all entities in the text
-                all_text_entities = entities_module.extract_entities_fast(text)
-                total_entities = max(len(all_text_entities), 1)
-                matched_count = sum(1 for name, _ in all_text_entities if name.lower() in query_entity_names_lower)
-                # Focus ratio: 1.0 if text only has query entities, lower if text has many other entities
-                focus_ratio = matched_count / total_entities
-                # Position bonus: entity appearing earlier = text is more about that entity
-                position_bonus = 0.0
-                for e in matched:
-                    pos = text_lower.find(e.lower())
-                    if pos >= 0:
-                        # Normalize position: 0.0 at end, 1.0 at start
-                        text_len = max(len(text_lower), 1)
-                        position_bonus = max(position_bonus, 1.0 - (pos / text_len))
-                # Boost scales with focus and position — aggressive to separate primary vs mentioned
-                boost = 2.0 + 5.0 * (focus_ratio ** 0.5) + 2.0 * position_bonus
-                current = row.get(score_key, row.get("score", 0))
-                row[score_key] = current * boost
-                row["entity_boosted"] = True
-                row["entity_focus"] = round(focus_ratio, 2)
-        qdrant_results = sorted(
-            qdrant_results,
-            key=lambda v: v.get("hybrid_score", 0) or v.get("score", 0),
-            reverse=True,
-        )
-
     graph_memory_results = [row for row in graph_results if row.get("source") in ("graph_memory", "graph_keyword")]
     graph_context_results = [row for row in graph_results if row.get("source") == "graph_context"]
 
@@ -230,12 +169,111 @@ def hybrid_search(
             row.get("rerank_score") is not None for row in all_candidates
         )
     else:
-        # Use hybrid_score (BM25-adjusted) when available, fall back to cosine score
         all_candidates = sorted(
             all_candidates,
             key=lambda value: float(value.get("hybrid_score") or value.get("score", 0)),
             reverse=True,
         )[:limit]
+
+    query_tokens = set(_TOKEN_RE.findall(query.lower()))
+    _stopwords = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "was",
+        "are",
+        "were",
+        "do",
+        "does",
+        "did",
+        "what",
+        "where",
+        "when",
+        "how",
+        "who",
+        "which",
+        "that",
+        "this",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "and",
+        "or",
+        "not",
+        "it",
+        "we",
+        "he",
+        "she",
+        "they",
+        "i",
+        "you",
+        "my",
+        "about",
+        "know",
+        "now",
+        "has",
+        "have",
+        "had",
+        "be",
+        "been",
+    }
+    query_content_tokens = query_tokens - _stopwords
+    if query_content_tokens:
+        score_key = (
+            "rerank_score"
+            if neural_applied
+            else ("hybrid_score" if any("hybrid_score" in r for r in all_candidates) else "score")
+        )
+        for row in all_candidates:
+            text_tokens = set(_TOKEN_RE.findall((row.get("text") or "").lower()))
+            overlap = query_content_tokens & text_tokens
+            if overlap:
+                overlap_ratio = len(overlap) / len(query_content_tokens)
+                boost = 1.0 + 9.0 * (overlap_ratio**3)
+                row[score_key] = row.get(score_key, row.get("score", 0)) * boost
+                row["keyword_boosted"] = True
+
+    query_entities = [name for name, _type in entities_module.extract_entities_fast(query)]
+    if query_entities:
+        score_key = (
+            "rerank_score"
+            if neural_applied
+            else ("hybrid_score" if any("hybrid_score" in r for r in all_candidates) else "score")
+        )
+        query_entity_names_lower = {e.lower() for e in query_entities}
+        for row in all_candidates:
+            text = row.get("text") or ""
+            text_lower = text.lower()
+            matched = [e for e in query_entities if e.lower() in text_lower]
+            if matched:
+                all_text_entities = entities_module.extract_entities_fast(text)
+                total_entities = max(len(all_text_entities), 1)
+                matched_count = sum(1 for name, _ in all_text_entities if name.lower() in query_entity_names_lower)
+                focus_ratio = matched_count / total_entities
+                position_bonus = 0.0
+                for e in matched:
+                    pos = text_lower.find(e.lower())
+                    if pos >= 0:
+                        text_len = max(len(text_lower), 1)
+                        position_bonus = max(position_bonus, 1.0 - (pos / text_len))
+                boost = 2.0 + 5.0 * (focus_ratio**0.5) + 2.0 * position_bonus
+                current = row.get(score_key, row.get("score", 0))
+                row[score_key] = current * boost
+                row["entity_boosted"] = True
+                row["entity_focus"] = round(focus_ratio, 2)
+
+    all_candidates = sorted(
+        all_candidates,
+        key=lambda v: float(v.get("rerank_score", 0) or v.get("hybrid_score", 0) or v.get("score", 0)),
+        reverse=True,
+    )
 
     merged = all_candidates[:limit]
 

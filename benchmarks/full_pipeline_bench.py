@@ -462,30 +462,30 @@ def generate_report(all_results):
     lines = []
     lines.append("# RASPUTIN Memory — LoCoMo Full Pipeline Benchmark Results")
     lines.append(f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    lines.append(f"**Pipeline:** BM25 + vector + reranker + entity boost + keyword overlap")
+    lines.append("**Pipeline:** BM25 + vector + reranker + entity boost + keyword overlap")
     lines.append(f"**Conversations:** {len(all_results)}")
     lines.append(f"**Total questions:** {len(all_f1s)}")
     lines.append(f"\n## Overall F1: {rasputin_score:.2f}")
     
-    lines.append(f"\n### Improvement over raw vector")
-    lines.append(f"- Raw vector: 41.44")
+    lines.append("\n### Improvement over raw vector")
+    lines.append("- Raw vector: 41.44")
     lines.append(f"- Full pipeline: {rasputin_score:.2f}")
     improvement = rasputin_score - 41.44
     lines.append(f"- **Improvement: +{improvement:.2f} ({improvement/41.44*100:.1f}%)**")
     
-    lines.append(f"\n## Leaderboard")
+    lines.append("\n## Leaderboard")
     for i, (name, score) in enumerate(leaderboard, 1):
         marker = " ← **YOU ARE HERE**" if "full pipeline" in name else ""
         lines.append(f"{i}. **{name}**: {score:.2f}{marker}")
     
-    lines.append(f"\n## Per-Category Breakdown")
+    lines.append("\n## Per-Category Breakdown")
     for cat in sorted(cat_all.keys()):
         scores = cat_all[cat]
         cat_name = CATEGORY_NAMES.get(cat, f"category-{cat}")
         avg = sum(scores) / len(scores) if scores else 0
         lines.append(f"- **{cat_name}** (cat {cat}): {avg*100:.2f} ({len(scores)} questions)")
     
-    lines.append(f"\n## Per-Conversation Results")
+    lines.append("\n## Per-Conversation Results")
     for conv_id, data in sorted(all_results.items()):
         lines.append(f"- **{conv_id}**: F1={data['mean_f1']*100:.2f} ({data['n_questions']} Qs, {data['n_committed']} committed)")
     

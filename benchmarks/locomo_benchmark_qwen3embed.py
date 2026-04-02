@@ -14,7 +14,6 @@ import json
 import math
 import os
 import re
-import sys
 import time
 import uuid
 from collections import Counter, defaultdict
@@ -308,7 +307,7 @@ def run_benchmark(
     if start_conv > 0:
         data = data[start_conv:]
 
-    total_convs = len(data)
+    len(data)
     for conv_idx, sample in enumerate(data):
         conv = sample["conversation"]
         qa_pairs = sample["qa"]

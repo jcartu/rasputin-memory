@@ -9,9 +9,7 @@ Pipeline: vector (qwen3 1024d) + neural reranker + answer generation via vLLM
 
 import json
 import math
-import os
 import time
-import uuid
 import hashlib
 import urllib.request
 import urllib.parse
@@ -54,7 +52,7 @@ def http_json(url, data=None, method=None, timeout=60):
 
 
 def normalize_l2(vec):
-    mag = math.sqrt(sum(x*x for x in vec))
+    mag = math.sqrt(sum(x * x for x in vec))
     if mag == 0:
         return vec
     return [x / mag for x in vec]
@@ -62,10 +60,14 @@ def normalize_l2(vec):
 
 def get_embedding(text, prefix="search_document: "):
     """Embed via vLLM qwen3-embedding, truncate to EMBED_DIM (Matryoshka)."""
-    resp = http_json(EMBED_URL, data={
-        "model": EMBED_MODEL,
-        "input": prefix + text[:2000],
-    }, timeout=60)
+    resp = http_json(
+        EMBED_URL,
+        data={
+            "model": EMBED_MODEL,
+            "input": prefix + text[:2000],
+        },
+        timeout=60,
+    )
     vec = resp["data"][0]["embedding"]
     # Matryoshka: truncate to 1024 and L2 normalize
     vec = vec[:EMBED_DIM]
@@ -76,12 +78,16 @@ def embed_batch(texts, prefix="search_document: ", batch_size=16):
     """Embed a batch of texts."""
     all_vecs = []
     for i in range(0, len(texts), batch_size):
-        batch = texts[i:i + batch_size]
+        batch = texts[i : i + batch_size]
         padded = [prefix + t[:2000] for t in batch]
-        resp = http_json(EMBED_URL, data={
-            "model": EMBED_MODEL,
-            "input": padded,
-        }, timeout=120)
+        resp = http_json(
+            EMBED_URL,
+            data={
+                "model": EMBED_MODEL,
+                "input": padded,
+            },
+            timeout=120,
+        )
         for item in resp["data"]:
             vec = item["embedding"][:EMBED_DIM]
             all_vecs.append(normalize_l2(vec))
@@ -95,10 +101,11 @@ def create_collection(name):
     except Exception:
         pass
     time.sleep(0.3)
-    http_json(f"{QDRANT_URL}/collections/{name}", data={
-        "vectors": {"size": EMBED_DIM, "distance": "Cosine"},
-        "optimizers_config": {"indexing_threshold": 0}
-    }, method="PUT")
+    http_json(
+        f"{QDRANT_URL}/collections/{name}",
+        data={"vectors": {"size": EMBED_DIM, "distance": "Cosine"}, "optimizers_config": {"indexing_threshold": 0}},
+        method="PUT",
+    )
     print(f"  Created collection: {name} ({EMBED_DIM}d)")
 
 
@@ -127,10 +134,12 @@ def commit_conversation(conv, collection):
                 continue
             full_text = f"[{session_date}] {speaker}: {text}"
             point_id = int(hashlib.md5(full_text.encode()).hexdigest()[:15], 16)
-            points.append({
-                "id": point_id,
-                "text": full_text,
-            })
+            points.append(
+                {
+                    "id": point_id,
+                    "text": full_text,
+                }
+            )
             committed += 1
         session_idx += 1
 
@@ -145,8 +154,8 @@ def commit_conversation(conv, collection):
     # Upsert to Qdrant in batches
     batch_size = 50
     for i in range(0, len(points), batch_size):
-        batch_pts = points[i:i+batch_size]
-        batch_vecs = vecs[i:i+batch_size]
+        batch_pts = points[i : i + batch_size]
+        batch_vecs = vecs[i : i + batch_size]
         qdrant_points = [
             {
                 "id": p["id"],
@@ -158,7 +167,7 @@ def commit_conversation(conv, collection):
                     "date": datetime.now().isoformat(),
                     "importance": 70,
                     "retrieval_count": 0,
-                }
+                },
             }
             for p, v in zip(batch_pts, batch_vecs)
         ]
@@ -202,10 +211,7 @@ def search(question, collection, limit=SEARCH_LIMIT):
 
 
 def generate_answer(question, chunks, model):
-    context = "\n\n".join(
-        f"[Memory {i+1}]: {c.get('text', '')}"
-        for i, c in enumerate(chunks[:10])
-    )
+    context = "\n\n".join(f"[Memory {i + 1}]: {c.get('text', '')}" for i, c in enumerate(chunks[:10]))
     prompt = f"""Answer the question using ONLY the memories below. Give the shortest possible answer (a few words or a short phrase). Do NOT explain or add context.
 
 Memories:
@@ -281,12 +287,12 @@ def run_benchmark():
     for idx, conv_data in enumerate(conversations):
         conv_id = conv_data.get("sample_id", f"conv-{idx}")
         if conv_id in all_results:
-            print(f"\n[{idx+1}/10] Skipping {conv_id} (done)")
+            print(f"\n[{idx + 1}/10] Skipping {conv_id} (done)")
             continue
 
-        print(f"\n{'='*60}")
-        print(f"[{idx+1}/10] {conv_id}")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print(f"[{idx + 1}/10] {conv_id}")
+        print(f"{'=' * 60}")
 
         collection = f"locomo_qwen3_{conv_id.replace('-', '_')}"
         try:
@@ -308,26 +314,28 @@ def run_benchmark():
                 pred = generate_answer(question, chunks, model)
                 f1 = compute_f1(pred, gold)
 
-                qa_results.append({
-                    "question": question,
-                    "ground_truth": gold,
-                    "prediction": pred,
-                    "f1": f1,
-                    "category": category,
-                    "n_chunks": len(chunks),
-                })
+                qa_results.append(
+                    {
+                        "question": question,
+                        "ground_truth": gold,
+                        "prediction": pred,
+                        "f1": f1,
+                        "category": category,
+                        "n_chunks": len(chunks),
+                    }
+                )
 
                 time.sleep(0.5)
 
                 if (qi + 1) % 20 == 0:
                     avg = sum(r["f1"] for r in qa_results) / len(qa_results)
-                    print(f"    {qi+1}/{len(qa_list)} questions, F1={avg:.4f}")
+                    print(f"    {qi + 1}/{len(qa_list)} questions, F1={avg:.4f}")
 
             conv_f1 = sum(r["f1"] for r in qa_results) / len(qa_results) if qa_results else 0
             cat_scores = defaultdict(list)
             for r in qa_results:
                 cat_scores[r["category"]].append(r["f1"])
-            cat_f1 = {cat: sum(scores)/len(scores) for cat, scores in cat_scores.items()}
+            cat_f1 = {cat: sum(scores) / len(scores) for cat, scores in cat_scores.items()}
 
             all_results[conv_id] = {
                 "conv_id": conv_id,
@@ -350,7 +358,9 @@ def run_benchmark():
 
         except Exception as e:
             print(f"  ❌ Error: {e}")
-            import traceback; traceback.print_exc()
+            import traceback
+
+            traceback.print_exc()
         finally:
             delete_collection(collection)
 
@@ -362,6 +372,7 @@ if __name__ == "__main__":
 
     # Save final results
     from collections import defaultdict
+
     all_scores = []
     cat_scores = defaultdict(list)
     for v in results.values():
@@ -370,22 +381,26 @@ if __name__ == "__main__":
             cat_scores[qa["category"]].append(qa["f1"])
 
     overall = sum(all_scores) / len(all_scores) if all_scores else 0
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"OVERALL F1 (Qwen3-Embedding 1024d): {overall:.4f} ({len(all_scores)} Qs)")
     for cat in sorted(cat_scores.keys()):
         scores = cat_scores[cat]
-        print(f"  {CATEGORY_NAMES.get(cat,'?')}: {sum(scores)/len(scores):.4f} ({len(scores)} Qs)")
+        print(f"  {CATEGORY_NAMES.get(cat, '?')}: {sum(scores) / len(scores):.4f} ({len(scores)} Qs)")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(RESULTS_DIR / "locomo-fullpipeline-qwen3embed.json", "w") as f:
-        json.dump({
-            "metadata": {
-                "embed": "qwen3-embedding",
-                "dim": 1024,
-                "pipeline": "vector(qwen3-1024d-matryoshka)+reranker",
-                "n_convs": len(results),
-                "overall_f1": overall,
+        json.dump(
+            {
+                "metadata": {
+                    "embed": "qwen3-embedding",
+                    "dim": 1024,
+                    "pipeline": "vector(qwen3-1024d-matryoshka)+reranker",
+                    "n_convs": len(results),
+                    "overall_f1": overall,
+                },
+                "results": results,
             },
-            "results": results,
-        }, f, indent=2)
-    print(f"\nSaved to benchmarks/results/locomo-fullpipeline-qwen3embed.json")
+            f,
+            indent=2,
+        )
+    print("\nSaved to benchmarks/results/locomo-fullpipeline-qwen3embed.json")
