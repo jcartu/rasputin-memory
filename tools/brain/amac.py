@@ -148,7 +148,7 @@ def amac_gate(text: str, source: str = "unknown", force: bool = False) -> tuple[
     _inc_metric("rejected")
     try:
         entry = {
-            "ts": _dt_mod.datetime.now().isoformat(),
+            "ts": _dt_mod.datetime.now(_dt_mod.timezone.utc).isoformat(),
             "source": source,
             "scores": score_dict,
             "text": text[:200],

@@ -116,6 +116,14 @@ def commit_memory(
                 "has_contradictions",
                 "mentioned_names",
                 "has_date",
+                "speaker",
+                "connected_to",
+                "contradicts",
+                "supersedes",
+                "pending_archive",
+                "soft_deleted",
+                "pending_delete",
+                "last_accessed",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-import threading
+import concurrent.futures
 import time
 import importlib
 from datetime import datetime, timezone
@@ -20,6 +20,7 @@ import re as _re
 safe_import = importlib.import_module("pipeline._imports").safe_import
 
 _TOKEN_RE = _re.compile(r"\w+", _re.UNICODE)
+_access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
 
 try:
     from bm25_search import hybrid_rerank as bm25_rerank
@@ -451,7 +452,6 @@ def hybrid_search(
         "results": merged,
         "graph_context": graph_enrichment,
         "graph_results": graph_results,
-        "graph_enrichment": graph_enrichment,
         "stats": {
             "expanded_queries": len(queries),
             "query_expansion_enabled": bool(expand),
@@ -496,7 +496,6 @@ def _update_access_tracking(results: list[dict[str, Any]], collection: Optional[
                 pass
 
     try:
-        thread = threading.Thread(target=_do_update, daemon=True)
-        thread.start()
+        _access_pool.submit(_do_update)
     except Exception:
         pass
