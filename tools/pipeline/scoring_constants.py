@@ -1,5 +1,42 @@
 from __future__ import annotations
 
+import re
+
+CAPITALIZED_NAME_RE = re.compile(r"\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)\b")
+NAME_STOPWORDS = frozenset(
+    {
+        "The",
+        "This",
+        "That",
+        "What",
+        "When",
+        "Where",
+        "Who",
+        "How",
+        "Yes",
+        "Not",
+        "But",
+        "And",
+        "Also",
+        "Just",
+        "Very",
+        "Really",
+        "Session",
+        "Unknown",
+        "None",
+        "True",
+        "False",
+        "Error",
+        "Warning",
+        "Memory",
+        "Search",
+        "Query",
+        "Answer",
+    }
+)
+
+MAX_TOTAL_BOOST = 3.0
+
 SOURCE_IMPORTANCE: dict[str, float] = {
     "conversation": 0.95,
     "chatgpt": 0.90,

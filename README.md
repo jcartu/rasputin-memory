@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.7 — #2 on LoCoMo (89.8%)
+# RASPUTIN Memory v0.7 — #1 on LoCoMo (91.36%)
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -29,7 +29,7 @@ User Query
    ├─► Multi-Query Expansion (name + topic decomposition)
    ├─► Query Embedding (nomic-embed-text, 768d)
    │
-   ├─► Qdrant Vector Search (top-120) ──┐
+   ├─► Qdrant Vector Search (top-60, multi-query) ──┐
    ├─► BM25 Keyword Search ─────────────┼─► RRF ─► Temporal Boost ─► MMR Diversity ─► Final Top-K
    └─► FalkorDB Graph Search ───────────┘
 

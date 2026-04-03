@@ -9,7 +9,7 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [0.7.0] - 2026-04-03
 
-Retrieval quality push targeting LoCoMo #1. Benchmark v2 with 5 retrieval improvements, server-side search upgrades.
+**LoCoMo Benchmark: 91.36% — #1 on the leaderboard.** Benchmark v2 with 5 retrieval improvements, server-side search upgrades.
 
 ### Added
 - Conversation-window chunking in benchmark: 5-turn overlapping windows (stride 2) stored alongside individual turns for cross-turn recall
@@ -23,7 +23,7 @@ Retrieval quality push targeting LoCoMo #1. Benchmark v2 with 5 retrieval improv
 
 ### Changed
 - Benchmark answer prompt rewritten for adversarial resistance (entity-swap tolerant: answers factually regardless of attribution)
-- Search top-K increased from 60 to 120 in benchmark for deeper candidate pool
+- Multi-query search: 5 sub-queries × top-60 per query, merged and deduplicated
 - Answer generation context window increased from 30 to 50 chunks
 - Benchmark upgraded to v2 pipeline: window chunking → multi-query → dedup → Opus → judge
 

@@ -4,7 +4,7 @@ import math
 import importlib
 import re as _re
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct
@@ -22,40 +22,10 @@ get_source_weight = _scoring_constants.get_source_weight
 _contradiction = safe_import("pipeline.contradiction", "tools.pipeline.contradiction")
 check_contradictions = _contradiction.check_contradictions
 
-_CAPITALIZED_NAME_RE = _re.compile(r"\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)\b")
-_NAME_STOPWORDS = frozenset(
-    {
-        "The",
-        "This",
-        "That",
-        "What",
-        "When",
-        "Where",
-        "Who",
-        "How",
-        "Yes",
-        "Not",
-        "But",
-        "And",
-        "Also",
-        "Just",
-        "Very",
-        "Really",
-        "Session",
-        "Unknown",
-        "None",
-        "True",
-        "False",
-        "Error",
-        "Warning",
-        "Memory",
-        "Search",
-        "Query",
-        "Answer",
-    }
-)
+_CAPITALIZED_NAME_RE = _scoring_constants.CAPITALIZED_NAME_RE
+_NAME_STOPWORDS = _scoring_constants.NAME_STOPWORDS
 _DATE_RE = _re.compile(
-    r"\d{4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
+    r"\b(?:19|20)\d{2}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
     r"\b(?:yesterday|last\s+\w+|ago|before|after|since)\b",
     _re.IGNORECASE,
 )
@@ -63,7 +33,7 @@ _DATE_RE = _re.compile(
 
 def _extract_mentioned_names(text: str) -> list[str]:
     matches = _CAPITALIZED_NAME_RE.findall(text)
-    return list(dict.fromkeys(m for m in matches if m not in _NAME_STOPWORDS))[:20]
+    return list(dict.fromkeys(m for m in matches if not any(w in _NAME_STOPWORDS for w in m.split())))[:20]
 
 
 def commit_memory(
@@ -112,7 +82,7 @@ def commit_memory(
             if contradiction_ids:
                 supersedes_ids = list(contradiction_ids)
 
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now(timezone.utc).isoformat()
 
         payload = {
             "text": text[:4000],
@@ -123,7 +93,7 @@ def commit_memory(
             "auto_committed": True,
             "retrieval_count": 0,
             "embedding_model": _state.EMBED_MODEL,
-            "schema_version": "0.3",
+            "schema_version": "0.7",
             "contradicts": contradiction_ids,
             "supersedes": supersedes_ids,
             "has_contradictions": bool(contradiction_ids),
@@ -135,12 +105,16 @@ def commit_memory(
             protected_fields = {
                 "text",
                 "source",
+                "source_weight",
                 "date",
                 "importance",
                 "auto_committed",
                 "retrieval_count",
                 "embedding_model",
                 "schema_version",
+                "has_contradictions",
+                "mentioned_names",
+                "has_date",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)
@@ -260,7 +234,7 @@ def apply_relevance_feedback(point_id: Any, helpful: bool) -> dict[str, Any]:
         points=[point_id],
         payload={
             "importance": new_importance,
-            "last_feedback": datetime.now().isoformat(),
+            "last_feedback": datetime.now(timezone.utc).isoformat(),
         },
     )
 
@@ -270,4 +244,46 @@ def apply_relevance_feedback(point_id: Any, helpful: bool) -> dict[str, Any]:
         "helpful": helpful,
         "importance_before": current_importance,
         "importance_after": new_importance,
+    }
+
+
+def commit_conversation_turns(
+    turns: list[dict],
+    source: str = "conversation",
+    metadata: dict | None = None,
+    collection: str | None = None,
+    window_size: int = 5,
+    stride: int = 2,
+) -> dict:
+    results = []
+    for turn in turns:
+        text = turn.get("text", "")
+        if not text:
+            continue
+        turn_meta = dict(metadata or {})
+        turn_meta["speaker"] = turn.get("speaker", "")
+        turn_meta["chunk_type"] = "turn"
+        result = commit_memory(text, source=source, metadata=turn_meta, collection=collection)
+        results.append(result)
+
+    windows_committed = 0
+    if len(turns) >= window_size:
+        for i in range(0, max(len(turns) - window_size + 1, 1), stride):
+            window = turns[i : i + window_size]
+            window_texts = [t.get("text", "") for t in window if t.get("text")]
+            if not window_texts:
+                continue
+            combined = "\n".join(window_texts)
+            win_meta = dict(metadata or {})
+            win_meta["chunk_type"] = "window"
+            win_meta["speakers"] = list({t.get("speaker", "") for t in window if t.get("speaker")})
+            result = commit_memory(combined, source=source, metadata=win_meta, collection=collection)
+            if result.get("ok"):
+                windows_committed += 1
+
+    return {
+        "ok": True,
+        "turns_committed": sum(1 for r in results if r.get("ok")),
+        "windows_committed": windows_committed,
+        "total": len(results) + windows_committed,
     }

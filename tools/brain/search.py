@@ -4,7 +4,7 @@ import json
 import threading
 import time
 import importlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from qdrant_client.models import Filter, FieldCondition, MatchValue
@@ -28,6 +28,7 @@ except ModuleNotFoundError:
 
 _query_expansion = safe_import("pipeline.query_expansion", "tools.pipeline.query_expansion")
 expand_queries = _query_expansion.expand_queries
+_scoring_constants = safe_import("pipeline.scoring_constants", "tools.pipeline.scoring_constants")
 
 
 def _neural_rerank(query: str, results: list[dict[str, Any]], top_k: Optional[int] = None) -> list[dict[str, Any]]:
@@ -138,7 +139,7 @@ Respond with ONLY the JSON array, nothing else."""
 
 _TEMPORAL_SIGNALS = frozenset({"when", "date", "year", "month", "how long", "ago", "before", "after", "since"})
 _DATE_PATTERN = _re.compile(
-    r"\d{4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
+    r"\b(?:19|20)\d{2}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
     r"\b(?:yesterday|last\s+\w+|ago|before|after)\b",
     _re.IGNORECASE,
 )
@@ -232,6 +233,16 @@ def hybrid_search(
     queries = [query]
     if expand:
         queries = expand_queries(query, max_expansions=5)
+        names = _scoring_constants.CAPITALIZED_NAME_RE.findall(query)
+        stop = _scoring_constants.NAME_STOPWORDS
+        for name in names[:2]:
+            if not any(w in stop for w in name.split()):
+                queries.append(name)
+                topic = query.replace(name, "").strip(" ?.,")
+                if len(topic) > 10 and topic not in queries:
+                    queries.append(topic)
+        seen = set()
+        queries = [q for q in queries if not (q in seen or seen.add(q))]  # type: ignore[func-returns-value]
 
     fetch_limit = limit * 4
     all_qdrant_results = []
@@ -400,6 +411,13 @@ def hybrid_search(
                 row[ranking_score_key] = current * 1.5
                 row["temporal_boosted"] = True
 
+    _max_boost = _scoring_constants.MAX_TOTAL_BOOST
+    for row in all_candidates:
+        base = row.get("score", 0.001) or 0.001
+        boosted = row.get(ranking_score_key, base)
+        if base > 0 and boosted / base > _max_boost:
+            row[ranking_score_key] = base * _max_boost
+
     all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
 
     all_candidates = sorted(
@@ -449,7 +467,7 @@ def hybrid_search(
 
 
 def _update_access_tracking(results: list[dict[str, Any]], collection: Optional[str] = None) -> None:
-    now = datetime.now().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     target_collection = collection or _state.COLLECTION
 
     def _do_update() -> None:

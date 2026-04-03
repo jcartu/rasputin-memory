@@ -5,7 +5,7 @@ v2 improvements (v0.7.0):
   1. Adversarial-resistant answer prompt (entity-swap tolerant)
   2. Conversation-window chunking (5-turn, stride 2) for cross-turn recall
   3. Multi-query retrieval (name + topic decomposition)
-  4. Top-K 120 with token-overlap deduplication
+  4. Top-K 60 per sub-query with token-overlap deduplication
   5. Context window 30→50 chunks for answer generation
 Inherited from v1:
   6. LLM-Judge via GPT-4o-mini (binary CORRECT/WRONG)
@@ -158,12 +158,14 @@ def generate_opus_answer(question, context_chunks, max_chunks=50):
     prompt = f"""You are answering questions about a conversation based on retrieved memory snippets.
 Answer concisely in 1-3 sentences. Be direct and specific.
 
-IMPORTANT: Always provide the factual answer from the memories, even if the question
-attributes an action or fact to the wrong person. For example, if asked "What did Alice
-cook?" but the memories show Bob cooked pasta, answer "pasta" — do NOT refuse or correct
-the attribution. The question is asking about the ACTION/FACT, not verifying who did it.
+IMPORTANT: If the question attributes an action or fact to Person A, but the memories show
+it was actually Person B who did it, STILL PROVIDE THE FACTUAL ANSWER. For example, if
+asked "What did Alice cook?" but the memories show Bob cooked pasta, answer "pasta."
+The question is asking about the ACTION/FACT, not verifying who did it.
 
-If no relevant facts exist in the memories at all, say "I don't have enough information to answer this question."
+If NO relevant facts exist in the memories for ANY person, say "I don't have enough
+information to answer this question." Only refuse when the memories genuinely contain
+nothing relevant — not when the person attribution is wrong.
 
 Memories:
 {context}
@@ -582,7 +584,7 @@ def rescore_existing(checkpoint_path):
 
 
 def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
-    """Run full pipeline: embed + windows → multi-query search (top-120) → dedup → Opus answer → judge."""
+    """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge."""
 
     # Load checkpoint
     checkpoint = {"results": [], "completed_keys": set()}
@@ -780,8 +782,8 @@ def generate_report(results):
     lines = [
         "# RASPUTIN Memory — LoCoMo Leaderboard Benchmark v1",
         f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        "**Pipeline:** Window chunking → Multi-query search (top-120) → Dedup → Claude Opus 4 → GPT-4o-mini judge",
-        "**v2:** Adversarial prompt, conversation windows, multi-query, top-K 120, 50-chunk context",
+        f"**Pipeline:** Window chunking → Multi-query search (top-{SEARCH_LIMIT}) → Dedup → Claude Opus 4 → GPT-4o-mini judge",
+        f"**v2:** Adversarial prompt, conversation windows, multi-query, top-K {SEARCH_LIMIT}, {CONTEXT_CHUNKS}-chunk context",
         f"**Total questions:** {total} ({len(non_adv)} non-adversarial, {len(adv)} adversarial)",
         "\n## Headline Score (excluding adversarial)",
         f"**LLM-Judge Accuracy: {acc_no_adv:.2f}%**",

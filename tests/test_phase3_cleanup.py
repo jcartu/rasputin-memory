@@ -142,7 +142,7 @@ def test_commit_includes_schema_version(monkeypatch):
     upsert_kwargs = mock_qdrant.upsert.call_args.kwargs
     payload = upsert_kwargs["points"][0].payload
     assert payload["embedding_model"] == hybrid_brain.EMBED_MODEL
-    assert payload["schema_version"] == "0.3"
+    assert payload["schema_version"] == "0.7"
 
 
 def test_no_dead_imports():

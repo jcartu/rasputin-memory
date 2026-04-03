@@ -7,6 +7,9 @@ import time
 
 from brain import _state
 
+safe_import = __import__("importlib").import_module("pipeline._imports").safe_import
+_scoring_constants = safe_import("pipeline.scoring_constants", "tools.pipeline.scoring_constants")
+
 _known_entities_cache = None
 _known_entities_cache_ts = 0.0
 KNOWN_ENTITIES_CACHE_TTL_SECONDS = 5 * 60
@@ -76,10 +79,10 @@ def extract_entities_fast(text: str) -> list[tuple[str, str]]:
             seen.add(name)
             extracted.append((name, "Person"))
 
-    _latin_stop = {"The", "This", "That", "What", "When", "Where", "Session", "Unknown", "None"}
-    for match in re.finditer(r"\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})+)\b", text):
+    _stop = _scoring_constants.NAME_STOPWORDS
+    for match in _scoring_constants.CAPITALIZED_NAME_RE.finditer(text):
         name = match.group(1)
-        if name not in seen and len(name) > 4 and name.split()[0] not in _latin_stop:
+        if name not in seen and len(name) > 3 and not any(w in _stop for w in name.split()):
             seen.add(name)
             extracted.append((name, "Person"))
 

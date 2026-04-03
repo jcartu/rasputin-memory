@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import signal
@@ -57,7 +58,8 @@ class HybridHandler(BaseHTTPRequestHandler):
         if not _state.MEMORY_API_TOKEN:
             return True
         auth = self.headers.get("Authorization", "")
-        if auth == f"Bearer {_state.MEMORY_API_TOKEN}":
+        expected = f"Bearer {_state.MEMORY_API_TOKEN}"
+        if hmac.compare_digest(auth.encode(), expected.encode()):
             return True
         self._send_json({"error": "Unauthorized"}, 401)
         return False
@@ -168,7 +170,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             health: dict[str, Any] = {
                 "status": "ok",
                 "engine": "hybrid-brain",
-                "version": "0.6.0",
+                "version": "0.7.0",
                 "components": {
                     "qdrant": "unknown",
                     "falkordb": "unknown",
@@ -369,6 +371,28 @@ class HybridHandler(BaseHTTPRequestHandler):
                 result["amac"] = {"reason": reason, "scores": scores}
             status = 200 if result.get("ok") else 500
             self._send_json(result, status)
+
+        elif parsed.path == "/commit_conversation":
+            if not self._enforce_rate_limit("/commit"):
+                return
+            turns = data.get("turns", [])
+            source = data.get("source", "conversation")
+            metadata = data.get("metadata", None)
+            window_size = int(data.get("window_size", 5))
+            stride = int(data.get("stride", 2))
+
+            if not turns or not isinstance(turns, list):
+                self._send_json({"error": "Missing or invalid 'turns' array"}, 400)
+                return
+
+            result = commit.commit_conversation_turns(
+                turns,
+                source=source,
+                metadata=metadata,
+                window_size=window_size,
+                stride=stride,
+            )
+            self._send_json(result)
 
         elif parsed.path == "/feedback":
             point_id = data.get("point_id")
