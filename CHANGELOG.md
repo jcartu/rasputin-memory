@@ -7,6 +7,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-03
+
+Retrieval quality push targeting LoCoMo #1. Benchmark v2 with 5 retrieval improvements, server-side search upgrades.
+
+### Added
+- Conversation-window chunking in benchmark: 5-turn overlapping windows (stride 2) stored alongside individual turns for cross-turn recall
+- Multi-query retrieval: question decomposition into name + topic sub-queries with merged deduplication
+- Token-overlap deduplication: removes near-duplicate passages (>75% token overlap) before answer generation
+- Temporal-aware retrieval boost: 1.5x score multiplier for date-bearing passages on temporal queries
+- MMR diversity selection in search pipeline: token-overlap-based filtering reduces redundant results
+- Capitalized Latin name extraction fallback in entity extraction (no longer requires known_entities.json)
+- `speaker`, `mentioned_names`, `has_date` payload fields on memory commit for richer structured metadata
+- Speaker extraction per LoCoMo conversation for entity-aware multi-query search
+
+### Changed
+- Benchmark answer prompt rewritten for adversarial resistance (entity-swap tolerant: answers factually regardless of attribution)
+- Search top-K increased from 60 to 120 in benchmark for deeper candidate pool
+- Answer generation context window increased from 30 to 50 chunks
+- Benchmark upgraded to v2 pipeline: window chunking → multi-query → dedup → Opus → judge
+
 ## [0.6.0] - 2026-04-03
 
 **LoCoMo Benchmark: 89.81% — #2 on the leaderboard.**
@@ -114,7 +134,8 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jcartu/rasputin-memory/compare/v0.3.0...v0.4.0

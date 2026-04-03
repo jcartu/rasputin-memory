@@ -25,7 +25,14 @@ def test_no_substring_match(monkeypatch):
 def test_capitalized_phrase_extraction(monkeypatch):
     monkeypatch.setattr(entities, "_load_known_entities", lambda: (set(), set(), set()))
     extracted = entities.extract_entities_fast("Roadmap review with Jane Smith in Toronto")
-    assert extracted == []
+    assert ("Jane Smith", "Person") in extracted
+
+
+def test_capitalized_stopwords_excluded(monkeypatch):
+    monkeypatch.setattr(entities, "_load_known_entities", lambda: (set(), set(), set()))
+    extracted = entities.extract_entities_fast("This Session started late")
+    names = [name for name, _type in extracted]
+    assert "This Session" not in names
 
 
 def test_entity_extraction_consistency(monkeypatch):

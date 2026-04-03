@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import importlib
+import re as _re
 import uuid
 from datetime import datetime
 from typing import Any, Optional
@@ -20,6 +21,49 @@ get_source_weight = _scoring_constants.get_source_weight
 
 _contradiction = safe_import("pipeline.contradiction", "tools.pipeline.contradiction")
 check_contradictions = _contradiction.check_contradictions
+
+_CAPITALIZED_NAME_RE = _re.compile(r"\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)\b")
+_NAME_STOPWORDS = frozenset(
+    {
+        "The",
+        "This",
+        "That",
+        "What",
+        "When",
+        "Where",
+        "Who",
+        "How",
+        "Yes",
+        "Not",
+        "But",
+        "And",
+        "Also",
+        "Just",
+        "Very",
+        "Really",
+        "Session",
+        "Unknown",
+        "None",
+        "True",
+        "False",
+        "Error",
+        "Warning",
+        "Memory",
+        "Search",
+        "Query",
+        "Answer",
+    }
+)
+_DATE_RE = _re.compile(
+    r"\d{4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
+    r"\b(?:yesterday|last\s+\w+|ago|before|after|since)\b",
+    _re.IGNORECASE,
+)
+
+
+def _extract_mentioned_names(text: str) -> list[str]:
+    matches = _CAPITALIZED_NAME_RE.findall(text)
+    return list(dict.fromkeys(m for m in matches if m not in _NAME_STOPWORDS))[:20]
 
 
 def commit_memory(
@@ -83,6 +127,9 @@ def commit_memory(
             "contradicts": contradiction_ids,
             "supersedes": supersedes_ids,
             "has_contradictions": bool(contradiction_ids),
+            "speaker": (metadata or {}).get("speaker", ""),
+            "mentioned_names": _extract_mentioned_names(text),
+            "has_date": bool(_DATE_RE.search(text)),
         }
         if metadata and isinstance(metadata, dict):
             protected_fields = {

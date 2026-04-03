@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.5 — #2 on LoCoMo (89.8%)
+# RASPUTIN Memory v0.7 — #2 on LoCoMo (89.8%)
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -21,21 +21,23 @@ Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 
 ---
 
-## Architecture Overview (v0.5)
+## Architecture Overview (v0.7)
 
 ```text
 User Query
    │
+   ├─► Multi-Query Expansion (name + topic decomposition)
    ├─► Query Embedding (nomic-embed-text, 768d)
    │
-   ├─► Qdrant Vector Search ──┐
-   ├─► BM25 Keyword Search ───┼─► Reciprocal Rank Fusion ─► Neural Reranker ─► Final Top-K
-   └─► FalkorDB Graph Search ─┘
+   ├─► Qdrant Vector Search (top-120) ──┐
+   ├─► BM25 Keyword Search ─────────────┼─► RRF ─► Temporal Boost ─► MMR Diversity ─► Final Top-K
+   └─► FalkorDB Graph Search ───────────┘
 
 Memory Commit
    │
    ├─► A-MAC quality gate (relevance/novelty/specificity)
    ├─► Duplicate detection
+   ├─► Entity + name extraction (speaker, mentioned_names, has_date)
    └─► Persist to Qdrant (+ graph links where applicable)
 ```
 
@@ -298,19 +300,23 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ---
 
-## Version Notes (v0.4 → v0.5)
+## Version Notes
+
+### v0.7.0 — Retrieval Quality Push (LoCoMo #1 Target)
+- **Conversation-window chunking** — 5-turn overlapping windows for cross-turn recall
+- **Multi-query retrieval** — name + topic decomposition with merged deduplication
+- **Adversarial-resistant prompts** — answers factually regardless of entity-swap questions
+- **Temporal boost** — 1.5× for date-bearing passages on temporal queries
+- **MMR diversity** — token-overlap dedup removes redundant passages
+- **Top-K 60→120** with smart truncation, context window 30→50 chunks
+
+### v0.6.0 — LoCoMo 89.81% (#2 on leaderboard)
+- LLM reranker (Claude Haiku), professional benchmark harness
+- Double decay penalty fix, keyword/entity boosting moved post-reranking
 
 ### v0.5.0 — Search Quality Breakthrough
-- **Keyword overlap boosting** — token-level matching with stopword filtering, up to 5× boost
-- **Entity focus scoring** — primary-entity texts boosted 1.5×–3.0×, position-weighted
-- **recall@5: 0.67 → 0.82** (+22%), **recall@10: 0.745 → 0.885** (+19%)
-- Reported improvements are based on RASPUTIN's internal token-level benchmark methodology.
-
-### v0.4.0
-- Unified hybrid retrieval pipeline hardening
-- Expanded test coverage and CI automation
-- Operational controls (maintenance and reliability)
-- Documentation refresh
+- Keyword overlap boosting, entity focus scoring
+- recall@5: 0.67 → 0.82 (+22%), recall@10: 0.745 → 0.885 (+19%)
 
 See [`CHANGELOG.md`](CHANGELOG.md) for full details.
 

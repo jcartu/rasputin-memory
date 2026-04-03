@@ -136,6 +136,40 @@ Respond with ONLY the JSON array, nothing else."""
         return results[:top_k]
 
 
+_TEMPORAL_SIGNALS = frozenset({"when", "date", "year", "month", "how long", "ago", "before", "after", "since"})
+_DATE_PATTERN = _re.compile(
+    r"\d{4}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
+    r"\b(?:yesterday|last\s+\w+|ago|before|after)\b",
+    _re.IGNORECASE,
+)
+
+
+def _mmr_diversify(
+    results: list[dict[str, Any]], score_key: str, max_results: int, overlap_threshold: float = 0.75
+) -> list[dict[str, Any]]:
+    if len(results) <= max_results:
+        return results
+    tokenize = _re.compile(r"\w+", _re.UNICODE)
+    selected: list[dict[str, Any]] = []
+    selected_token_sets: list[set[str]] = []
+    for r in results:
+        tokens = set(tokenize.findall((r.get("text") or "").lower()))
+        if not tokens:
+            continue
+        if selected_token_sets:
+            max_overlap = max(
+                (len(tokens & existing) / min(len(tokens), len(existing)) if existing else 0.0)
+                for existing in selected_token_sets
+            )
+            if max_overlap > overlap_threshold:
+                continue
+        selected.append(r)
+        selected_token_sets.append(tokens)
+        if len(selected) >= max_results:
+            break
+    return selected
+
+
 def qdrant_search(
     query: str,
     limit: int = 10,
@@ -357,6 +391,16 @@ def hybrid_search(
                 row[ranking_score_key] = current * boost
                 row["entity_boosted"] = True
                 row["entity_focus"] = round(focus_ratio, 2)
+
+    query_lower = query.lower()
+    if any(signal in query_lower for signal in _TEMPORAL_SIGNALS):
+        for row in all_candidates:
+            if _DATE_PATTERN.search(row.get("text") or ""):
+                current = row.get(ranking_score_key, row.get("score", 0))
+                row[ranking_score_key] = current * 1.5
+                row["temporal_boosted"] = True
+
+    all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
 
     all_candidates = sorted(
         all_candidates,

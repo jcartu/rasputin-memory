@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import signal
 import threading
 import time
@@ -41,9 +42,10 @@ class SimpleRateLimiter:
             return True
 
 
-_rate_limiters = {
+_search_rpm = int(os.environ.get("RATE_LIMIT_SEARCH", "120"))
+_rate_limiters: dict[str, SimpleRateLimiter | None] = {
     "/commit": SimpleRateLimiter(calls_per_minute=30),
-    "/search": SimpleRateLimiter(calls_per_minute=120),
+    "/search": SimpleRateLimiter(calls_per_minute=_search_rpm) if _search_rpm > 0 else None,
 }
 
 

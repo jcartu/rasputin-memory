@@ -76,4 +76,11 @@ def extract_entities_fast(text: str) -> list[tuple[str, str]]:
             seen.add(name)
             extracted.append((name, "Person"))
 
+    _latin_stop = {"The", "This", "That", "What", "When", "Where", "Session", "Unknown", "None"}
+    for match in re.finditer(r"\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})+)\b", text):
+        name = match.group(1)
+        if name not in seen and len(name) > 4 and name.split()[0] not in _latin_stop:
+            seen.add(name)
+            extracted.append((name, "Person"))
+
     return extracted
