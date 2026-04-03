@@ -42,6 +42,7 @@ def commit_memory(
     importance: int = 60,
     metadata: Optional[dict[str, Any]] = None,
     force: bool = False,
+    collection: Optional[str] = None,
 ) -> dict[str, Any]:
     with _state._commit_lock:
         try:
@@ -121,7 +122,7 @@ def commit_memory(
 
         try:
             _state.qdrant.upsert(
-                collection_name=_state.COLLECTION,
+                collection_name=collection or _state.COLLECTION,
                 points=[PointStruct(id=point_id, vector=vector, payload=payload)],
             )
         except Exception as error:
