@@ -37,5 +37,10 @@ decay_half_life_low = 14
 decay_half_life_medium = 60
 decay_half_life_high = 365
 
+[constraints]
+enabled = false
+model = "qwen3.5:9b"
+timeout = 15
+
 [entities]
 known_entities_path = "config/known_entities.json"

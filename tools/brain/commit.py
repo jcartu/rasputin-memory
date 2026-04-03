@@ -124,9 +124,24 @@ def commit_memory(
                 "soft_deleted",
                 "pending_delete",
                 "last_accessed",
+                "constraints",
+                "constraint_summary",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)
+
+        constraint_texts = []
+        try:
+            from brain import constraints as _constraints_mod
+
+            if _constraints_mod.CONSTRAINTS_ENABLED:
+                extracted = _constraints_mod.extract_constraints(text)
+                if extracted:
+                    constraint_texts = [c.get("constraint", "") for c in extracted]
+                    payload["constraints"] = extracted
+                    payload["constraint_summary"] = " | ".join(constraint_texts)
+        except Exception as exc:
+            _state.logger.debug("Constraint extraction skipped: %s", exc)
 
         try:
             _state.qdrant.upsert(

@@ -221,6 +221,45 @@ def qdrant_search(
     return scoring.apply_temporal_decay(out)
 
 
+_FACTUAL_PREFIXES = ("what is", "what was", "when did", "who is", "how many", "where did", "what does", "how old")
+
+
+def _decompose_query_intent(query: str) -> list[str]:
+    if any(query.lower().startswith(p) for p in _FACTUAL_PREFIXES):
+        return [query]
+    try:
+        import requests as _req
+
+        resp = _req.post(
+            _state.AMAC_LLM_URL,
+            json={
+                "model": _state.CONFIG.get("constraints", {}).get("model", "qwen3.5:9b"),
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": f'A user says: "{query}"\n\nWhat implicit topics, goals, or constraints from PRIOR conversations might be relevant? List 2-3 short search queries.\n\nReturn ONLY a JSON array of strings.',
+                    }
+                ],
+                "temperature": 0.0,
+                "max_tokens": 200,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        raw = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+        import json as _json
+
+        start = raw.find("[")
+        end = raw.rfind("]") + 1
+        if start >= 0 and end > start:
+            intents = _json.loads(raw[start:end])
+            if isinstance(intents, list):
+                return [query] + [str(i) for i in intents[:3]]
+    except Exception:
+        pass
+    return [query]
+
+
 def hybrid_search(
     query: str,
     limit: int = 10,
@@ -255,6 +294,19 @@ def hybrid_search(
         if collection:
             qdrant_kwargs["collection"] = collection
         all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
+
+    try:
+        from brain import constraints as _constraints_mod
+
+        if _constraints_mod.CONSTRAINTS_ENABLED:
+            intent_queries = _decompose_query_intent(query)
+            for iq in intent_queries[1:]:
+                iq_kwargs: dict[str, Any] = {"limit": 20, "source_filter": source_filter}
+                if collection:
+                    iq_kwargs["collection"] = collection
+                all_qdrant_results.extend(qdrant_search(iq, **iq_kwargs))
+    except Exception:
+        pass
 
     deduped_by_text: dict[str, dict[str, Any]] = {}
     for item in all_qdrant_results:
