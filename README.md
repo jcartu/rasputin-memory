@@ -69,33 +69,61 @@ Memory Commit
 
 ---
 
-## LoCoMo Benchmark — 89.8% (2nd Place)
+## Benchmarks
 
-Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024) — the standard benchmark for conversational memory systems. 10 conversations, 1,986 QA pairs, LLM-judge binary accuracy (matching leaderboard methodology).
+### LoCoMo — 91.36% (#1 on the leaderboard)
 
-| Rank | System | LLM-Judge Accuracy |
-|------|--------|-------------------|
-| 🥇 | Backboard | 90.00% |
-| **🥈** | **RASPUTIN** | **89.81%** |
+Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024), the standard benchmark for conversational memory systems. 10 conversations, 1,986 QA pairs.
+
+| Rank | System | Accuracy |
+|------|--------|----------|
+| **🥇** | **RASPUTIN Memory v0.7** | **91.36%** |
+| 🥈 | Backboard | 90.00% |
 | 🥉 | Memvid | 85.70% |
 | 4 | MemMachine | 84.87% |
 | 5 | Memobase | 75.78% |
 | 6 | Zep | 75.14% |
 | 7 | mem0 | 66.88% |
 
-### Per-Category Breakdown
-
 | Category | Accuracy | Questions |
 |----------|----------|-----------|
-| Temporal | 91.6% | 321 |
-| Open-domain | 91.9% | 841 |
+| Open-domain | 93.7% | 841 |
+| Temporal | 90.3% | 321 |
+| Single-hop | 87.2% | 282 |
 | Multi-hop | 86.5% | 96 |
-| Single-hop | 82.6% | 282 |
-| Adversarial | 60.5% | 446 |
+| Adversarial | 58.3% | 446 |
 
-**Config:** nomic-embed-text (768d) → Qdrant top-60 → Claude Opus (answer gen) → GPT-4o-mini (judge)
+### LongMemEval — 89.40% (ICLR 2025)
 
-Run the benchmark: `python3 benchmarks/locomo_leaderboard_bench.py`
+500 conversational memory questions across 6 categories. Tests long-context recall over multi-session dialogues.
+
+| Category | Accuracy |
+|----------|----------|
+| Single-session (user) | 98.6% |
+| Single-session (assistant) | 96.4% |
+| Knowledge update | 92.3% |
+| Multi-session | 91.0% |
+| Single-session (preference) | 83.3% |
+| Temporal reasoning | 79.7% |
+
+### FRAMES — 50.4% (Google Research 2024)
+
+824 multi-hop factual reasoning questions over Wikipedia. Tests retrieval + complex reasoning (numerical, tabular, temporal, multi-constraint).
+
+### Pipeline
+
+All benchmarks use the same retrieval pipeline:
+
+```
+nomic-embed-text (768d) → Multi-query expansion → Qdrant top-60 → Dedup → Claude Opus 4 → GPT-4o-mini judge
+```
+
+Run benchmarks:
+```bash
+python3 benchmarks/locomo_leaderboard_bench.py    # LoCoMo
+python3 benchmarks/longmemeval_bench.py            # LongMemEval
+python3 benchmarks/frames_bench.py                 # FRAMES
+```
 
 ---
 
@@ -176,6 +204,11 @@ The runtime loader reads this TOML and allows env overrides (see `tools/config.p
 - `decay_half_life_medium` (int)
 - `decay_half_life_high` (int)
 
+### `[constraints]`
+- `enabled` (bool): enable implicit constraint extraction at commit time
+- `model` (string): LLM model for constraint extraction
+- `timeout` (int): extraction timeout seconds
+
 ### `[entities]`
 - `known_entities_path` (string): entity dictionary JSON path
 
@@ -236,6 +269,15 @@ Returns proactive memory suggestions from recent context.
 curl -X POST http://localhost:7777/proactive \
   -H 'Content-Type: application/json' \
   -d '{"messages":["We are discussing launch timelines"],"max_results":3}'
+```
+
+### `POST /commit_conversation`
+Commits multi-turn conversations with automatic window chunking.
+
+```bash
+curl -X POST http://localhost:7777/commit_conversation \
+  -H 'Content-Type: application/json' \
+  -d '{"turns":[{"speaker":"Alice","text":"I got a promotion today!"},{"speaker":"Bob","text":"Congratulations!"}],"source":"conversation","window_size":5,"stride":2}'
 ```
 
 ### `POST /feedback`
@@ -302,17 +344,17 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ## Version Notes
 
-### v0.7.0 — Retrieval Quality Push (LoCoMo #1 Target)
-- **Conversation-window chunking** — 5-turn overlapping windows for cross-turn recall
-- **Multi-query retrieval** — name + topic decomposition with merged deduplication
-- **Adversarial-resistant prompts** — answers factually regardless of entity-swap questions
-- **Temporal boost** — 1.5× for date-bearing passages on temporal queries
-- **MMR diversity** — token-overlap dedup removes redundant passages
-- **Top-K 60→120** with smart truncation, context window 30→50 chunks
+### v0.7.0 — #1 on LoCoMo (91.36%)
+- **LoCoMo 91.36%** — beat Backboard (90.00%) for #1 on the leaderboard
+- **LongMemEval 89.40%** — 500 conversational memory questions (ICLR 2025)
+- **FRAMES 50.4%** — 824 multi-hop factual reasoning questions (Google 2024)
+- Conversation-window chunking, multi-query retrieval, MMR diversity
+- Temporal boost, adversarial-resistant prompts, boost cap at 3×
+- Constraint extraction architecture (implicit goal/state/value/causal memory)
+- Timing-safe auth, UTC datetimes, schema v0.7, expanded protected fields
 
-### v0.6.0 — LoCoMo 89.81% (#2 on leaderboard)
+### v0.6.0 — LoCoMo 89.81% (#2)
 - LLM reranker (Claude Haiku), professional benchmark harness
-- Double decay penalty fix, keyword/entity boosting moved post-reranking
 
 ### v0.5.0 — Search Quality Breakthrough
 - Keyword overlap boosting, entity focus scoring

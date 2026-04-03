@@ -1,8 +1,8 @@
-# RASPUTIN Memory — LoCoMo Leaderboard Benchmark v1
+# RASPUTIN Memory — LoCoMo Leaderboard Benchmark v2
 
-**Date:** 2026-04-03 05:15
-**Pipeline:** Window chunking → Multi-query search (top-120) → Dedup → Claude Opus 4 → GPT-4o-mini judge
-**v2:** Adversarial prompt, conversation windows, multi-query, top-K 120, 50-chunk context
+**Date:** 2026-04-03
+**Pipeline:** Window chunking → Multi-query search (top-60 × 5 sub-queries) → Dedup → Claude Opus 4 → GPT-4o-mini judge
+**v2:** Adversarial prompt, conversation windows, multi-query, 50-chunk context
 **Total questions:** 1986 (1540 non-adversarial, 446 adversarial)
 
 ## Headline Score (excluding adversarial)
@@ -33,11 +33,12 @@
 - **conv-50**: 89.2% (141/158 excl. adv)
 
 ## Leaderboard Comparison
-| System | LLM-Judge Accuracy |
-|--------|-------------------|
-| Backboard | 90.00% |
-| MemMachine | 84.87% |
-| **RASPUTIN** | **91.36%** |
-| Memobase | 75.78% |
-| Zep | 75.14% |
-| mem0 | 66.88% |
+| Rank | System | LLM-Judge Accuracy |
+|------|--------|-------------------|
+| **#1** | **RASPUTIN Memory v0.7** | **91.36%** |
+| #2 | Backboard | 90.00% |
+| #3 | Memvid | 85.70% |
+| #4 | MemMachine | 84.87% |
+| #5 | Memobase | 75.78% |
+| #6 | Zep | 75.14% |
+| #7 | mem0 | 66.88% |

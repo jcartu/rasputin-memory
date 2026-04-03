@@ -24,3 +24,5 @@ AGENTS.md
 WORK-ORDER.md
 audits/
 COMBINED-OPUS-AUDIT.md
+benchmarks/locomo_plus_data/
+benchmarks/results/*-checkpoint.json

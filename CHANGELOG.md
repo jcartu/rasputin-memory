@@ -9,23 +9,54 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [0.7.0] - 2026-04-03
 
-**LoCoMo Benchmark: 91.36% — #1 on the leaderboard.** Benchmark v2 with 5 retrieval improvements, server-side search upgrades.
+**LoCoMo: 91.36% — #1 on the leaderboard.** Also: LongMemEval 89.40%, FRAMES 50.4%.
 
-### Added
-- Conversation-window chunking in benchmark: 5-turn overlapping windows (stride 2) stored alongside individual turns for cross-turn recall
-- Multi-query retrieval: question decomposition into name + topic sub-queries with merged deduplication
-- Token-overlap deduplication: removes near-duplicate passages (>75% token overlap) before answer generation
-- Temporal-aware retrieval boost: 1.5x score multiplier for date-bearing passages on temporal queries
-- MMR diversity selection in search pipeline: token-overlap-based filtering reduces redundant results
-- Capitalized Latin name extraction fallback in entity extraction (no longer requires known_entities.json)
-- `speaker`, `mentioned_names`, `has_date` payload fields on memory commit for richer structured metadata
-- Speaker extraction per LoCoMo conversation for entity-aware multi-query search
+### Benchmarks
+- **LoCoMo 91.36%** (1,986 QA) — #1, beating Backboard (90.00%). LLM-judge accuracy, non-adversarial.
+- **LongMemEval 89.40%** (500 QA, ICLR 2025) — conversational memory across 6 question types
+- **FRAMES 50.4%** (824 QA, Google 2024) — multi-hop factual reasoning over Wikipedia
+- **LoCoMo-Plus** (2,387 QA, ARR 2026) — cognitive memory evaluation with implicit constraint recall (harness shipped, baseline running)
+- Benchmark harnesses: `locomo_leaderboard_bench.py`, `longmemeval_bench.py`, `frames_bench.py`, `locomo_plus_bench.py`
+
+### Added — Retrieval Pipeline
+- Conversation-window chunking: 5-turn overlapping windows (stride 2) alongside individual turns
+- Multi-query retrieval: name + topic decomposition with merged deduplication
+- Token-overlap deduplication (>75% overlap removed before answer generation)
+- Temporal-aware retrieval boost: 1.5× for date-bearing passages on temporal queries
+- MMR diversity selection: token-overlap filtering reduces redundant results
+- Boost cap at `MAX_TOTAL_BOOST = 3.0` (was unbounded)
+- Multi-query name + topic decomposition backported to production `hybrid_search`
+- `/commit_conversation` endpoint for windowed multi-turn ingestion
+- `speaker`, `mentioned_names`, `has_date`, `constraint_summary` payload fields on commit
+- Latin name extraction fallback (no longer requires `known_entities.json`)
+- Configurable search rate limit (`RATE_LIMIT_SEARCH` env var)
+- `ThreadPoolExecutor` for access tracking (replaces fire-and-forget `Thread()`)
+
+### Added — Constraint Extraction (experimental)
+- `tools/brain/constraints.py`: extracts implicit constraints (goals, states, values, causal chains) from text via local LLM
+- Query intent decomposition: for non-factual queries, generates intent-based sub-queries
+- `[constraints]` config section with `enabled`, `model`, `timeout`
+- Disabled by default; designed for cognitive memory evaluation
 
 ### Changed
-- Benchmark answer prompt rewritten for adversarial resistance (entity-swap tolerant: answers factually regardless of attribution)
+- Benchmark answer prompt rewritten for adversarial resistance (entity-swap tolerant)
 - Multi-query search: 5 sub-queries × top-60 per query, merged and deduplicated
-- Answer generation context window increased from 30 to 50 chunks
-- Benchmark upgraded to v2 pipeline: window chunking → multi-query → dedup → Opus → judge
+- Answer generation context window: 30 → 50 chunks
+- Temporal regex: `\d{4}` → `\b(19|20)\d{2}\b` (avoids false positives on apartment numbers, IDs)
+- Unified name extraction regex + stopwords in `pipeline/scoring_constants.py`
+
+### Fixed — Security & Quality
+- `hmac.compare_digest` for timing-safe auth token comparison
+- `datetime.now()` → `datetime.now(timezone.utc)` (commit.py, search.py, amac.py)
+- `schema_version` 0.3 → 0.7
+- `SECURITY.md` updated: v0.7.x/v0.6.x supported (was v0.3.x)
+- Protected fields expanded: `speaker`, `mentioned_names`, `has_date`, `source_weight`, `has_contradictions`, `connected_to`, `contradicts`, `supersedes`, `pending_archive`, `soft_deleted`, `pending_delete`, `last_accessed`, `constraints`, `constraint_summary`
+- Duplicate `graph_enrichment` key removed from search response
+- Health endpoint version: 0.7.0
+
+### Removed
+- `requirements.txt` (pinned broken `qdrant-client==1.9.0`)
+- `benchmarks/ground_truth.jsonl` (medical PII references)
 
 ## [0.6.0] - 2026-04-03
 
