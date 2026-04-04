@@ -5,7 +5,7 @@ import importlib
 import re as _re
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Optional, TypedDict
 
 from qdrant_client.models import Filter, FieldCondition, MatchValue, PointStruct
 
@@ -13,6 +13,32 @@ from brain import _state
 from brain import embedding
 from brain import entities
 from brain import graph
+
+
+class MemoryPayload(TypedDict, total=False):
+    text: str
+    source: str
+    source_weight: float
+    date: str
+    importance: int
+    auto_committed: bool
+    retrieval_count: int
+    last_accessed: str
+    embedding_model: str
+    schema_version: str
+    contradicts: list[Any]
+    supersedes: list[Any]
+    has_contradictions: bool
+    speaker: str
+    mentioned_names: list[str]
+    has_date: bool
+    connected_to: list[Any]
+    constraints: list[dict[str, Any]]
+    constraint_summary: str
+    pending_archive: bool
+    soft_deleted: bool
+    pending_delete: bool
+
 
 safe_import = importlib.import_module("pipeline._imports").safe_import
 
@@ -85,7 +111,7 @@ def commit_memory(
 
         timestamp = datetime.now(timezone.utc).isoformat()
 
-        payload = {
+        payload: MemoryPayload = {
             "text": text[:4000],
             "source": source,
             "source_weight": get_source_weight(source),
