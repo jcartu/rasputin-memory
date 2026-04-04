@@ -1,26 +1,23 @@
 #!/usr/bin/env python3
 """
-RASPUTIN Memory — Benchmark Runner with Git Integrity + Batch API Support
+RASPUTIN Memory — Benchmark Runner
 
-Three execution modes:
-  1. Legacy (sequential): runs benchmark end-to-end in one process
-  2. Phased (batch): splits into search → submit-answers → retrieve → submit-judge → retrieve → score
-  3. Compare: diff two commit results
+Two benchmark modes:
+  --mode production (default): Haiku answers, neutral judge, 60 chunks.
+    Tracks retrieval quality over time. Results in {hash}-{bench}-production.json.
+  --mode compare: gpt-4o-mini answers, generous judge, 60 chunks.
+    Competition-comparable. Results in {hash}-{bench}-compare.json.
 
-Phase 1 requires clean repo (commit hash captured). Retrieval phases do not.
+Three execution styles:
+  Sequential: runs benchmark end-to-end in one process.
+  Batch:      --submit / --retrieve / --finalize (Anthropic + OpenAI batch APIs, 50% cheaper).
+  Compare:    --compare-to HASH (diff two commits).
 
 Usage:
-    # Legacy mode (sequential, for quick tests)
-    python3 benchmarks/bench_runner.py locomo [--force] [--limit N]
-
-    # Phased mode (batch APIs, 50% cheaper)
-    python3 benchmarks/bench_runner.py locomo --phase search
-    python3 benchmarks/bench_runner.py locomo --phase submit-answers
-    python3 benchmarks/bench_runner.py locomo --phase retrieve-answers
-    python3 benchmarks/bench_runner.py locomo --phase submit-judge
-    python3 benchmarks/bench_runner.py locomo --phase retrieve-judge
-
-    # Compare
+    python3 benchmarks/bench_runner.py locomo [--mode production|compare]
+    python3 benchmarks/bench_runner.py locomo --submit [--mode production]
+    python3 benchmarks/bench_runner.py locomo --retrieve
+    python3 benchmarks/bench_runner.py locomo --finalize
     python3 benchmarks/bench_runner.py locomo --compare-to HASH
 """
 
@@ -50,6 +47,7 @@ HISTORY_FIELDS = [
     "commit_short",
     "date",
     "benchmark",
+    "mode",
     "headline_score",
     "answer_model",
     "judge_model",
@@ -58,7 +56,37 @@ HISTORY_FIELDS = [
     "note",
 ]
 
-PHASES = ["search", "submit-answers", "retrieve-answers", "submit-judge", "retrieve-judge"]
+JUDGE_MODEL_PINNED = "gpt-4o-mini-2024-07-18"
+
+JUDGE_PROMPT_GENEROUS = (
+    "Is the system's answer correct? Be generous \u2014 if the answer captures the essential "
+    "information from the ground truth, even if phrased differently or includes extra correct "
+    "details, score it as CORRECT. Only score WRONG if the answer is factually incorrect, "
+    "missing the key information, or says it doesn't know when the answer was available."
+)
+
+JUDGE_PROMPT_NEUTRAL = (
+    "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
+    "information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. "
+    "Do not give credit for answers that are technically true but don't answer the question."
+)
+
+MODE_DEFAULTS = {
+    "production": {
+        "answer_model": "claude-haiku-4-5-20251001",
+        "judge_model": JUDGE_MODEL_PINNED,
+        "judge_prompt": JUDGE_PROMPT_NEUTRAL,
+        "context_chunks": 60,
+        "search_limit": 60,
+    },
+    "compare": {
+        "answer_model": "gpt-4o-mini",
+        "judge_model": JUDGE_MODEL_PINNED,
+        "judge_prompt": JUDGE_PROMPT_GENEROUS,
+        "context_chunks": 60,
+        "search_limit": 60,
+    },
+}
 
 
 def get_commit_hash() -> str:
@@ -81,6 +109,10 @@ def repo_is_dirty() -> bool:
     return bool(result.stdout.strip())
 
 
+def result_filename(commit: str, benchmark: str, mode: str) -> str:
+    return f"{commit}-{benchmark}-{mode}.json"
+
+
 def state_path(commit: str, benchmark: str) -> Path:
     return RESULTS_DIR / f"{commit}-{benchmark}-state.json"
 
@@ -100,6 +132,13 @@ def save_state(st: dict[str, Any]) -> None:
         json.dump(st, f, indent=2)
 
 
+def get_mode_config(mode: str) -> dict[str, Any]:
+    cfg = MODE_DEFAULTS[mode].copy()
+    cfg["answer_model"] = os.environ.get("BENCH_ANSWER_MODEL", cfg["answer_model"])
+    cfg["mode"] = mode
+    return cfg
+
+
 def load_history() -> list[dict]:
     if not HISTORY_FILE.exists():
         return []
@@ -110,10 +149,10 @@ def load_history() -> list[dict]:
 def save_history_row(row: dict) -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     existing = load_history()
-    existing_keys = {r["commit"] + r["benchmark"] for r in existing}
-    key = row["commit"] + row["benchmark"]
+    existing_keys = {r["commit"] + r["benchmark"] + r.get("mode", "") for r in existing}
+    key = row["commit"] + row["benchmark"] + row.get("mode", "")
     if key in existing_keys:
-        print(f"  History already has entry for {row['commit_short']} / {row['benchmark']}, skipping.")
+        print(f"  History already has entry for {row['commit_short']} / {row['benchmark']} / {row.get('mode', '')}")
         return
 
     write_header = not HISTORY_FILE.exists()
@@ -124,11 +163,13 @@ def save_history_row(row: dict) -> None:
         writer.writerow(row)
 
 
-def load_result_file(commit: str, benchmark: str) -> dict | None:
-    result_file = RESULTS_DIR / f"{commit}-{benchmark}.json"
-    if result_file.exists():
-        with open(result_file) as f:
-            return json.load(f)
+def load_result_file(commit: str, benchmark: str, mode: str = "production") -> dict | None:
+    for m in [mode, "production", "compare", ""]:
+        fname = f"{commit}-{benchmark}-{m}.json" if m else f"{commit}-{benchmark}.json"
+        p = RESULTS_DIR / fname
+        if p.exists():
+            with open(p) as f:
+                return json.load(f)
     return None
 
 
@@ -136,16 +177,12 @@ def compare_results(old: dict, new: dict) -> list[dict]:
     deltas = []
     old_scores = old.get("scores", {})
     new_scores = new.get("scores", {})
-
     if not old_scores:
         old_scores = {k: v for k, v in old.items() if isinstance(v, (int, float)) and k != "total"}
     if not new_scores:
         new_scores = {k: v for k, v in new.items() if isinstance(v, (int, float)) and k != "total"}
-
-    all_keys = sorted(set(old_scores.keys()) | set(new_scores.keys()))
-    for key in all_keys:
-        ov = old_scores.get(key)
-        nv = new_scores.get(key)
+    for key in sorted(set(old_scores) | set(new_scores)):
+        ov, nv = old_scores.get(key), new_scores.get(key)
         if ov is not None and nv is not None and isinstance(ov, (int, float)) and isinstance(nv, (int, float)):
             delta = nv - ov
             deltas.append({"metric": key, "old": ov, "new": nv, "delta": delta, "improved": delta > 0})
@@ -169,103 +206,71 @@ def print_comparison(deltas: list[dict], old_commit: str, new_commit: str) -> bo
 def offer_revert(deltas: list[dict]) -> None:
     regressions = [d for d in deltas if not d["improved"] and abs(d["delta"]) > 0.001]
     if not regressions:
-        print("\n  No regressions detected.")
         return
-
     print(f"\n  REGRESSION in: {', '.join(d['metric'] for d in regressions)}")
     try:
         answer = input("  Revert HEAD? (y/n): ").strip().lower()
     except EOFError:
         return
-
     if answer == "y":
         subprocess.run(["git", "revert", "HEAD", "--no-edit"], cwd=str(REPO))
-        print("  Reverted. Regression data preserved in revert commit.")
+        print("  Reverted.")
 
 
-def get_methodology() -> dict[str, Any]:
-    return {
-        "answer_model": os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001"),
-        "judge_model": "gpt-4o-mini",
-        "context_chunks": int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10")),
-        "search_limit": int(os.environ.get("BENCH_SEARCH_LIMIT", "10")),
-        "note": (
-            "Leaderboard systems evaluated with their own answer models \u2014 "
-            "direct score comparison not valid; retrieval quality comparison "
-            "requires same answer model across all systems"
-        ),
-    }
+def set_bench_env(env: dict, mode_cfg: dict) -> None:
+    env["BENCH_ANSWER_MODEL"] = mode_cfg["answer_model"]
+    env["BENCH_JUDGE_MODEL"] = mode_cfg["judge_model"]
+    env["BENCH_CONTEXT_CHUNKS"] = str(mode_cfg["context_chunks"])
+    env["BENCH_SEARCH_LIMIT"] = str(mode_cfg["search_limit"])
+    env["BENCH_JUDGE_PROMPT"] = mode_cfg["judge_prompt"]
+    env["BENCH_MODE"] = mode_cfg["mode"]
 
 
-# ─── Phase handlers ──────────────────────────────────────────
+# ─── Batch: --submit ─────────────────────────────────────────
 
 
-def phase_search(benchmark: str, commit: str, extra_args: list[str]) -> None:
+def batch_submit(benchmark: str, commit: str, mode_cfg: dict, extra_args: list[str]) -> None:
     script = BENCH_SCRIPTS[benchmark]
-    cmd = [sys.executable, "-u", str(REPO / script), "--reset", "--search-only"] + extra_args
+    search_output = RESULTS_DIR / f"{commit}-{benchmark}-search.json"
+
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
     env["BENCH_COMMIT"] = commit
-
-    search_output = RESULTS_DIR / f"{commit}-{benchmark}-search.json"
     env["BENCH_SEARCH_OUTPUT"] = str(search_output)
+    set_bench_env(env, mode_cfg)
 
+    cmd = [sys.executable, "-u", str(REPO / script), "--reset", "--search-only"] + extra_args
     print(f"  Phase 1 (search): {script}")
     proc = subprocess.run(cmd, env=env, cwd=str(REPO))
     if proc.returncode != 0:
-        print(f"  Search phase failed (exit {proc.returncode})")
+        print(f"  Search failed (exit {proc.returncode})")
         sys.exit(1)
-
     if not search_output.exists():
         print(f"  No search output at {search_output}")
-        print("  Hint: benchmark script must support --search-only and write to BENCH_SEARCH_OUTPUT")
         sys.exit(1)
 
-    st = load_state(commit, benchmark)
-    st["phase"] = "searched"
-    st["search_output"] = str(search_output)
-    save_state(st)
-    print(f"  Search results: {search_output}")
-    print("  State saved. Next: --phase submit-answers")
-
-
-def phase_submit_answers(benchmark: str, commit: str) -> None:
     from benchmarks.batch_api import anthropic_create_batch
 
-    st = load_state(commit, benchmark)
-    if st.get("phase") not in ("searched", "answers-submitted"):
-        print(f"  State phase is '{st.get('phase')}', expected 'searched'. Run --phase search first.")
-        sys.exit(1)
-
-    search_file = st.get("search_output")
-    if not search_file or not Path(search_file).exists():
-        print(f"  Search output not found: {search_file}")
-        sys.exit(1)
-
-    with open(search_file) as f:
+    with open(search_output) as f:
         search_data = json.load(f)
 
-    methodology = get_methodology()
-    answer_model = methodology["answer_model"]
-    max_chunks = methodology["context_chunks"]
+    answer_model = mode_cfg["answer_model"]
+    max_chunks = mode_cfg["context_chunks"]
 
     requests = []
     for item in search_data.get("items", []):
-        qid = item["id"]
-        question = item["question"]
         chunks = item.get("chunks", [])
         context = "\n".join(f"- {c}" for c in chunks[:max_chunks])
-
         prompt = (
             "You are answering questions about a conversation based on retrieved memory snippets.\n"
             "Answer concisely in 1-3 sentences. Be direct and specific.\n"
             "If NO relevant facts exist in the memories, say "
             '"I don\'t have enough information to answer this question."\n\n'
-            f"Memories:\n{context}\n\nQuestion: {question}\nAnswer:"
+            f"Memories:\n{context}\n\nQuestion: {item['question']}\nAnswer:"
         )
         requests.append(
             {
-                "custom_id": qid,
+                "custom_id": item["id"],
                 "params": {
                     "model": answer_model,
                     "max_tokens": 150,
@@ -275,22 +280,35 @@ def phase_submit_answers(benchmark: str, commit: str) -> None:
             }
         )
 
-    print(f"  Submitting {len(requests)} answer requests to Anthropic batch API ({answer_model})")
+    print(f"  Submitting {len(requests)} answer requests ({answer_model})")
     batch = anthropic_create_batch(requests)
-    batch_id = batch["id"]
-    print(f"  Batch created: {batch_id}")
-    print(f"  Status: {batch['processing_status']}")
+    print(f"  Batch: {batch['id']} ({batch['processing_status']})")
 
-    st["phase"] = "answers-submitted"
-    st["answer_batch_id"] = batch_id
-    st["answer_model"] = answer_model
-    st["total_questions"] = len(requests)
+    st = load_state(commit, benchmark)
+    st.update(
+        {
+            "phase": "answers-submitted",
+            "mode": mode_cfg["mode"],
+            "search_output": str(search_output),
+            "answer_batch_id": batch["id"],
+            "answer_model": answer_model,
+            "total_questions": len(requests),
+        }
+    )
     save_state(st)
-    print("  State saved. Next: --phase retrieve-answers (poll until done)")
+    print("  Next: --retrieve")
 
 
-def phase_retrieve_answers(benchmark: str, commit: str) -> None:
-    from benchmarks.batch_api import anthropic_get_results, anthropic_poll_batch
+# ─── Batch: --retrieve ───────────────────────────────────────
+
+
+def batch_retrieve(benchmark: str, commit: str, mode_cfg: dict) -> None:
+    from benchmarks.batch_api import (
+        anthropic_get_results,
+        anthropic_poll_batch,
+        openai_create_batch,
+        openai_upload_jsonl,
+    )
 
     st = load_state(commit, benchmark)
     if st.get("phase") != "answers-submitted":
@@ -301,102 +319,79 @@ def phase_retrieve_answers(benchmark: str, commit: str) -> None:
     print(f"  Polling Anthropic batch {batch_id}...")
     anthropic_poll_batch(batch_id)
 
-    print("  Downloading results...")
+    print("  Downloading answers...")
     results = anthropic_get_results(batch_id)
 
     answers: dict[str, str] = {}
     for r in results:
         cid = r.get("custom_id", "")
-        result_data = r.get("result", {})
-        if result_data.get("type") == "succeeded":
-            msg = result_data.get("message", {})
-            content = msg.get("content", [{}])
-            text = content[0].get("text", "") if content else ""
-            answers[cid] = text
+        rd = r.get("result", {})
+        if rd.get("type") == "succeeded":
+            content = rd.get("message", {}).get("content", [{}])
+            answers[cid] = content[0].get("text", "") if content else ""
         else:
             answers[cid] = ""
 
     answers_file = RESULTS_DIR / f"{commit}-{benchmark}-answers.json"
     with open(answers_file, "w") as f:
         json.dump(answers, f, indent=2)
+    print(f"  {sum(1 for v in answers.values() if v)}/{len(answers)} answers retrieved")
 
-    st["phase"] = "answers-retrieved"
-    st["answers_file"] = str(answers_file)
-    st["answers_succeeded"] = sum(1 for v in answers.values() if v)
-    save_state(st)
-    print(f"  {st['answers_succeeded']}/{len(answers)} answers retrieved. Saved: {answers_file}")
-    print("  Next: --phase submit-judge")
-
-
-def phase_submit_judge(benchmark: str, commit: str) -> None:
-    from benchmarks.batch_api import openai_create_batch, openai_upload_jsonl
-
-    st = load_state(commit, benchmark)
-    if st.get("phase") not in ("answers-retrieved", "judge-submitted"):
-        print(f"  State phase is '{st.get('phase')}', expected 'answers-retrieved'.")
-        sys.exit(1)
-
-    search_file = st["search_output"]
-    answers_file = st["answers_file"]
-
-    with open(search_file) as f:
+    with open(st["search_output"]) as f:
         search_data = json.load(f)
-    with open(answers_file) as f:
-        answers = json.load(f)
-
     items_by_id = {item["id"]: item for item in search_data.get("items", [])}
 
-    judge_prompt_template = (
-        "You are evaluating an AI memory system's answer.\n\n"
-        "Question: {question}\n"
-        "Ground Truth Answer: {gold}\n"
-        "System Answer: {prediction}\n\n"
-        "Is the system's answer correct? Score CORRECT only if the answer contains "
-        "the specific information asked for. Score WRONG if the answer is vague, "
-        "missing key facts, or incorrect. Do not give credit for answers that are "
-        "technically true but don't answer the question.\n\n"
-        "Reply with exactly one word: CORRECT or WRONG"
-    )
+    judge_prompt = mode_cfg["judge_prompt"]
+    judge_model = mode_cfg["judge_model"]
 
     lines = []
     for qid, answer in answers.items():
         item = items_by_id.get(qid, {})
-        gold = item.get("gold", "")
-        question = item.get("question", "")
-
-        prompt = judge_prompt_template.format(question=question, gold=gold, prediction=answer)
-        line = json.dumps(
-            {
-                "custom_id": qid,
-                "method": "POST",
-                "url": "/v1/chat/completions",
-                "body": {
-                    "model": "gpt-4o-mini",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.0,
-                    "max_tokens": 10,
-                },
-            }
+        prompt = (
+            "You are evaluating an AI memory system's answer.\n\n"
+            f"Question: {item.get('question', '')}\n"
+            f"Ground Truth Answer: {item.get('gold', '')}\n"
+            f"System Answer: {answer}\n\n"
+            f"{judge_prompt}\n\n"
+            "Reply with exactly one word: CORRECT or WRONG"
         )
-        lines.append(line)
+        lines.append(
+            json.dumps(
+                {
+                    "custom_id": qid,
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": {
+                        "model": judge_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.0,
+                        "max_tokens": 10,
+                    },
+                }
+            )
+        )
 
-    jsonl_content = "\n".join(lines) + "\n"
-    print(f"  Uploading {len(lines)} judge requests to OpenAI...")
-    file_id = openai_upload_jsonl(jsonl_content)
-    print(f"  File uploaded: {file_id}")
-
+    print(f"  Uploading {len(lines)} judge requests ({judge_model})...")
+    file_id = openai_upload_jsonl("\n".join(lines) + "\n")
     batch = openai_create_batch(file_id, metadata={"description": f"judge-{benchmark}-{commit[:8]}"})
-    batch_id = batch["id"]
-    print(f"  Batch created: {batch_id}")
+    print(f"  Judge batch: {batch['id']}")
 
-    st["phase"] = "judge-submitted"
-    st["judge_batch_id"] = batch_id
-    st["judge_file_id"] = file_id
+    st.update(
+        {
+            "phase": "judge-submitted",
+            "answers_file": str(answers_file),
+            "judge_batch_id": batch["id"],
+            "judge_file_id": file_id,
+        }
+    )
     save_state(st)
-    print("  State saved. Next: --phase retrieve-judge (poll until done, then score)")
+    print("  Next: --finalize")
 
 
-def phase_retrieve_judge(benchmark: str, commit: str) -> None:
+# ─── Batch: --finalize ───────────────────────────────────────
+
+
+def batch_finalize(benchmark: str, commit: str, mode_cfg: dict) -> None:
     from benchmarks.batch_api import openai_get_results, openai_poll_batch
 
     st = load_state(commit, benchmark)
@@ -419,14 +414,10 @@ def phase_retrieve_judge(benchmark: str, commit: str) -> None:
     scores: dict[str, float] = {}
     for r in results:
         cid = r.get("custom_id", "")
-        error = r.get("error")
-        if error:
+        if r.get("error"):
             scores[cid] = 0.0
-            continue
-        resp = r.get("response", {})
-        if resp.get("status_code") == 200:
-            body = resp.get("body", {})
-            text = body.get("choices", [{}])[0].get("message", {}).get("content", "")
+        elif r.get("response", {}).get("status_code") == 200:
+            text = r["response"]["body"].get("choices", [{}])[0].get("message", {}).get("content", "")
             scores[cid] = 1.0 if "CORRECT" in text.upper() else 0.0
         else:
             scores[cid] = 0.0
@@ -435,28 +426,35 @@ def phase_retrieve_judge(benchmark: str, commit: str) -> None:
     correct = sum(1 for v in scores.values() if v >= 1.0)
     accuracy = correct / total * 100 if total else 0
 
-    methodology = get_methodology()
+    mode = mode_cfg["mode"]
     final_result = {
         "commit": commit,
         "commit_short": commit[:8],
         "benchmark": benchmark,
+        "mode": mode,
         "overall_accuracy": accuracy,
         "total": total,
         "correct": correct,
-        "methodology": methodology,
+        "methodology": {
+            "answer_model": mode_cfg["answer_model"],
+            "judge_model": mode_cfg["judge_model"],
+            "context_chunks": mode_cfg["context_chunks"],
+            "search_limit": mode_cfg["search_limit"],
+            "judge_prompt_style": "generous" if mode == "compare" else "neutral",
+        },
         "scores": scores,
     }
 
-    result_file = RESULTS_DIR / f"{commit}-{benchmark}.json"
-    with open(result_file, "w") as f:
+    rf = RESULTS_DIR / result_filename(commit, benchmark, mode)
+    with open(rf, "w") as f:
         json.dump(final_result, f, indent=2)
 
     st["phase"] = "complete"
     st["accuracy"] = accuracy
     save_state(st)
 
-    print(f"\n  RESULT: {accuracy:.2f}% ({correct}/{total})")
-    print(f"  Saved: {result_file}")
+    print(f"\n  RESULT ({mode} mode): {accuracy:.2f}% ({correct}/{total})")
+    print(f"  Saved: {rf}")
 
     save_history_row(
         {
@@ -464,167 +462,77 @@ def phase_retrieve_judge(benchmark: str, commit: str) -> None:
             "commit_short": commit[:8],
             "date": datetime.now().isoformat(),
             "benchmark": benchmark,
+            "mode": mode,
             "headline_score": f"{accuracy:.2f}",
-            "answer_model": methodology["answer_model"],
-            "judge_model": methodology["judge_model"],
-            "context_chunks": str(methodology["context_chunks"]),
-            "search_limit": str(methodology["search_limit"]),
+            "answer_model": mode_cfg["answer_model"],
+            "judge_model": mode_cfg["judge_model"],
+            "context_chunks": str(mode_cfg["context_chunks"]),
+            "search_limit": str(mode_cfg["search_limit"]),
             "note": "batch",
         }
     )
-    print(f"  History updated: {HISTORY_FILE}")
 
 
-# ─── Legacy mode (sequential) ────────────────────────────────
+# ─── Sequential (legacy) ─────────────────────────────────────
 
 
-def run_bench_legacy(benchmark: str, extra_args: list[str], commit: str) -> dict | None:
+def run_sequential(benchmark: str, commit: str, mode_cfg: dict, extra_args: list[str]) -> None:
     script = BENCH_SCRIPTS.get(benchmark)
     if not script:
         print(f"Unknown benchmark: {benchmark}")
-        return None
+        sys.exit(1)
 
-    result_file = RESULTS_DIR / f"{commit}-{benchmark}.json"
+    mode = mode_cfg["mode"]
+    rf = RESULTS_DIR / result_filename(commit, benchmark, mode)
 
-    cmd = [sys.executable, "-u", str(REPO / script), "--reset"] + extra_args
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
-    env["BENCH_RESULT_FILE"] = str(result_file)
+    env["BENCH_RESULT_FILE"] = str(rf)
     env["BENCH_COMMIT"] = commit
+    set_bench_env(env, mode_cfg)
 
+    cmd = [sys.executable, "-u", str(REPO / script), "--reset"] + extra_args
     print(f"  Running: {script} {' '.join(extra_args)}")
     proc = subprocess.run(cmd, env=env, cwd=str(REPO))
 
     if proc.returncode != 0:
-        print(f"  Benchmark failed with exit code {proc.returncode}")
-        return None
-
-    if result_file.exists():
-        with open(result_file) as f:
-            return json.load(f)
-
-    standard_files = {
-        "locomo": RESULTS_DIR / "locomo-leaderboard-v1.json",
-        "longmemeval": RESULTS_DIR / "longmemeval-results.json",
-        "frames": RESULTS_DIR / "frames-results.json",
-        "locomo-plus": RESULTS_DIR / "locomo-plus-results.json",
-    }
-    fallback = standard_files.get(benchmark)
-    if fallback and fallback.exists():
-        with open(fallback) as f:
-            data = json.load(f)
-        data["commit"] = commit
-        data["commit_short"] = commit[:8]
-        with open(result_file, "w") as f:
-            json.dump(data, f, indent=2)
-        return data
-    return None
-
-
-# ─── Main ─────────────────────────────────────────────────────
-
-
-def main():
-    parser = argparse.ArgumentParser(description="RASPUTIN benchmark runner with git integrity + batch API")
-    parser.add_argument("benchmark", nargs="?", choices=list(BENCH_SCRIPTS.keys()))
-    parser.add_argument("--phase", choices=PHASES, default=None, help="Run a specific batch phase")
-    parser.add_argument("--force", action="store_true")
-    parser.add_argument("--compare-to", type=str, default=None)
-    parser.add_argument("--constraints", action="store_true")
-    parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--conversations", type=str, default=None)
-    args = parser.parse_args()
-
-    if args.compare_to and args.benchmark:
-        commit = get_commit_hash()
-        old_result = load_result_file(args.compare_to, args.benchmark)
-        new_result = load_result_file(commit, args.benchmark)
-        if not old_result:
-            print(f"No result file for {args.compare_to[:8]} / {args.benchmark}")
-            sys.exit(1)
-        if not new_result:
-            print(f"No result file for {commit[:8]} / {args.benchmark}. Run the benchmark first.")
-            sys.exit(1)
-        deltas = compare_results(old_result, new_result)
-        if deltas:
-            has_regression = print_comparison(deltas, args.compare_to, commit)
-            if has_regression:
-                offer_revert(deltas)
-        else:
-            print("  No comparable numeric metrics found.")
-        sys.exit(0)
-
-    if not args.benchmark:
-        parser.print_help()
+        print(f"  Benchmark failed (exit {proc.returncode})")
         sys.exit(1)
 
-    commit = get_commit_hash()
+    result = None
+    if rf.exists():
+        with open(rf) as f:
+            result = json.load(f)
+    else:
+        standard_files = {
+            "locomo": RESULTS_DIR / "locomo-leaderboard-v1.json",
+            "longmemeval": RESULTS_DIR / "longmemeval-results.json",
+            "frames": RESULTS_DIR / "frames-results.json",
+            "locomo-plus": RESULTS_DIR / "locomo-plus-results.json",
+        }
+        fallback = standard_files.get(benchmark)
+        if fallback and fallback.exists():
+            with open(fallback) as f:
+                result = json.load(f)
 
-    if args.phase:
-        is_search_phase = args.phase == "search"
-        if is_search_phase and repo_is_dirty():
-            print("ERROR: uncommitted changes. Commit first \u2014 benchmark must be tied to a hash.")
-            sys.exit(1)
-
-        print(f"Benchmark: {args.benchmark}")
-        print(f"Phase:     {args.phase}")
-        print(f"Commit:    {commit[:8]}")
-        print()
-
-        extra_args: list[str] = []
-        if args.limit:
-            extra_args.extend(["--limit", str(args.limit)])
-        if args.conversations is not None:
-            extra_args.extend(["--conversations", args.conversations])
-
-        if args.phase == "search":
-            phase_search(args.benchmark, commit, extra_args)
-        elif args.phase == "submit-answers":
-            phase_submit_answers(args.benchmark, commit)
-        elif args.phase == "retrieve-answers":
-            phase_retrieve_answers(args.benchmark, commit)
-        elif args.phase == "submit-judge":
-            phase_submit_judge(args.benchmark, commit)
-        elif args.phase == "retrieve-judge":
-            phase_retrieve_judge(args.benchmark, commit)
-        sys.exit(0)
-
-    if repo_is_dirty():
-        print("ERROR: uncommitted changes. Commit first \u2014 benchmark must be tied to a hash.")
-        sys.exit(1)
-
-    existing = load_result_file(commit, args.benchmark)
-    if existing and not args.force:
-        print(f"Already benchmarked commit {commit[:8]} / {args.benchmark}. Use --force to re-run.")
-        sys.exit(0)
-
-    extra_args = []
-    if args.limit:
-        extra_args.extend(["--limit", str(args.limit)])
-    if args.conversations is not None:
-        extra_args.extend(["--conversations", args.conversations])
-    if args.constraints and args.benchmark == "locomo-plus":
-        extra_args.append("--constraints")
-
-    print(f"Benchmark: {args.benchmark} (legacy sequential mode)")
-    print(f"Commit:    {commit[:8]} ({commit})")
-    print(f"Date:      {datetime.now().isoformat()}")
-    print()
-
-    result = run_bench_legacy(args.benchmark, extra_args, commit)
     if not result:
         print("\n  No result file produced.")
         sys.exit(1)
 
-    methodology = get_methodology()
     result["commit"] = commit
     result["commit_short"] = commit[:8]
-    result["methodology"] = methodology
+    result["mode"] = mode
+    result["methodology"] = {
+        "answer_model": mode_cfg["answer_model"],
+        "judge_model": mode_cfg["judge_model"],
+        "context_chunks": mode_cfg["context_chunks"],
+        "search_limit": mode_cfg["search_limit"],
+        "judge_prompt_style": "generous" if mode == "compare" else "neutral",
+    }
 
-    result_file = RESULTS_DIR / f"{commit}-{args.benchmark}.json"
-    with open(result_file, "w") as f:
+    with open(rf, "w") as f:
         json.dump(result, f, indent=2)
-    print(f"\n  Result saved: {result_file}")
+    print(f"\n  Result ({mode}): {rf}")
 
     headline = result.get("headline_score") or result.get("overall_accuracy") or result.get("overall")
     save_history_row(
@@ -632,16 +540,99 @@ def main():
             "commit": commit,
             "commit_short": commit[:8],
             "date": datetime.now().isoformat(),
-            "benchmark": args.benchmark,
+            "benchmark": benchmark,
+            "mode": mode,
             "headline_score": f"{headline:.2f}" if isinstance(headline, (int, float)) else str(headline or ""),
-            "answer_model": methodology["answer_model"],
-            "judge_model": methodology["judge_model"],
-            "context_chunks": str(methodology["context_chunks"]),
-            "search_limit": str(methodology["search_limit"]),
+            "answer_model": mode_cfg["answer_model"],
+            "judge_model": mode_cfg["judge_model"],
+            "context_chunks": str(mode_cfg["context_chunks"]),
+            "search_limit": str(mode_cfg["search_limit"]),
             "note": "",
         }
     )
-    print(f"  History updated: {HISTORY_FILE}")
+
+
+# ─── Main ─────────────────────────────────────────────────────
+
+
+def main():
+    parser = argparse.ArgumentParser(description="RASPUTIN benchmark runner")
+    parser.add_argument("benchmark", nargs="?", choices=list(BENCH_SCRIPTS.keys()))
+    parser.add_argument("--mode", choices=["production", "compare"], default="production")
+    parser.add_argument("--submit", action="store_true", help="Batch: search + submit answer batch")
+    parser.add_argument("--retrieve", action="store_true", help="Batch: retrieve answers + submit judge batch")
+    parser.add_argument("--finalize", action="store_true", help="Batch: retrieve judge + score")
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--compare-to", type=str, default=None)
+    parser.add_argument("--answer-model", type=str, default=None, help="Override answer model")
+    parser.add_argument("--constraints", action="store_true")
+    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--conversations", type=str, default=None)
+    args = parser.parse_args()
+
+    if args.compare_to and args.benchmark:
+        commit = get_commit_hash()
+        old_result = load_result_file(args.compare_to, args.benchmark, args.mode)
+        new_result = load_result_file(commit, args.benchmark, args.mode)
+        if not old_result:
+            print(f"No result for {args.compare_to[:8]} / {args.benchmark}")
+            sys.exit(1)
+        if not new_result:
+            print(f"No result for {commit[:8]} / {args.benchmark}. Run benchmark first.")
+            sys.exit(1)
+        deltas = compare_results(old_result, new_result)
+        if deltas:
+            if print_comparison(deltas, args.compare_to, commit):
+                offer_revert(deltas)
+        else:
+            print("  No comparable metrics found.")
+        sys.exit(0)
+
+    if not args.benchmark:
+        parser.print_help()
+        sys.exit(1)
+
+    mode_cfg = get_mode_config(args.mode)
+    if args.answer_model:
+        mode_cfg["answer_model"] = args.answer_model
+
+    commit = get_commit_hash()
+
+    extra_args: list[str] = []
+    if args.limit:
+        extra_args.extend(["--limit", str(args.limit)])
+    if args.conversations is not None:
+        extra_args.extend(["--conversations", args.conversations])
+    if args.constraints and args.benchmark == "locomo-plus":
+        extra_args.append("--constraints")
+
+    print(f"Benchmark: {args.benchmark}")
+    print(f"Mode:      {args.mode}")
+    print(f"Commit:    {commit[:8]}")
+    print(f"Answer:    {mode_cfg['answer_model']}")
+    print(f"Judge:     {mode_cfg['judge_model']} ({'generous' if args.mode == 'compare' else 'neutral'})")
+    print(f"Chunks:    {mode_cfg['context_chunks']}")
+    print()
+
+    if args.submit:
+        if repo_is_dirty():
+            print("ERROR: uncommitted changes. Commit first.")
+            sys.exit(1)
+        batch_submit(args.benchmark, commit, mode_cfg, extra_args)
+    elif args.retrieve:
+        batch_retrieve(args.benchmark, commit, mode_cfg)
+    elif args.finalize:
+        batch_finalize(args.benchmark, commit, mode_cfg)
+    else:
+        if repo_is_dirty():
+            print("ERROR: uncommitted changes. Commit first.")
+            sys.exit(1)
+        mode = args.mode
+        rf = RESULTS_DIR / result_filename(commit, args.benchmark, mode)
+        if rf.exists() and not args.force:
+            print(f"Already benchmarked {commit[:8]} / {args.benchmark} / {mode}. Use --force.")
+            sys.exit(0)
+        run_sequential(args.benchmark, commit, mode_cfg, extra_args)
 
 
 if __name__ == "__main__":
