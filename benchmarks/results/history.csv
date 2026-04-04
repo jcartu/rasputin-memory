@@ -1,1 +1,2 @@
 date,commit,recall_at_5,recall_at_10,mrr_at_10,latency_p50_ms,latency_p95_ms
+fb9c1d2f83ba789e912da931355194468e16a281,fb9c1d2f,2026-04-04T17:32:31.502596,locomo,production,,claude-haiku-4-5-20251001,gpt-4o-mini-2024-07-18,60,60,

@@ -1,43 +1,34 @@
 # RASPUTIN Memory — LoCoMo Leaderboard Benchmark v1
 
-**Date:** 2026-04-04 09:47
-**Pipeline:** Window chunking → Multi-query search (top-60) → Dedup → Claude Opus 4 → GPT-4o-mini judge
-**v2:** Adversarial prompt, conversation windows, multi-query, top-K 60, 50-chunk context
-**Total questions:** 1986 (1540 non-adversarial, 446 adversarial)
+**Date:** 2026-04-04 17:32
+**Pipeline:** Window chunking → Multi-query search (top-60) → Dedup → claude-haiku-4-5-20251001 → gpt-4o-mini-2024-07-18 judge
+**Mode:** production | top-K 60, 60-chunk context
+**Total questions:** 199 (152 non-adversarial, 47 adversarial)
 
 ## Headline Score (excluding adversarial)
-**LLM-Judge Accuracy: 92.79%**
-- Token F1: 20.32%
+**LLM-Judge Accuracy: 62.50%**
+- Token F1: 15.70%
 
 ## Including adversarial
-- All categories: 84.94%
-- Adversarial only: 57.85%
+- All categories: 49.25%
+- Adversarial only: 6.38%
 
 ## Per-Category Breakdown
-- **adversarial**: 57.8% judge, 16.0% F1 (446 Qs)
-- **multi-hop**: 89.6% judge, 9.5% F1 (96 Qs)
-- **open-domain**: 94.8% judge, 25.3% F1 (841 Qs)
-- **single-hop**: 90.4% judge, 14.6% F1 (282 Qs)
-- **temporal**: 90.7% judge, 15.4% F1 (321 Qs)
+- **adversarial**: 6.4% judge, 11.3% F1 (47 Qs)
+- **multi-hop**: 46.2% judge, 7.7% F1 (13 Qs)
+- **open-domain**: 74.3% judge, 20.0% F1 (70 Qs)
+- **single-hop**: 43.8% judge, 8.7% F1 (32 Qs)
+- **temporal**: 62.2% judge, 16.4% F1 (37 Qs)
 
 ## Per-Conversation
-- **conv-26**: 96.7% (147/152 excl. adv)
-- **conv-30**: 97.5% (79/81 excl. adv)
-- **conv-41**: 95.4% (145/152 excl. adv)
-- **conv-42**: 91.5% (182/199 excl. adv)
-- **conv-43**: 92.1% (164/178 excl. adv)
-- **conv-44**: 93.5% (115/123 excl. adv)
-- **conv-47**: 92.0% (138/150 excl. adv)
-- **conv-48**: 91.1% (174/191 excl. adv)
-- **conv-49**: 91.0% (142/156 excl. adv)
-- **conv-50**: 90.5% (143/158 excl. adv)
+- **conv-26**: 62.5% (95/152 excl. adv)
 
 ## Leaderboard Comparison
 | System | LLM-Judge Accuracy |
 |--------|-------------------|
 | Backboard | 90.00% |
 | MemMachine | 84.87% |
-| **RASPUTIN** | **92.79%** |
+| **RASPUTIN** | **62.50%** |
 | Memobase | 75.78% |
 | Zep | 75.14% |
 | mem0 | 66.88% |
