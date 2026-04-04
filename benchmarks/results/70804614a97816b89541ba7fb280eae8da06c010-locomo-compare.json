@@ -2389,5 +2389,15 @@
       "f1": 0.0
     }
   ],
-  "date": "2026-04-04T19:59:16.220347"
+  "date": "2026-04-04T19:59:16.220347",
+  "commit": "70804614a97816b89541ba7fb280eae8da06c010",
+  "commit_short": "70804614",
+  "mode": "compare",
+  "methodology": {
+    "answer_model": "gpt-4o-mini",
+    "judge_model": "gpt-4o-mini-2024-07-18",
+    "context_chunks": 60,
+    "search_limit": 60,
+    "judge_prompt_style": "generous"
+  }
 }
