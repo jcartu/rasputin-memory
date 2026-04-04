@@ -234,26 +234,47 @@ Memories:
 Question: {question}
 Answer:"""
 
+    is_openai = ANSWER_MODEL.startswith("gpt-") or ANSWER_MODEL.startswith("o1-") or ANSWER_MODEL.startswith("o3-")
+
     for attempt in range(5):
         try:
-            req = urllib.request.Request(
-                "https://api.anthropic.com/v1/messages",
-                data=json.dumps(
-                    {
-                        "model": ANSWER_MODEL,
-                        "max_tokens": 150,
-                        "temperature": 0.0,
-                        "messages": [{"role": "user", "content": prompt}],
-                    }
-                ).encode(),
-                method="POST",
-            )
-            req.add_header("Content-Type", "application/json")
-            req.add_header("x-api-key", ANTHROPIC_API_KEY)
-            req.add_header("anthropic-version", "2023-06-01")
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                data = json.loads(resp.read().decode())
-            return data["content"][0]["text"].strip()
+            if is_openai:
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/chat/completions",
+                    data=json.dumps(
+                        {
+                            "model": ANSWER_MODEL,
+                            "messages": [{"role": "user", "content": prompt}],
+                            "temperature": 0.0,
+                            "max_tokens": 150,
+                        }
+                    ).encode(),
+                    method="POST",
+                )
+                req.add_header("Content-Type", "application/json")
+                req.add_header("Authorization", f"Bearer {OPENAI_API_KEY}")
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.loads(resp.read().decode())
+                return data["choices"][0]["message"]["content"].strip()
+            else:
+                req = urllib.request.Request(
+                    "https://api.anthropic.com/v1/messages",
+                    data=json.dumps(
+                        {
+                            "model": ANSWER_MODEL,
+                            "max_tokens": 150,
+                            "temperature": 0.0,
+                            "messages": [{"role": "user", "content": prompt}],
+                        }
+                    ).encode(),
+                    method="POST",
+                )
+                req.add_header("Content-Type", "application/json")
+                req.add_header("x-api-key", ANTHROPIC_API_KEY)
+                req.add_header("anthropic-version", "2023-06-01")
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    data = json.loads(resp.read().decode())
+                return data["content"][0]["text"].strip()
         except Exception as e:
             if attempt < 4:
                 wait = 2**attempt
@@ -728,7 +749,8 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                     print(f"    Judge error on Q{qi}: {e}")
                     judge = 0.0
                 f1 = compute_f1(prediction, ground_truth)
-                return (qi, question, ground_truth, category, prediction, judge, f1)
+                chunk_texts = [c.get("text", "") if isinstance(c, dict) else str(c) for c in chunks[:CONTEXT_CHUNKS]]
+                return (qi, question, ground_truth, category, prediction, judge, f1, chunk_texts)
 
             with ThreadPoolExecutor(max_workers=CONCURRENCY) as executor:
                 futures = {executor.submit(process_single_qa, item): item[0] for item in searched}
@@ -737,7 +759,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                     result = future.result()
                     if result is None:
                         continue
-                    qi, question, ground_truth, category, prediction, judge, f1 = result
+                    qi, question, ground_truth, category, prediction, judge, f1, chunk_texts = result
 
                     key = f"{conv_id}_{qi}"
                     checkpoint["results"].append(
@@ -752,6 +774,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                             "correct": bool(judge),
                             "judge_score": judge,
                             "f1": f1,
+                            "chunks": chunk_texts,
                         }
                     )
                     checkpoint["completed_keys"].add(key)
@@ -870,6 +893,44 @@ def generate_report(results):
     for cid, s in sorted(conv_stats.items()):
         acc = s["correct_no_adv"] / s["total_no_adv"] * 100 if s["total_no_adv"] else 0
         lines.append(f"- **{cid}**: {acc:.1f}% ({s['correct_no_adv']}/{s['total_no_adv']} excl. adv)")
+
+    oracle_by_cat = defaultdict(lambda: {"not_in_60": 0, "in_60_not_10": 0, "in_10_still_wrong": 0, "total_wrong": 0})
+    for r in all_results:
+        if r.get("correct"):
+            continue
+        cat = CATEGORY_NAMES.get(r.get("category", 0), f"cat-{r.get('category', 0)}")
+        oracle_by_cat[cat]["total_wrong"] += 1
+        gold_lower = str(r.get("gold", "")).lower()
+        gold_tokens = set(re.findall(r"\w+", gold_lower))
+        chunks = r.get("chunks", [])
+        if not chunks or not gold_tokens:
+            oracle_by_cat[cat]["not_in_60"] += 1
+            continue
+        found_rank = None
+        for i, chunk in enumerate(chunks):
+            chunk_tokens = set(re.findall(r"\w+", chunk.lower()))
+            overlap = gold_tokens & chunk_tokens
+            if len(overlap) >= max(1, len(gold_tokens) * 0.5):
+                found_rank = i + 1
+                break
+        if found_rank is None:
+            oracle_by_cat[cat]["not_in_60"] += 1
+        elif found_rank > 10:
+            oracle_by_cat[cat]["in_60_not_10"] += 1
+        else:
+            oracle_by_cat[cat]["in_10_still_wrong"] += 1
+
+    lines.append("\n## Retrieval Oracle (failure diagnosis)")
+    lines.append("| Category | Wrong | Not in top-60 | In 60 not 10 | In top-10 but wrong |")
+    lines.append("|----------|-------|---------------|--------------|---------------------|")
+    for cat_name in sorted(oracle_by_cat.keys()):
+        o = oracle_by_cat[cat_name]
+        lines.append(
+            f"| {cat_name} | {o['total_wrong']} | "
+            f"{o['not_in_60']} ({o['not_in_60'] * 100 // max(o['total_wrong'], 1)}%) | "
+            f"{o['in_60_not_10']} ({o['in_60_not_10'] * 100 // max(o['total_wrong'], 1)}%) | "
+            f"{o['in_10_still_wrong']} ({o['in_10_still_wrong'] * 100 // max(o['total_wrong'], 1)}%) |"
+        )
 
     lines.append("\n## Leaderboard Comparison")
     lines.append("| System | LLM-Judge Accuracy |")
