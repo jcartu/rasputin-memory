@@ -227,36 +227,50 @@ _FACTUAL_PREFIXES = ("what is", "what was", "when did", "who is", "how many", "w
 def _decompose_query_intent(query: str) -> list[str]:
     if any(query.lower().startswith(p) for p in _FACTUAL_PREFIXES):
         return [query]
-    try:
-        import requests as _req
 
-        resp = _req.post(
-            _state.AMAC_LLM_URL,
-            json={
-                "model": _state.CONFIG.get("constraints", {}).get("model", "qwen3.5:9b"),
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f'A user says: "{query}"\n\nWhat implicit topics, goals, or constraints from PRIOR conversations might be relevant? List 2-3 short search queries.\n\nReturn ONLY a JSON array of strings.',
-                    }
-                ],
-                "temperature": 0.0,
-                "max_tokens": 200,
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
-        raw = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-        import json as _json
+    anthropic_key = _state.ANTHROPIC_API_KEY
 
-        start = raw.find("[")
-        end = raw.rfind("]") + 1
-        if start >= 0 and end > start:
-            intents = _json.loads(raw[start:end])
-            if isinstance(intents, list):
-                return [query] + [str(i) for i in intents[:3]]
-    except Exception:
-        pass
+    prompt = (
+        f'A user says: "{query}"\n\n'
+        "What implicit topics, goals, or constraints from PRIOR conversations might be relevant? "
+        "List 2-3 short search queries.\n\nReturn ONLY a JSON array of strings."
+    )
+
+    if anthropic_key:
+        try:
+            import urllib.request as _urllib_req
+
+            body = json.dumps(
+                {
+                    "model": "claude-sonnet-4-6",
+                    "max_tokens": 200,
+                    "temperature": 0.0,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+            ).encode()
+
+            req = _urllib_req.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=body,
+                method="POST",
+            )
+            req.add_header("Content-Type", "application/json")
+            req.add_header("x-api-key", anthropic_key)
+            req.add_header("anthropic-version", "2023-06-01")
+
+            with _urllib_req.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+
+            raw = data["content"][0]["text"].strip()
+            start = raw.find("[")
+            end = raw.rfind("]") + 1
+            if start >= 0 and end > start:
+                intents = json.loads(raw[start:end])
+                if isinstance(intents, list):
+                    return [query] + [str(i) for i in intents[:3]]
+        except Exception:
+            pass
+
     return [query]
 
 
@@ -295,6 +309,7 @@ def hybrid_search(
             qdrant_kwargs["collection"] = collection
         all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
 
+    constraint_hits: list[dict[str, Any]] = []
     try:
         from brain import constraints as _constraints_mod
 
@@ -305,8 +320,37 @@ def hybrid_search(
                 if collection:
                     iq_kwargs["collection"] = collection
                 all_qdrant_results.extend(qdrant_search(iq, **iq_kwargs))
+
+            constraint_col = f"{(collection or _state.COLLECTION)}_constraints"
+            all_search_queries = list(dict.fromkeys(queries + intent_queries))[:8]
+            for sq in all_search_queries:
+                try:
+                    vec = embedding.get_embedding(sq)
+                    hits = _state.qdrant.query_points(
+                        collection_name=constraint_col,
+                        query=vec,
+                        limit=15,
+                        with_payload=True,
+                    )
+                    for point in hits.points if hasattr(hits, "points") else []:
+                        p = point.payload or {}
+                        constraint_hits.append(
+                            {
+                                "score": round(point.score * 0.9, 4),
+                                "text": p.get("parent_text", ""),
+                                "constraint_summary": p.get("constraint_summary", ""),
+                                "source": p.get("source", ""),
+                                "date": p.get("date", ""),
+                                "point_id": point.id,
+                                "origin": "constraint",
+                            }
+                        )
+                except Exception:
+                    pass
     except Exception:
         pass
+
+    all_qdrant_results.extend(constraint_hits)
 
     deduped_by_text: dict[str, dict[str, Any]] = {}
     for item in all_qdrant_results:
@@ -342,35 +386,50 @@ def hybrid_search(
 
     neural_applied = False
     llm_applied = False
+    cohere_applied = False
     ranking_score_key = "hybrid_score" if any("hybrid_score" in row for row in all_candidates) else "score"
     if all_candidates:
         rerank_pool = all_candidates[: limit * 3]
-        if _state.LLM_RERANKER_ENABLED and _state.ANTHROPIC_API_KEY:
-            all_candidates = _llm_rerank(query, rerank_pool, top_k=limit)
-            llm_applied = any(row.get("llm_rerank_position") is not None for row in all_candidates)
-            if llm_applied:
-                top_span = max(len(all_candidates), 1)
-                for idx, row in enumerate(all_candidates):
-                    llm_position = row.get("llm_rerank_position")
-                    if llm_position is None:
-                        llm_position = idx + top_span
-                        row["llm_rerank_position"] = llm_position
-                    row["llm_rerank_score"] = float((2 * top_span) - int(llm_position))
-                ranking_score_key = "llm_rerank_score"
-        elif embedding.is_reranker_available():
-            pre_count = len(all_candidates)
-            all_candidates = _neural_rerank(query, rerank_pool, top_k=limit)
-            neural_applied = len(all_candidates) <= pre_count and any(
-                row.get("rerank_score") is not None for row in all_candidates
-            )
-            if neural_applied:
-                ranking_score_key = "rerank_score"
-        else:
-            all_candidates = sorted(
-                all_candidates,
-                key=lambda value: float(value.get(ranking_score_key) or value.get("score", 0)),
-                reverse=True,
-            )[:limit]
+
+        # Priority: Cohere > LLM > Local BGE > no reranking
+        try:
+            from brain.rerank_providers import RERANK_PROVIDER, rerank_cohere, COHERE_API_KEY
+
+            if RERANK_PROVIDER == "cohere" and COHERE_API_KEY:
+                all_candidates = rerank_cohere(query, rerank_pool, top_k=limit)
+                cohere_applied = any(r.get("reranker") == "cohere" for r in all_candidates)
+                if cohere_applied:
+                    ranking_score_key = "rerank_score"
+        except ImportError:
+            pass
+
+        if not cohere_applied:
+            if _state.LLM_RERANKER_ENABLED and _state.ANTHROPIC_API_KEY:
+                all_candidates = _llm_rerank(query, rerank_pool, top_k=limit)
+                llm_applied = any(row.get("llm_rerank_position") is not None for row in all_candidates)
+                if llm_applied:
+                    top_span = max(len(all_candidates), 1)
+                    for idx, row in enumerate(all_candidates):
+                        llm_position = row.get("llm_rerank_position")
+                        if llm_position is None:
+                            llm_position = idx + top_span
+                            row["llm_rerank_position"] = llm_position
+                        row["llm_rerank_score"] = float((2 * top_span) - int(llm_position))
+                    ranking_score_key = "llm_rerank_score"
+            elif embedding.is_reranker_available():
+                pre_count = len(all_candidates)
+                all_candidates = _neural_rerank(query, rerank_pool, top_k=limit)
+                neural_applied = len(all_candidates) <= pre_count and any(
+                    row.get("rerank_score") is not None for row in all_candidates
+                )
+                if neural_applied:
+                    ranking_score_key = "rerank_score"
+            else:
+                all_candidates = sorted(
+                    all_candidates,
+                    key=lambda value: float(value.get(ranking_score_key) or value.get("score", 0)),
+                    reverse=True,
+                )[:limit]
 
     query_tokens = set(_TOKEN_RE.findall(query.lower()))
     _stopwords = {
@@ -421,6 +480,7 @@ def hybrid_search(
         "be",
         "been",
     }
+    # Additive keyword relevance boost (max +0.15)
     query_content_tokens = query_tokens - _stopwords
     if query_content_tokens:
         for row in all_candidates:
@@ -428,10 +488,11 @@ def hybrid_search(
             overlap = query_content_tokens & text_tokens
             if overlap:
                 overlap_ratio = len(overlap) / len(query_content_tokens)
-                boost = 1.0 + 9.0 * (overlap_ratio**3)
-                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) * boost
+                bonus = 0.15 * (overlap_ratio**2)
+                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
                 row["keyword_boosted"] = True
 
+    # Additive entity relevance boost (max +0.15)
     query_entities = [name for name, _type in entities_module.extract_entities_fast(query)]
     if query_entities:
         query_entity_names_lower = {e.lower() for e in query_entities}
@@ -450,26 +511,18 @@ def hybrid_search(
                     if pos >= 0:
                         text_len = max(len(text_lower), 1)
                         position_bonus = max(position_bonus, 1.0 - (pos / text_len))
-                boost = 2.0 + 5.0 * (focus_ratio**0.5) + 2.0 * position_bonus
-                current = row.get(ranking_score_key, row.get("score", 0))
-                row[ranking_score_key] = current * boost
+                bonus = 0.10 * focus_ratio + 0.05 * position_bonus
+                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
                 row["entity_boosted"] = True
                 row["entity_focus"] = round(focus_ratio, 2)
 
+    # Additive temporal boost (+0.08)
     query_lower = query.lower()
     if any(signal in query_lower for signal in _TEMPORAL_SIGNALS):
         for row in all_candidates:
             if _DATE_PATTERN.search(row.get("text") or ""):
-                current = row.get(ranking_score_key, row.get("score", 0))
-                row[ranking_score_key] = current * 1.5
+                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + 0.08
                 row["temporal_boosted"] = True
-
-    _max_boost = _scoring_constants.MAX_TOTAL_BOOST
-    for row in all_candidates:
-        base = row.get("score", 0.001) or 0.001
-        boosted = row.get(ranking_score_key, base)
-        if base > 0 and boosted / base > _max_boost:
-            row[ranking_score_key] = base * _max_boost
 
     all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
 
@@ -512,6 +565,7 @@ def hybrid_search(
             "graph_merged": len([row for row in merged if row.get("origin") == "graph"]),
             "graph_enriched_entities": len(graph_enrichment),
             "bm25_reranked": bm25_applied,
+            "cohere_reranked": cohere_applied,
             "llm_reranked": llm_applied,
             "neural_reranked": neural_applied,
         },
@@ -522,32 +576,19 @@ def _update_access_tracking(results: list[dict[str, Any]], collection: Optional[
     now = datetime.now(timezone.utc).isoformat()
     target_collection = collection or _state.COLLECTION
 
-    def _do_update() -> None:
-        for row in results:
-            point_id = row.get("point_id")
-            if point_id is None:
-                continue
+    def _do_batch() -> None:
+        ids = [r["point_id"] for r in results if r.get("point_id")]
+        if ids:
             try:
-                points = _state.qdrant.retrieve(
+                _state.qdrant.set_payload(
                     collection_name=target_collection,
-                    ids=[point_id],
-                    with_payload=True,
+                    points=ids,
+                    payload={"last_accessed": now},
                 )
-                if points:
-                    payload = points[0].payload or {}
-                    current_count = payload.get("retrieval_count", 0) or 0
-                    _state.qdrant.set_payload(
-                        collection_name=target_collection,
-                        points=[point_id],
-                        payload={
-                            "last_accessed": now,
-                            "retrieval_count": current_count + 1,
-                        },
-                    )
             except Exception:
                 pass
 
     try:
-        _access_pool.submit(_do_update)
+        _access_pool.submit(_do_batch)
     except Exception:
         pass
