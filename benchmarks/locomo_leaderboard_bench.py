@@ -863,10 +863,65 @@ def generate_report(results):
     return "\n".join(lines)
 
 
+def run_search_only(conversations, conv_indices, port):
+    search_items = []
+    conv_ids = list(conversations.keys())
+    indices = conv_indices or list(range(len(conv_ids)))
+
+    for ci in indices:
+        if ci >= len(conv_ids):
+            continue
+        conv_id = conv_ids[ci]
+        conv_data = conversations[conv_id]
+        qa_list = conv_data.get("qa_pairs", [])
+        collection = f"locomo_lb_{conv_id}"
+        speakers = extract_speakers(conv_data.get("conversation", []))
+
+        create_collection(collection)
+        proc = start_bench_server(collection, port)
+
+        try:
+            commit_conversation(conv_data["conversation"], collection)
+
+            for qi, qa in enumerate(qa_list):
+                question = qa["question"]
+                gold = str(qa.get("answer", qa.get("adversarial_answer", "")))
+                category = qa.get("category", 0)
+                if not gold:
+                    continue
+
+                chunks = multi_query_search(question, speakers=speakers, port=port)
+                chunk_texts = [c.get("text", "") if isinstance(c, dict) else str(c) for c in chunks]
+
+                search_items.append(
+                    {
+                        "id": f"{conv_id}_{qi}",
+                        "question": question,
+                        "gold": gold,
+                        "category": category,
+                        "conv_id": conv_id,
+                        "chunks": chunk_texts,
+                        "num_chunks": len(chunk_texts),
+                    }
+                )
+                time.sleep(0.1)
+
+            print(f"  {conv_id}: {len([i for i in search_items if i['conv_id'] == conv_id])} questions searched")
+        finally:
+            kill_server(proc)
+            delete_collection(collection)
+
+    output_path = os.environ.get("BENCH_SEARCH_OUTPUT", str(RESULTS_DIR / "search-output.json"))
+    with open(output_path, "w") as f:
+        json.dump({"items": search_items, "total": len(search_items)}, f, indent=2)
+    print(f"\n  Search-only: {len(search_items)} items saved to {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--conversations", type=str, default=None)
     parser.add_argument("--rescore-only", action="store_true")
+    parser.add_argument("--search-only", action="store_true")
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
@@ -894,6 +949,10 @@ def main():
     conv_indices = None
     if args.conversations:
         conv_indices = [int(x) for x in args.conversations.split(",")]
+
+    if args.search_only:
+        run_search_only(conversations, conv_indices, args.port)
+        return
 
     results = run_full_pipeline(conversations, conv_indices, args.port)
 
