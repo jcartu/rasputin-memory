@@ -134,10 +134,19 @@ def get_embedding(text, prefix="search_document: "):
         prefixed = f"{prefix}{text}" if prefix else text
         result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
         if "embeddings" in result:
-            return result["embeddings"][0]
-        if "data" in result:
-            return result["data"][0]["embedding"]
-        raise ValueError(f"Unexpected embed response: {list(result.keys())}")
+            vec = result["embeddings"][0]
+        elif "data" in result:
+            vec = result["data"][0]["embedding"]
+        else:
+            raise ValueError(f"Unexpected embed response: {list(result.keys())}")
+        if len(vec) > EMBED_DIM:
+            import math
+
+            vec = vec[:EMBED_DIM]
+            mag = math.sqrt(sum(v * v for v in vec))
+            if mag > 0:
+                vec = [v / mag for v in vec]
+        return vec
 
 
 # ─── Deduplication ───────────────────────────────────────────

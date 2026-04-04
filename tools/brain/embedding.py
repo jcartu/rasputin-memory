@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import math
 import re
 import time
 from typing import Any, Optional
 
 from brain import _state
+
+_TARGET_DIMS = int(_state.CONFIG.get("embeddings", {}).get("dimensions", 768))
 
 
 def is_reranker_available() -> bool:
@@ -33,6 +36,16 @@ def get_embedding(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[fl
     return _get_embedding_ollama(text, prefix=prefix)
 
 
+def _truncate_if_needed(vec: list[float]) -> list[float]:
+    if len(vec) <= _TARGET_DIMS:
+        return vec
+    truncated = vec[:_TARGET_DIMS]
+    mag = math.sqrt(sum(v * v for v in truncated))
+    if mag > 0:
+        return [v / mag for v in truncated]
+    return truncated
+
+
 def _get_embedding_ollama(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[float]:
     prefixed_text = f"{prefix}{text}" if prefix else text
     max_retries = 2
@@ -46,11 +59,11 @@ def _get_embedding_ollama(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) ->
             response.raise_for_status()
             data = response.json()
             if "embeddings" in data:
-                return data["embeddings"][0]
+                return _truncate_if_needed(data["embeddings"][0])
             if "data" in data and isinstance(data["data"], list):
-                return data["data"][0]["embedding"]
+                return _truncate_if_needed(data["data"][0]["embedding"])
             if "embedding" in data:
-                return data["embedding"]
+                return _truncate_if_needed(data["embedding"])
             raise ValueError(f"Unexpected embedding response: {list(data.keys())}")
         except _state.requests.exceptions.Timeout:
             _state.logger.warning("Embedding timeout on attempt %s/%s", attempt + 1, max_retries)
