@@ -13,6 +13,7 @@ graph_name = "brain"
 disabled = false
 
 [embeddings]
+provider = "gemini"
 url = "http://localhost:11434/api/embed"
 model = "nomic-embed-text"
 dimensions = 768
@@ -38,9 +39,10 @@ decay_half_life_medium = 60
 decay_half_life_high = 365
 
 [constraints]
-enabled = false
-model = "qwen3.5:9b"
+enabled = true
+model = "claude-sonnet-4-6"
 timeout = 15
+provider = "anthropic"
 
 [entities]
 known_entities_path = "config/known_entities.json"
