@@ -596,6 +596,8 @@ def hybrid_search(
             "graph_hits": len(graph_results),
             "graph_merged": len([row for row in merged if row.get("origin") == "graph"]),
             "graph_enriched_entities": len(graph_enrichment),
+            "graph_hop_2_connections": sum(len(v) for v in graph_enrichment.values()),
+            "constraint_hits": len(constraint_hits),
             "bm25_reranked": bm25_applied,
             "cohere_reranked": cohere_applied,
             "llm_reranked": llm_applied,
