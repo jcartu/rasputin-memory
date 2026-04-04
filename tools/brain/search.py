@@ -274,6 +274,36 @@ def _decompose_query_intent(query: str) -> list[str]:
     return [query]
 
 
+def _resolve_contradictions_in_results(results: list[dict[str, Any]]) -> None:
+    supersede_map: dict[Any, set[Any]] = {}
+    for row in results:
+        supersedes = row.get("supersedes") or []
+        pid = row.get("point_id")
+        if pid and supersedes:
+            supersede_map[pid] = set(supersedes)
+
+    if not supersede_map:
+        return
+
+    superseded_ids = set()
+    for targets in supersede_map.values():
+        superseded_ids.update(targets)
+
+    for row in results:
+        pid = row.get("point_id")
+        if pid and pid in superseded_ids:
+            row["contradiction_demoted"] = True
+            for score_key in ("rerank_score", "hybrid_score", "score"):
+                if score_key in row:
+                    row[score_key] = row[score_key] * 0.3
+                    break
+
+    results.sort(
+        key=lambda v: float(v.get("rerank_score", 0) or v.get("hybrid_score", 0) or v.get("score", 0)),
+        reverse=True,
+    )
+
+
 def hybrid_search(
     query: str,
     limit: int = 10,
@@ -539,6 +569,8 @@ def hybrid_search(
     )
 
     merged = all_candidates[:limit]
+
+    _resolve_contradictions_in_results(merged)
 
     if graph_context_results and len(merged) < limit:
         for graph_context in graph_context_results[: limit - len(merged)]:
