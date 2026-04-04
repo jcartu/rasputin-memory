@@ -304,7 +304,7 @@ Question: {question}
 Ground Truth: {ground_truth}
 System Answer: {prediction}
 
-Be generous — if the answer captures the essential information, score CORRECT.
+Score CORRECT only if the answer contains the specific information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect.
 Reply with exactly: CORRECT or WRONG"""
     text = anthropic_completion(prompt, model=model, max_tokens=10)
     return 1.0 if "CORRECT" in text.upper() else 0.0

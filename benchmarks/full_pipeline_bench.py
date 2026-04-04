@@ -352,7 +352,7 @@ Question: {question}
 Ground Truth Answer: {ground_truth}
 System Answer: {prediction}
 
-Is the system's answer correct? Be generous — if the answer captures the essential information from the ground truth, even if phrased differently, score it as CORRECT.
+Is the system's answer correct? Score CORRECT only if the answer contains the specific information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. Do not give credit for answers that are technically true but don't answer the question.
 
 Reply with exactly one word: CORRECT or WRONG"""
 
