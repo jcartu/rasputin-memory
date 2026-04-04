@@ -2,3 +2,4 @@ commit,commit_short,date,benchmark,mode,headline_score,answer_model,judge_model,
 fb9c1d2f83ba789e912da931355194468e16a281,fb9c1d2f,2026-04-04T17:32:31,locomo,production,62.50,claude-haiku-4-5-20251001,gpt-4o-mini-2024-07-18,60,60,baseline
 70804614a97816b89541ba7fb280eae8da06c010,70804614,2026-04-04T19:59:00,locomo,compare,61.18,gpt-4o-mini,gpt-4o-mini-2024-07-18,60,60,baseline
 a785fbd22f509a6c9e09b84a6ff4641ea2742f01,a785fbd2,2026-04-04T20:52:03.513548,locomo,production,,claude-haiku-4-5-20251001,gpt-4o-mini-2024-07-18,60,60,
+c41b91076254e008c067b4ef126d2734a5390f13,c41b9107,2026-04-05T02:21:22.074875,locomo,production,,claude-haiku-4-5-20251001,gpt-4o-mini-2024-07-18,60,60,
