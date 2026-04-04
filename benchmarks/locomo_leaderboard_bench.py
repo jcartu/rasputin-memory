@@ -51,13 +51,13 @@ BENCH_PORT = 7779
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPUS_MODEL = "claude-opus-4-6"
+ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
 JUDGE_MODEL = "gpt-4o-mini"
 
 CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domain", 5: "adversarial"}
 
-SEARCH_LIMIT = 60
-CONTEXT_CHUNKS = 50
+SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "10"))
+CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10"))
 
 
 def http_json(url, data=None, method=None, timeout=60, headers=None):
@@ -219,7 +219,7 @@ Answer:"""
                 "https://api.anthropic.com/v1/messages",
                 data=json.dumps(
                     {
-                        "model": OPUS_MODEL,
+                        "model": ANSWER_MODEL,
                         "max_tokens": 150,
                         "temperature": 0.0,
                         "messages": [{"role": "user", "content": prompt}],
@@ -252,7 +252,7 @@ Question: {question}
 Ground Truth Answer: {ground_truth}
 System Answer: {prediction}
 
-Is the system's answer correct? Be generous — if the answer captures the essential information from the ground truth, even if phrased differently or includes extra correct details, score it as CORRECT. Only score WRONG if the answer is factually incorrect, missing the key information, or says it doesn't know when the answer was available.
+Is the system's answer correct? Score CORRECT only if the answer contains the specific information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. Do not give credit for answers that are technically true but don't answer the question.
 
 Reply with exactly one word: CORRECT or WRONG"""
 
@@ -829,7 +829,7 @@ def generate_report(results):
     lines = [
         "# RASPUTIN Memory — LoCoMo Leaderboard Benchmark v1",
         f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"**Pipeline:** Window chunking → Multi-query search (top-{SEARCH_LIMIT}) → Dedup → Claude Opus 4 → GPT-4o-mini judge",
+        f"**Pipeline:** Window chunking → Multi-query search (top-{SEARCH_LIMIT}) → Dedup → {ANSWER_MODEL} → GPT-4o-mini judge",
         f"**v2:** Adversarial prompt, conversation windows, multi-query, top-K {SEARCH_LIMIT}, {CONTEXT_CHUNKS}-chunk context",
         f"**Total questions:** {total} ({len(non_adv)} non-adversarial, {len(adv)} adversarial)",
         "\n## Headline Score (excluding adversarial)",

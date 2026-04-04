@@ -40,11 +40,11 @@ BENCH_PORT = 7783
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPUS_MODEL = "claude-opus-4-6"
+ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
 JUDGE_MODEL = "gpt-4o-mini"
 
-SEARCH_LIMIT = 60
-CONTEXT_CHUNKS = 50
+SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "10"))
+CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10"))
 
 LABEL_TO_SCORE = {"correct": 1.0, "partial": 0.5, "wrong": 0.0}
 
@@ -523,7 +523,7 @@ Answer:"""
                 "https://api.anthropic.com/v1/messages",
                 data=json.dumps(
                     {
-                        "model": OPUS_MODEL,
+                        "model": ANSWER_MODEL,
                         "max_tokens": 200,
                         "temperature": 0.0,
                         "messages": [{"role": "user", "content": prompt}],

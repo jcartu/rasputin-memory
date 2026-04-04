@@ -39,11 +39,11 @@ BENCH_PORT = 7781
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPUS_MODEL = "claude-opus-4-6"
+ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
 JUDGE_MODEL = "gpt-4o-mini"
 
-SEARCH_LIMIT = 60
-CONTEXT_CHUNKS = 50
+SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "10"))
+CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10"))
 
 
 # ─── HTTP helpers ────────────────────────────────────────────
@@ -165,7 +165,7 @@ Answer:"""
                 "https://api.anthropic.com/v1/messages",
                 data=json.dumps(
                     {
-                        "model": OPUS_MODEL,
+                        "model": ANSWER_MODEL,
                         "max_tokens": 150,
                         "temperature": 0.0,
                         "messages": [{"role": "user", "content": prompt}],
@@ -196,7 +196,7 @@ Question: {question}
 Ground Truth Answer: {ground_truth}
 System Answer: {prediction}
 
-Is the system's answer correct? Be generous — if the answer captures the essential information from the ground truth, even if phrased differently, score it as CORRECT. Only score WRONG if the answer is factually incorrect, missing the key information, or says it doesn't know when the answer was available.
+Is the system's answer correct? Score CORRECT only if the answer contains the specific information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. Do not give credit for answers that are technically true but don't answer the question.
 
 Reply with exactly one word: CORRECT or WRONG"""
 
@@ -457,7 +457,7 @@ def generate_report(state):
     lines = [
         "# RASPUTIN Memory — LongMemEval Benchmark (ICLR 2025)",
         f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"**Pipeline:** Multi-query search (top-{SEARCH_LIMIT}) → Claude Opus 4 → GPT-4o-mini judge",
+        f"**Pipeline:** Multi-query search (top-{SEARCH_LIMIT}) → {ANSWER_MODEL} → GPT-4o-mini judge",
         f"**Total questions:** {len(all_scores)}",
         f"\n## Overall Accuracy: {overall:.2f}%",
         "\n## Per-Category Breakdown",
