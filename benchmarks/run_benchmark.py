@@ -454,6 +454,46 @@ def compute_supersede_rate(
     return round(success / total, 4) if total else 0.0
 
 
+def compute_decay_pair_rate(
+    fixtures: list[FixtureRecord],
+    id_to_point: dict[str, Any],
+    evaluations: list[EvaluationRow],
+) -> float:
+    pairs: dict[str, dict[str, str]] = defaultdict(dict)
+    for fixture in fixtures:
+        if fixture.category != "decay":
+            continue
+        pair_id = str(fixture.metadata.get("pair", "")).strip()
+        role = str(fixture.metadata.get("role", "")).strip()
+        if pair_id and role in ("high-importance-old", "low-importance-recent"):
+            pairs[pair_id][role] = fixture.id
+
+    eval_by_id = {row.record_id: row for row in evaluations}
+    total = 0
+    success = 0
+
+    for pair_data in pairs.values():
+        high_id = pair_data.get("high-importance-old")
+        low_id = pair_data.get("low-importance-recent")
+        if not high_id or not low_id:
+            continue
+
+        high_eval = eval_by_id.get(high_id)
+        if not high_eval:
+            continue
+
+        total += 1
+        high_point = str(id_to_point[high_id])
+        low_point = str(id_to_point[low_id])
+        high_rank = _rank_for_point(high_eval.result_point_ids, high_point)
+        low_rank = _rank_for_point(high_eval.result_point_ids, low_point)
+
+        if high_rank is not None and (low_rank is None or high_rank < low_rank):
+            success += 1
+
+    return round(success / total, 4) if total else 0.0
+
+
 def current_commit_hash() -> str:
     try:
         completed = subprocess.run(
@@ -611,6 +651,11 @@ def run(args: argparse.Namespace) -> int:
 
             overall, categories = summarize_categories(evaluations)
             categories.setdefault("contradiction", {})["supersede_rate"] = compute_supersede_rate(
+                fixtures=fixtures,
+                id_to_point=id_to_point,
+                evaluations=evaluations,
+            )
+            categories.setdefault("decay", {})["pair_ranking_rate"] = compute_decay_pair_rate(
                 fixtures=fixtures,
                 id_to_point=id_to_point,
                 evaluations=evaluations,
