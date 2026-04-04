@@ -1,37 +1,106 @@
 # Benchmarks
 
-## Synthetic Benchmark (offline, no services needed)
-Tests memory-specific behaviors with mock embeddings.
+## Modes
+
+The benchmark runner supports two modes that control the answer model, judge prompt, and context settings.
+
+### `--mode production` (default)
+
+Tracks retrieval quality over time. Uses a weak answer model so metric changes reflect retrieval improvements, not answer generation improvements.
+
+- Answer model: `claude-haiku-4-5-20251001`
+- Judge: `gpt-4o-mini-2024-07-18` (pinned) with neutral prompt
+- Context: 60 chunks, search limit 60
+- Results: `{commit}-{bench}-production.json`
+
+### `--mode compare`
+
+Competition-comparable numbers. Matches the methodology used by Memvid, Backboard, and other published systems: generous judge prompt, same context depth.
+
+- Answer model: `gpt-4o-mini` (override with `--answer-model gpt-4o`)
+- Judge: `gpt-4o-mini-2024-07-18` (pinned) with generous prompt (field standard)
+- Context: 60 chunks, search limit 60
+- Results: `{commit}-{bench}-compare.json`
+
+The leaderboard comparison table uses compare-mode numbers because that is the only apples-to-apples comparison with competitors who all use generous judging. Production-mode numbers are lower because the neutral judge and weaker answer model are more demanding, which is the point for tracking retrieval improvements.
+
+## Cost
+
+| Setup | Embeddings | Reranker | Answers | Cost/LoCoMo run |
+|---|---|---|---|---|
+| Full cloud (default) | Gemini | Cohere | Claude Haiku | ~$2-5 |
+| OpenAI-only | text-embedding-3-small | none | gpt-4o-mini | ~$3-6 |
+| Fully local (free) | nomic via Ollama | BGE local | Ollama qwen | $0 |
+| Batch mode | any | any | any | 50% of above |
+
+## Reproducing Published Numbers
+
+### Required
+
+- Qdrant running on port 6333
+- Ollama running on port 11434 with `nomic-embed-text` pulled
+- `ANTHROPIC_API_KEY` (answer generation for production mode)
+- `OPENAI_API_KEY` (judge model for both modes)
+
+### Optional
+
+- `COHERE_API_KEY` — enables Cohere rerank-v3.5 (improves retrieval quality)
+- `GEMINI_API_KEY` — enables Gemini embedding (alternative to local nomic)
+
+### Compare mode (leaderboard numbers)
 
 ```bash
-make benchmark
+python3 benchmarks/bench_runner.py locomo --mode compare
+python3 benchmarks/bench_runner.py longmemeval --mode compare
 ```
 
-## LoCoMo Benchmark (requires Qdrant + embedding service + LLM)
-Standard conversational memory benchmark (ACL 2024, Snap Research).
-10 conversations, ~2000 QA pairs across 5 categories.
+### Production mode (retrieval tracking)
 
-Reports both token-level F1 AND LLM-judge accuracy (the metric used by
-mem0, Zep, MemMachine, Memvid on their leaderboards).
-
-### Run with local LLM:
 ```bash
-python3 benchmarks/full_pipeline_bench.py
+python3 benchmarks/bench_runner.py locomo --mode production
 ```
 
-### Run with Claude Opus (answer gen) + Anthropic judge:
+### Batch mode (50% cheaper, same results)
+
 ```bash
-LLM_BACKEND=anthropic ANTHROPIC_API_KEY=sk-... python3 benchmarks/full_pipeline_bench.py
+python3 benchmarks/bench_runner.py locomo --submit --mode production
+# Wait for Anthropic batch (~1 hour)
+python3 benchmarks/bench_runner.py locomo --retrieve
+# Wait for OpenAI batch (up to 24 hours)
+python3 benchmarks/bench_runner.py locomo --finalize
 ```
 
-### Environment Variables
-| Variable | Default | Description |
-|----------|---------|-------------|
-| LLM_BACKEND | openai | `openai` or `anthropic` |
-| ANTHROPIC_API_KEY | | Required for anthropic backend |
-| ANTHROPIC_MODEL | claude-opus-4-20250514 | Answer generation model |
-| JUDGE_BACKEND | (same as LLM_BACKEND) | Judge LLM backend |
-| JUDGE_MODEL | gpt-4o-mini | Judge model |
-| BENCH_EMBED_URL | http://localhost:11434/api/embed | Embedding endpoint |
-| BENCH_EMBED_MODEL | nomic-embed-text | Embedding model |
-| BENCH_EMBED_DIM | 768 | Embedding dimensions |
+### Fully local (free)
+
+```bash
+EMBED_PROVIDER=ollama RERANK_PROVIDER=none \
+  BENCH_ANSWER_MODEL=qwen3.5:9b \
+  python3 benchmarks/bench_runner.py locomo --mode production
+```
+
+## Available Benchmarks
+
+| Benchmark | Dataset | Questions | What it Tests |
+|---|---|---|---|
+| `locomo` | LoCoMo (ACL 2024) | ~2000 | Conversational memory: single-hop, multi-hop, temporal, open-domain, adversarial |
+| `longmemeval` | LongMemEval (ICLR 2025) | 500 | Long-term interactive memory across session types |
+| `frames` | FRAMES (Google 2024) | 824 | Multi-step reasoning over Wikipedia |
+| `locomo-plus` | LoCoMo-Plus | varies | Cognitive/implicit memory |
+
+## Comparing Commits
+
+```bash
+python3 benchmarks/bench_runner.py locomo --compare-to <old-hash>
+```
+
+Prints per-metric deltas and offers `git revert HEAD` on regression.
+
+## Result Files
+
+```
+benchmarks/results/
+  {hash}-{bench}-production.json    # tracked over time
+  {hash}-{bench}-compare.json       # for leaderboard claims
+  {hash}-{bench}-state.json         # batch phase state (resumable)
+  history.csv                       # all production-mode runs
+```
