@@ -77,14 +77,54 @@ def http_json(url, data=None, method=None, timeout=60, headers=None):
 # ─── Embedding ───────────────────────────────────────────────
 
 
+BENCH_EMBED_PROVIDER = os.environ.get("BENCH_EMBED_PROVIDER", os.environ.get("EMBED_PROVIDER", "gemini"))
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+
 def get_embedding(text, prefix="search_document: "):
-    prefixed = f"{prefix}{text}" if prefix else text
-    result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
-    if "embeddings" in result:
-        return result["embeddings"][0]
-    if "data" in result:
-        return result["data"][0]["embedding"]
-    raise ValueError(f"Unexpected embed response: {list(result.keys())}")
+    if BENCH_EMBED_PROVIDER == "gemini" and GEMINI_API_KEY:
+        import math
+
+        if "query" in prefix.lower():
+            task_type = "RETRIEVAL_QUERY"
+        else:
+            task_type = "RETRIEVAL_DOCUMENT"
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"gemini-embedding-001:embedContent?key={GEMINI_API_KEY}"
+        )
+        body = json.dumps(
+            {
+                "content": {"parts": [{"text": text[:8000]}]},
+                "taskType": task_type,
+                "outputDimensionality": EMBED_DIM,
+            }
+        ).encode()
+        req = urllib.request.Request(url, data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read().decode())
+                values = data["embedding"]["values"]
+                mag = math.sqrt(sum(v * v for v in values))
+                if mag > 0 and EMBED_DIM != 3072:
+                    values = [v / mag for v in values]
+                return values
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2**attempt)
+                    continue
+                raise
+    else:
+        prefixed = f"{prefix}{text}" if prefix else text
+        result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
+        if "embeddings" in result:
+            return result["embeddings"][0]
+        if "data" in result:
+            return result["data"][0]["embedding"]
+        raise ValueError(f"Unexpected embed response: {list(result.keys())}")
 
 
 # ─── Multi-query expansion ───────────────────────────────────
@@ -404,6 +444,13 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["EMBED_MODEL"] = EMBED_MODEL
     env["EMBED_PREFIX_QUERY"] = "search_query: "
     env["EMBED_PREFIX_DOC"] = "search_document: "
+    env["EMBED_PROVIDER"] = os.environ.get("EMBED_PROVIDER", "gemini")
+    env["GEMINI_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
+    env["CONSTRAINTS_ENABLED"] = os.environ.get("CONSTRAINTS_ENABLED", "false")
+    env["CONSTRAINTS_PROVIDER"] = os.environ.get("CONSTRAINTS_PROVIDER", "anthropic")
+    env["RERANK_PROVIDER"] = os.environ.get("RERANK_PROVIDER", "cohere")
+    env["COHERE_API_KEY"] = os.environ.get("COHERE_API_KEY", "")
+    env["LLM_RERANKER"] = os.environ.get("LLM_RERANKER", "false")
     env["PYTHONPATH"] = str(REPO / "tools")
 
     server_log = RESULTS_DIR / "bench-server.log"

@@ -48,6 +48,68 @@ CONTEXT_CHUNKS = 50
 
 LABEL_TO_SCORE = {"correct": 1.0, "partial": 0.5, "wrong": 0.0}
 
+HAIKU_MODEL = "claude-3-haiku-20240307"
+
+_CONSTRAINT_PROMPT = """Extract IMPLICIT constraints from the conversation below. Only extract what is actually present — never invent or assume.
+
+Constraint types:
+- GOAL: An objective the speaker is working toward
+- STATE: A current situation or condition of the speaker
+- VALUE: Something the speaker cares about or prioritizes
+- CAUSAL: A cause-effect relationship mentioned or implied
+
+Text:
+{text}
+
+Return a JSON array of constraints found. If none exist, return [].
+Format: [{{"type": "goal|state|value|causal", "constraint": "concise description"}}]
+Return ONLY the JSON array, nothing else."""
+
+
+def extract_constraints_anthropic(text):
+    if not text or len(text) < 30 or not ANTHROPIC_API_KEY:
+        return []
+
+    prompt = _CONSTRAINT_PROMPT.format(text=text[:2000])
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=json.dumps(
+                    {
+                        "model": HAIKU_MODEL,
+                        "max_tokens": 500,
+                        "temperature": 0.0,
+                        "messages": [{"role": "user", "content": prompt}],
+                    }
+                ).encode(),
+                method="POST",
+            )
+            req.add_header("Content-Type", "application/json")
+            req.add_header("x-api-key", ANTHROPIC_API_KEY)
+            req.add_header("anthropic-version", "2023-06-01")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                result = json.loads(resp.read().decode())
+            raw = result["content"][0]["text"].strip()
+
+            if "```" in raw:
+                parts = raw.split("```")
+                raw = parts[1] if len(parts) >= 3 else parts[-1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+
+            si = raw.find("[")
+            ei = raw.rfind("]") + 1
+            if si >= 0 and ei > si:
+                constraints = json.loads(raw[si:ei])
+                if isinstance(constraints, list):
+                    return [c for c in constraints if isinstance(c, dict) and "constraint" in c][:10]
+            return []
+        except Exception:
+            if attempt < 2:
+                time.sleep(2**attempt)
+    return []
+
 
 # ─── Judge prompts (exact from LoCoMo-Plus paper) ───────────
 
@@ -136,14 +198,54 @@ def http_json(url, data=None, method=None, timeout=60, headers=None):
 # ─── Embedding ───────────────────────────────────────────────
 
 
+BENCH_EMBED_PROVIDER = os.environ.get("BENCH_EMBED_PROVIDER", os.environ.get("EMBED_PROVIDER", "gemini"))
+GEMINI_API_KEY_BENCH = os.environ.get("GEMINI_API_KEY", "")
+
+
 def get_embedding(text, prefix="search_document: "):
-    prefixed = f"{prefix}{text}" if prefix else text
-    result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
-    if "embeddings" in result:
-        return result["embeddings"][0]
-    if "data" in result:
-        return result["data"][0]["embedding"]
-    raise ValueError(f"Unexpected embed response: {list(result.keys())}")
+    if BENCH_EMBED_PROVIDER == "gemini" and GEMINI_API_KEY_BENCH:
+        import math
+
+        if "query" in prefix.lower():
+            task_type = "RETRIEVAL_QUERY"
+        else:
+            task_type = "RETRIEVAL_DOCUMENT"
+
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"gemini-embedding-001:embedContent?key={GEMINI_API_KEY_BENCH}"
+        )
+        body = json.dumps(
+            {
+                "content": {"parts": [{"text": text[:8000]}]},
+                "taskType": task_type,
+                "outputDimensionality": EMBED_DIM,
+            }
+        ).encode()
+        req = urllib.request.Request(url, data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read().decode())
+                values = data["embedding"]["values"]
+                mag = math.sqrt(sum(v * v for v in values))
+                if mag > 0 and EMBED_DIM != 3072:
+                    values = [v / mag for v in values]
+                return values
+            except Exception:
+                if attempt < 2:
+                    time.sleep(2**attempt)
+                    continue
+                raise
+    else:
+        prefixed = f"{prefix}{text}" if prefix else text
+        result = http_json(EMBED_URL, data={"model": EMBED_MODEL, "input": prefixed}, timeout=30)
+        if "embeddings" in result:
+            return result["embeddings"][0]
+        if "data" in result:
+            return result["data"][0]["embedding"]
+        raise ValueError(f"Unexpected embed response: {list(result.keys())}")
 
 
 # ─── Conversation parsing ────────────────────────────────────
@@ -198,7 +300,7 @@ def delete_collection(name):
         pass
 
 
-def commit_turns(turns, collection):
+def commit_turns(turns, collection, constraints_fn=None):
     points = []
     committed = 0
     all_texts = []
@@ -236,6 +338,7 @@ def commit_turns(turns, collection):
             pass
 
     window_committed = 0
+    constraint_committed = 0
     for i in range(0, max(len(all_texts) - 4, 1), 2):
         window = all_texts[i : i + 5]
         wtext = "\n".join(window)
@@ -266,10 +369,46 @@ def commit_turns(turns, collection):
         except Exception:
             pass
 
+        if constraints_fn:
+            try:
+                extracted = constraints_fn(wtext)
+                if extracted:
+                    summary = " | ".join(c.get("constraint", "") for c in extracted)
+                    ctext = f"[CONSTRAINTS] {summary}"
+                    cvec = get_embedding(ctext[:2000], prefix="search_document: ")
+                    cpid = int(hashlib.md5(ctext.encode()).hexdigest()[:15], 16)
+                    points.append(
+                        {
+                            "id": cpid,
+                            "vector": cvec,
+                            "payload": {
+                                "text": ctext[:4000],
+                                "source": "locomo_plus",
+                                "source_weight": 1.0,
+                                "date": datetime.now().isoformat(),
+                                "importance": 80,
+                                "retrieval_count": 0,
+                                "chunk_type": "constraint",
+                                "constraints": extracted,
+                            },
+                        }
+                    )
+                    constraint_committed += 1
+                    if len(points) >= 50:
+                        http_json(
+                            f"{QDRANT_URL}/collections/{collection}/points",
+                            data={"points": points},
+                            method="PUT",
+                            timeout=30,
+                        )
+                        points = []
+            except Exception:
+                pass
+
     if points:
         http_json(f"{QDRANT_URL}/collections/{collection}/points", data={"points": points}, method="PUT", timeout=30)
     time.sleep(1)
-    return committed, window_committed
+    return committed, window_committed, constraint_committed
 
 
 # ─── Server management ───────────────────────────────────────
@@ -288,6 +427,13 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["EMBED_MODEL"] = EMBED_MODEL
     env["EMBED_PREFIX_QUERY"] = "search_query: "
     env["EMBED_PREFIX_DOC"] = "search_document: "
+    env["EMBED_PROVIDER"] = os.environ.get("EMBED_PROVIDER", "gemini")
+    env["GEMINI_API_KEY"] = os.environ.get("GEMINI_API_KEY", "")
+    env["CONSTRAINTS_ENABLED"] = os.environ.get("CONSTRAINTS_ENABLED", "true")
+    env["CONSTRAINTS_PROVIDER"] = os.environ.get("CONSTRAINTS_PROVIDER", "anthropic")
+    env["RERANK_PROVIDER"] = os.environ.get("RERANK_PROVIDER", "cohere")
+    env["COHERE_API_KEY"] = os.environ.get("COHERE_API_KEY", "")
+    env["LLM_RERANKER"] = os.environ.get("LLM_RERANKER", "false")
     env["PYTHONPATH"] = str(REPO / "tools")
     log_fh = open(RESULTS_DIR / "locomo-plus-server.log", "w")
     proc = subprocess.Popen(
@@ -518,7 +664,9 @@ def generate_report(state):
 # ─── Main pipeline ───────────────────────────────────────────
 
 
-def run_benchmark(samples, limit=None, category_filter=None):
+def run_benchmark(samples, limit=None, category_filter=None, use_constraints=False):
+    constraints_fn = extract_constraints_anthropic if use_constraints else None
+
     if category_filter:
         samples = [s for s in samples if s["category"] == category_filter]
     if limit:
@@ -534,7 +682,8 @@ def run_benchmark(samples, limit=None, category_filter=None):
         if sid not in done_ids:
             pending.append((sid, s))
 
-    print(f"LoCoMo-Plus: {len(samples)} samples, {len(done_ids)} done, {len(pending)} pending\n")
+    mode = " [+constraints]" if use_constraints else ""
+    print(f"LoCoMo-Plus{mode}: {len(samples)} samples, {len(done_ids)} done, {len(pending)} pending\n")
 
     conv_groups = defaultdict(list)
     for sid, s in pending:
@@ -546,7 +695,8 @@ def run_benchmark(samples, limit=None, category_filter=None):
 
     try:
         for gi, (conv_key, group) in enumerate(conv_groups.items()):
-            collection = f"lcp_{conv_key}"
+            cpfx = "lcc" if use_constraints else "lcp"
+            collection = f"{cpfx}_{conv_key}"
 
             kill_server(proc)
             if current_collection:
@@ -555,8 +705,11 @@ def run_benchmark(samples, limit=None, category_filter=None):
             first_sample = group[0][1]
             turns = parse_turns_from_prompt(first_sample["input_prompt"])
             create_collection(collection)
-            nt, nw = commit_turns(turns, collection)
-            print(f"\n[Group {gi + 1}/{len(conv_groups)}] {len(group)} samples, {nt} turns + {nw} windows")
+            nt, nw, nc = commit_turns(turns, collection, constraints_fn=constraints_fn)
+            constraint_info = f" + {nc} constraints" if nc else ""
+            print(
+                f"\n[Group {gi + 1}/{len(conv_groups)}] {len(group)} samples, {nt} turns + {nw} windows{constraint_info}"
+            )
 
             proc = start_bench_server(collection, BENCH_PORT)
             current_collection = collection
@@ -614,11 +767,27 @@ def run_benchmark(samples, limit=None, category_filter=None):
 
 
 def main():
+    global CHECKPOINT_FILE, OUTPUT_FILE, COMPARISON_FILE, BENCH_PORT
+
     parser = argparse.ArgumentParser(description="RASPUTIN Memory — LoCoMo-Plus Benchmark")
     parser.add_argument("--reset", action="store_true")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--category", type=str, default=None)
+    parser.add_argument("--constraints", action="store_true", help="Enable constraint extraction via Claude Haiku")
+    parser.add_argument("--tag", type=str, default=None, help="Run tag for file naming (auto-set by --constraints)")
+    parser.add_argument("--port", type=int, default=None, help="Server port (default 7783, auto 7784 for constraints)")
     args = parser.parse_args()
+
+    tag = args.tag or ("constraints" if args.constraints else "baseline")
+    if args.port:
+        BENCH_PORT = args.port
+    elif args.constraints:
+        BENCH_PORT = 7784
+
+    if tag != "baseline":
+        CHECKPOINT_FILE = RESULTS_DIR / f"locomo-plus-{tag}-checkpoint.json"
+        OUTPUT_FILE = RESULTS_DIR / f"locomo-plus-{tag}-results.json"
+        COMPARISON_FILE = RESULTS_DIR / f"locomo-plus-{tag}-comparison.md"
 
     if args.reset and CHECKPOINT_FILE.exists():
         CHECKPOINT_FILE.unlink()
@@ -632,12 +801,12 @@ def main():
     with open(UNIFIED_INPUT) as f:
         samples = json.load(f)
 
-    print(f"Loaded {len(samples)} samples")
+    print(f"Loaded {len(samples)} samples (tag={tag}, constraints={'ON' if args.constraints else 'OFF'})")
     cats = Counter(s["category"] for s in samples)
     for c, n in cats.most_common():
         print(f"  {c}: {n}")
 
-    run_benchmark(samples, limit=args.limit, category_filter=args.category)
+    run_benchmark(samples, limit=args.limit, category_filter=args.category, use_constraints=args.constraints)
 
 
 if __name__ == "__main__":
