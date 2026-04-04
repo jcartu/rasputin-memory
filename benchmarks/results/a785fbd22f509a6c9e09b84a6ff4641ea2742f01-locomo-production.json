@@ -2389,5 +2389,15 @@
       "f1": 0.14814814814814814
     }
   ],
-  "date": "2026-04-04T20:52:03.484993"
+  "date": "2026-04-04T20:52:03.484993",
+  "commit": "a785fbd22f509a6c9e09b84a6ff4641ea2742f01",
+  "commit_short": "a785fbd2",
+  "mode": "production",
+  "methodology": {
+    "answer_model": "claude-haiku-4-5-20251001",
+    "judge_model": "gpt-4o-mini-2024-07-18",
+    "context_chunks": 60,
+    "search_limit": 60,
+    "judge_prompt_style": "neutral"
+  }
 }
