@@ -22,6 +22,18 @@ def is_reranker_available() -> bool:
 
 
 def get_embedding(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[float]:
+    try:
+        from brain.embedding_providers import EMBED_PROVIDER, get_embedding_auto
+
+        if EMBED_PROVIDER != "ollama":
+            return get_embedding_auto(text, prefix=prefix)
+    except ImportError:
+        pass
+
+    return _get_embedding_ollama(text, prefix=prefix)
+
+
+def _get_embedding_ollama(text: str, prefix: str = _state.EMBED_PREFIX_QUERY) -> list[float]:
     prefixed_text = f"{prefix}{text}" if prefix else text
     max_retries = 2
     for attempt in range(max_retries):
