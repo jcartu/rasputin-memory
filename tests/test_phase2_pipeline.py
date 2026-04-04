@@ -79,6 +79,11 @@ def test_search_uses_query_expansion(monkeypatch):
     monkeypatch.setattr(search_module, "_update_access_tracking", lambda *args, **kwargs: None)
     monkeypatch.setattr(embedding_module, "is_reranker_available", lambda: False)
     monkeypatch.setattr(state, "BM25_AVAILABLE", False)
+    monkeypatch.setattr(state, "ANTHROPIC_API_KEY", "")
+    monkeypatch.setattr(state, "LLM_RERANKER_ENABLED", False)
+
+    constraints_mod = importlib.import_module("brain.constraints")
+    monkeypatch.setattr(constraints_mod, "CONSTRAINTS_ENABLED", False)
 
     result = search_module.hybrid_search("vpn history", limit=5, expand=True)
 

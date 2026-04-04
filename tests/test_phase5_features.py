@@ -51,7 +51,8 @@ def test_contradiction_detected():
     assert rows[0]["existing_id"] == 1
 
 
-def test_non_contradictory_passes():
+def test_non_contradictory_passes(monkeypatch):
+    monkeypatch.setattr(contradiction, "llm_verify_contradiction", lambda *a, **kw: False)
     qdrant = _FakeQdrant([_FakePoint(1, "John Doe moved to Moscow in 2025.", 0.96)])
     rows = contradiction.check_contradictions(
         text="John Doe moved to Moscow in 2026 and started a new role.",

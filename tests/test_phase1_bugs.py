@@ -65,7 +65,7 @@ def test_amac_metrics_thread_safe():
 def test_access_tracking_increments():
     source = (ROOT / "tools" / "brain" / "search.py").read_text()
     assert '"point_id": point.id' in source
-    assert "qdrant.retrieve(" in source or "_state.qdrant.retrieve(" in source
+    assert "qdrant.set_payload(" in source or "_state.qdrant.set_payload(" in source
     assert "for r in results[:10]" not in source
 
 
