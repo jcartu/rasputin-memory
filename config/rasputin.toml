@@ -14,6 +14,7 @@ disabled = false
 
 [embeddings]
 provider = "gemini"
+fallback = "ollama"
 url = "http://localhost:11434/api/embed"
 model = "nomic-embed-text"
 dimensions = 768
@@ -21,11 +22,25 @@ prefix_query = "search_query: "
 prefix_doc = "search_document: "
 
 [reranker]
+provider = "cohere"
+fallback = "local"
+model = "rerank-v3.5"
 url = "http://localhost:8006/rerank"
 timeout = 15
 enabled = true
 llm_reranker = true
 llm_reranker_model = "claude-haiku-4-20250414"
+
+[llm]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+
+[benchmark]
+answer_model = "claude-haiku-4-5-20251001"
+judge_model = "gpt-4o-mini-2024-07-18"
+context_chunks = 60
+search_limit = 60
+compare_answer_model = "gpt-4o-mini"
 
 [amac]
 threshold = 4.0
