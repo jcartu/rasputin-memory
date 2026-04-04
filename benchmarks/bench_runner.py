@@ -101,12 +101,11 @@ def get_commit_hash() -> str:
 
 def repo_is_dirty() -> bool:
     result = subprocess.run(
-        ["git", "status", "--porcelain"],
+        ["git", "diff", "--quiet", "HEAD"],
         capture_output=True,
-        text=True,
         cwd=str(REPO),
     )
-    return bool(result.stdout.strip())
+    return result.returncode != 0
 
 
 def result_filename(commit: str, benchmark: str, mode: str) -> str:
