@@ -130,7 +130,7 @@ def commit_memory(
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)
 
-        constraint_texts = []
+        constraint_texts: list[str] = []
         try:
             from brain import constraints as _constraints_mod
 
@@ -140,6 +140,28 @@ def commit_memory(
                     constraint_texts = [c.get("constraint", "") for c in extracted]
                     payload["constraints"] = extracted
                     payload["constraint_summary"] = " | ".join(constraint_texts)
+
+                    constraint_combined = " | ".join(constraint_texts)
+                    try:
+                        constraint_vec = embedding.get_embedding(constraint_combined, prefix=_state.EMBED_PREFIX_DOC)
+                        _state.qdrant.upsert(
+                            collection_name=_state.CONSTRAINT_COLLECTION,
+                            points=[
+                                PointStruct(
+                                    id=point_id,
+                                    vector=constraint_vec,
+                                    payload={
+                                        "constraint_summary": constraint_combined,
+                                        "constraints": extracted,
+                                        "parent_text": text[:500],
+                                        "source": source,
+                                        "date": timestamp,
+                                    },
+                                )
+                            ],
+                        )
+                    except Exception as ce:
+                        _state.logger.debug("Constraint collection upsert failed: %s", ce)
         except Exception as exc:
             _state.logger.debug("Constraint extraction skipped: %s", exc)
 

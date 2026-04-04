@@ -68,6 +68,7 @@ SERVER_HOST = CONFIG["server"]["host"]
 SERVER_PORT = int(CONFIG["server"]["port"])
 QDRANT_URL = CONFIG["qdrant"]["url"]
 COLLECTION = CONFIG["qdrant"]["collection"]
+CONSTRAINT_COLLECTION = f"{COLLECTION}_constraints"
 EMBED_MODEL = os.environ.get("EMBED_MODEL", CONFIG["embeddings"]["model"])
 EMBED_URL = os.environ.get("EMBED_URL", CONFIG["embeddings"]["url"])
 EMBED_PREFIX_QUERY = os.environ.get("EMBED_PREFIX_QUERY", CONFIG["embeddings"]["prefix_query"])
@@ -124,6 +125,7 @@ __all__ = [
     "ANTHROPIC_API_KEY",
     "BM25_AVAILABLE",
     "COLLECTION",
+    "CONSTRAINT_COLLECTION",
     "CONFIG",
     "EMBED_MODEL",
     "EMBED_PREFIX_DOC",

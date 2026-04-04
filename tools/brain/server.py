@@ -435,6 +435,24 @@ def serve(port: int = _state.SERVER_PORT) -> None:
         _state.COLLECTION,
         _state.qdrant.get_collection(_state.COLLECTION).points_count,
     )
+
+    try:
+        _state.qdrant.get_collection(_state.CONSTRAINT_COLLECTION)
+        _state.logger.info("Constraint collection: %s", _state.CONSTRAINT_COLLECTION)
+    except Exception:
+        try:
+            from qdrant_client.models import VectorParams, Distance
+
+            _state.qdrant.create_collection(
+                collection_name=_state.CONSTRAINT_COLLECTION,
+                vectors_config=VectorParams(
+                    size=int(_state.CONFIG["embeddings"].get("dimensions", 768)),
+                    distance=Distance.COSINE,
+                ),
+            )
+            _state.logger.info("Created constraint collection: %s", _state.CONSTRAINT_COLLECTION)
+        except Exception as e:
+            _state.logger.warning("Constraint collection creation failed: %s", e)
     try:
         redis_client = _state.get_falkordb()
         node_count = redis_client.execute_command("GRAPH.QUERY", _state.GRAPH_NAME, "MATCH (n) RETURN count(n)")[1][0][
