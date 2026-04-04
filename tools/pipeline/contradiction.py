@@ -94,6 +94,48 @@ def looks_contradictory(new_text: str, old_text: str) -> bool:
     return False
 
 
+def llm_verify_contradiction(new_text: str, old_text: str) -> bool:
+    import os
+
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not anthropic_key:
+        return False
+
+    prompt = (
+        "Do these two statements contradict each other? "
+        "A statement CONTRADICTS another if accepting one requires rejecting the other.\n\n"
+        f'Statement A: "{new_text[:500]}"\n'
+        f'Statement B: "{old_text[:500]}"\n\n'
+        'Reply with ONLY "YES" or "NO".'
+    )
+
+    try:
+        import json
+        import urllib.request
+
+        body = json.dumps(
+            {
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 10,
+                "temperature": 0.0,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        ).encode()
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=body,
+            method="POST",
+        )
+        req.add_header("Content-Type", "application/json")
+        req.add_header("x-api-key", anthropic_key)
+        req.add_header("anthropic-version", "2023-06-01")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return "YES" in data["content"][0]["text"].strip().upper()
+    except Exception:
+        return False
+
+
 def check_contradictions(
     text: str,
     embedding: list[float],
@@ -127,6 +169,15 @@ def check_contradictions(
                     "existing_id": getattr(point, "id", None),
                     "existing_text": existing_text[:200],
                     "similarity": round(float(score), 4),
+                }
+            )
+        elif score >= 0.90 and llm_verify_contradiction(text, existing_text):
+            contradictions.append(
+                {
+                    "existing_id": getattr(point, "id", None),
+                    "existing_text": existing_text[:200],
+                    "similarity": round(float(score), 4),
+                    "llm_verified": True,
                 }
             )
     return contradictions
