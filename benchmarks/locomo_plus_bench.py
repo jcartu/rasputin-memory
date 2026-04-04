@@ -41,10 +41,18 @@ BENCH_PORT = 7783
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
-JUDGE_MODEL = "gpt-4o-mini"
+BENCH_MODE = os.environ.get("BENCH_MODE", "production")
+JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
 
-SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "10"))
-CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10"))
+SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "60"))
+CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "60"))
+
+_DEFAULT_JUDGE_PROMPT = (
+    "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
+    "information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. "
+    "Do not give credit for answers that are technically true but don't answer the question."
+)
+JUDGE_INSTRUCTION = os.environ.get("BENCH_JUDGE_PROMPT", _DEFAULT_JUDGE_PROMPT)
 
 LABEL_TO_SCORE = {"correct": 1.0, "partial": 0.5, "wrong": 0.0}
 

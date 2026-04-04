@@ -40,10 +40,18 @@ BENCH_PORT = 7782
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
-JUDGE_MODEL = "gpt-4o-mini"
+BENCH_MODE = os.environ.get("BENCH_MODE", "production")
+JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
 
-SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "10"))
-CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "10"))
+SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "60"))
+CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "60"))
+
+_DEFAULT_JUDGE_PROMPT = (
+    "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
+    "information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. "
+    "Do not give credit for answers that are technically true but don't answer the question."
+)
+JUDGE_INSTRUCTION = os.environ.get("BENCH_JUDGE_PROMPT", _DEFAULT_JUDGE_PROMPT)
 
 
 # ─── HTTP helpers ────────────────────────────────────────────
@@ -210,7 +218,7 @@ Question: {question}
 Ground Truth Answer: {ground_truth}
 System Answer: {prediction}
 
-Is the system's answer correct? Score CORRECT only if the answer contains the specific information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. Do not give credit for answers that are technically true but don't answer the question.
+{JUDGE_INSTRUCTION}
 
 Reply with exactly one word: CORRECT or WRONG"""
 
@@ -408,7 +416,7 @@ def generate_report(state):
     lines = [
         "# RASPUTIN Memory — FRAMES Benchmark (Google Research 2024)",
         f"\n**Date:** {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"**Pipeline:** Wikipedia fetch → Embed → Search (top-{SEARCH_LIMIT}) → {ANSWER_MODEL} → GPT-4o-mini judge",
+        f"**Pipeline:** Wikipedia fetch → Embed → Search (top-{SEARCH_LIMIT}) → {ANSWER_MODEL} → {JUDGE_MODEL} judge",
         f"**Total questions:** {len(all_scores)}",
         f"\n## Overall Accuracy: {overall:.2f}%",
         "\n## Per-Reasoning-Type Breakdown",
