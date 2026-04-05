@@ -32,6 +32,7 @@ class MemoryPayload(TypedDict, total=False):
     speaker: str
     mentioned_names: list[str]
     has_date: bool
+    extracted_dates: list[str]
     connected_to: list[Any]
     constraints: list[dict[str, Any]]
     constraint_summary: str
@@ -55,6 +56,29 @@ _DATE_RE = _re.compile(
     r"\b(?:yesterday|last\s+\w+|ago|before|after|since)\b",
     _re.IGNORECASE,
 )
+
+
+_STRUCTURED_DATE_RE = _re.compile(
+    r"\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December|"
+    r"Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[,.]?\s+(\d{4})\b|"
+    r"\b(January|February|March|April|May|June|July|August|September|October|November|December|"
+    r"Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[,.]?\s+(\d{1,2})[,.]?\s+(\d{4})\b|"
+    r"\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b",
+    _re.IGNORECASE,
+)
+
+
+def _extract_dates(text: str) -> list[str]:
+    dates: list[str] = []
+    for match in _STRUCTURED_DATE_RE.finditer(text):
+        groups = match.groups()
+        if groups[0] and groups[1] and groups[2]:
+            dates.append(f"{groups[0]} {groups[1]} {groups[2]}")
+        elif groups[3] and groups[4] and groups[5]:
+            dates.append(f"{groups[4]} {groups[3]} {groups[5]}")
+        elif groups[6] and groups[7] and groups[8]:
+            dates.append(f"{groups[6]}-{groups[7]}-{groups[8]}")
+    return dates[:5]
 
 
 def _extract_mentioned_names(text: str) -> list[str]:
@@ -127,6 +151,7 @@ def commit_memory(
             "speaker": (metadata or {}).get("speaker", ""),
             "mentioned_names": _extract_mentioned_names(text),
             "has_date": bool(_DATE_RE.search(text)),
+            "extracted_dates": _extract_dates(text),
         }
         if metadata and isinstance(metadata, dict):
             protected_fields = {
@@ -142,6 +167,7 @@ def commit_memory(
                 "has_contradictions",
                 "mentioned_names",
                 "has_date",
+                "extracted_dates",
                 "speaker",
                 "connected_to",
                 "contradicts",
