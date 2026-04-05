@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import math
+import os as _os
 import re
 import time
 from typing import Any, Optional
 
 from brain import _state
 
-_TARGET_DIMS = int(_state.CONFIG.get("embeddings", {}).get("dimensions", 768))
+_TARGET_DIMS = int(_os.environ.get("EMBED_DIM", _state.CONFIG.get("embeddings", {}).get("dimensions", 768)))
 
 
 def is_reranker_available() -> bool:

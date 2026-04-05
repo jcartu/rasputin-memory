@@ -46,7 +46,7 @@ OLD_CHECKPOINT = RESULTS_DIR / "locomo-leaderboard-checkpoint.json"
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 EMBED_URL = os.environ.get("BENCH_EMBED_URL", "http://localhost:11434/api/embed")
 EMBED_MODEL = os.environ.get("BENCH_EMBED_MODEL", "nomic-embed-text")
-EMBED_DIM = 768
+EMBED_DIM = int(os.environ.get("BENCH_EMBED_DIM", "768"))
 BENCH_PORT = 7779
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -392,8 +392,8 @@ def commit_conversation(conv, collection):
 
     num_sessions = session_idx - 1
 
-    # Phase 2: embed and commit individual turns
-    for turn_info in all_turns:
+    _turns_enabled = os.environ.get("CHUNK_TURNS", "1") == "1"
+    for turn_info in all_turns if _turns_enabled else []:
         commit_text = turn_info["commit_text"]
         try:
             vec = get_embedding(commit_text[:2000], prefix="search_document: ")
@@ -427,7 +427,12 @@ def commit_conversation(conv, collection):
                 print(f"    Embed error: {e}")
 
     # Phase 3: build and commit overlapping conversation windows
-    windows = _build_conversation_windows(all_turns, window_size=5, stride=2)
+    _window_size = int(os.environ.get("CHUNK_WINDOW_SIZE", "5"))
+    _stride = int(os.environ.get("CHUNK_STRIDE", "2"))
+    _windows_enabled = os.environ.get("CHUNK_WINDOWS", "1") == "1"
+    windows = (
+        _build_conversation_windows(all_turns, window_size=_window_size, stride=_stride) if _windows_enabled else []
+    )
     window_committed = 0
     for window in windows:
         window_text = window["text"]
@@ -484,6 +489,7 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["RATE_LIMIT_SEARCH"] = "0"
     env["EMBED_URL"] = EMBED_URL
     env["EMBED_MODEL"] = EMBED_MODEL
+    env["EMBED_DIM"] = str(EMBED_DIM)
     env["EMBED_PREFIX_QUERY"] = "search_query: "
     env["EMBED_PREFIX_DOC"] = "search_document: "
     env["EMBED_PROVIDER"] = os.environ.get("EMBED_PROVIDER", "gemini")
