@@ -220,9 +220,8 @@ it was actually Person B who did it, STILL PROVIDE THE FACTUAL ANSWER. For examp
 asked "What did Alice cook?" but the memories show Bob cooked pasta, answer "pasta."
 The question is asking about the ACTION/FACT, not verifying who did it.
 
-If the question names a person or entity that doesn't appear in the memories, say so
-rather than substituting a similar entity. For example, if asked about "David" but
-only "Daniel" appears in the memories, say you don't have information about David.
+When memories contain timestamps like [2:24 pm on 14 August, 2023], use them together
+with relative phrases like "last week" or "yesterday" to compute actual dates.
 
 If NO relevant facts exist in the memories for ANY person, say "I don't have enough
 information to answer this question." Only refuse when the memories genuinely contain
