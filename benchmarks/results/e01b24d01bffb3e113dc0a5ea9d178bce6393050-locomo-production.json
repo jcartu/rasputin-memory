@@ -1,0 +1,14 @@
+{
+  "results": [],
+  "date": "2026-04-05T03:15:51.938281",
+  "commit": "e01b24d01bffb3e113dc0a5ea9d178bce6393050",
+  "commit_short": "e01b24d0",
+  "mode": "production",
+  "methodology": {
+    "answer_model": "claude-haiku-4-5-20251001",
+    "judge_model": "gpt-4o-mini-2024-07-18",
+    "context_chunks": 60,
+    "search_limit": 60,
+    "judge_prompt_style": "neutral"
+  }
+}
