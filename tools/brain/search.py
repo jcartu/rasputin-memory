@@ -546,10 +546,25 @@ def hybrid_search(
                 row["entity_boosted"] = True
                 row["entity_focus"] = round(focus_ratio, 2)
 
-    # Additive temporal boost (+0.08)
+    # Additive temporal boost (+0.08 base, +0.12 if extracted dates match query tokens)
     query_lower = query.lower()
-    if any(signal in query_lower for signal in _TEMPORAL_SIGNALS):
+    query_date_tokens = set(
+        _re.findall(
+            r"\b(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{4})\b",
+            query_lower,
+        )
+    )
+    if any(signal in query_lower for signal in _TEMPORAL_SIGNALS) or query_date_tokens:
         for row in all_candidates:
+            extracted = row.get("extracted_dates") or []
+            if extracted and query_date_tokens:
+                extracted_lower = " ".join(extracted).lower()
+                matching = sum(1 for t in query_date_tokens if t in extracted_lower)
+                if matching:
+                    bonus = 0.08 + 0.04 * min(matching, 3)
+                    row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
+                    row["temporal_boosted"] = True
+                    continue
             if _DATE_PATTERN.search(row.get("text") or ""):
                 row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + 0.08
                 row["temporal_boosted"] = True
