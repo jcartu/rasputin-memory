@@ -29,6 +29,7 @@ ABLATION_MMR = _os.environ.get("ABLATION_MMR", "1") == "1"
 ABLATION_RERANKER = _os.environ.get("ABLATION_RERANKER", "1") == "1"
 ABLATION_QUERY_EXPAND = _os.environ.get("ABLATION_QUERY_EXPAND", "1") == "1"
 SCORE_BREAKDOWN = _os.environ.get("SCORE_BREAKDOWN", "0") == "1"
+CROSS_ENCODER_ENABLED = _os.environ.get("CROSS_ENCODER", "1") == "1"
 
 _TOKEN_RE = _re.compile(r"\w+", _re.UNICODE)
 _access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
@@ -438,10 +439,21 @@ def hybrid_search(
         for row in all_candidates:
             sb = row.setdefault("_sb", {})
             sb["pre_rerank_score"] = row.get(ranking_score_key, row.get("score", 0))
-    if all_candidates and ABLATION_RERANKER:
+    ce_applied = False
+    if all_candidates and CROSS_ENCODER_ENABLED:
+        try:
+            from brain import cross_encoder as _ce
+
+            if _ce.is_available():
+                all_candidates = _ce.rerank_with_recency(query, all_candidates, top_k=limit)
+                ce_applied = True
+                ranking_score_key = "final_score"
+        except ImportError:
+            pass
+
+    if all_candidates and ABLATION_RERANKER and not ce_applied:
         rerank_pool = all_candidates[: limit * 3]
 
-        # Priority: Cohere > LLM > Local BGE > no reranking
         try:
             from brain.rerank_providers import RERANK_PROVIDER, rerank_cohere, COHERE_API_KEY
 
@@ -657,6 +669,7 @@ def hybrid_search(
                 "query_expand": ABLATION_QUERY_EXPAND,
             },
             "bm25_reranked": bm25_applied,
+            "cross_encoder_reranked": ce_applied,
             "cohere_reranked": cohere_applied,
             "llm_reranked": llm_applied,
             "neural_reranked": neural_applied,

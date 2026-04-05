@@ -499,6 +499,8 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["RERANK_PROVIDER"] = os.environ.get("RERANK_PROVIDER", "cohere")
     env["COHERE_API_KEY"] = os.environ.get("COHERE_API_KEY", "")
     env["LLM_RERANKER"] = os.environ.get("LLM_RERANKER", "false")
+    env["CROSS_ENCODER"] = os.environ.get("CROSS_ENCODER", "1")
+    env["CUDA_VISIBLE_DEVICES"] = ""
     env["PYTHONPATH"] = str(REPO / "tools")
 
     server_log = RESULTS_DIR / "bench-server.log"
