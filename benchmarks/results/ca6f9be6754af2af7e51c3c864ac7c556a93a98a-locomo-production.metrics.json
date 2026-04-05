@@ -1,0 +1,62 @@
+{
+  "temporal": {
+    "total": 37,
+    "correct": 24,
+    "gold_in_any": 33,
+    "gold_in_top5": 30,
+    "gold_in_top10": 31,
+    "retrieval_miss": 3,
+    "retrieval_buried": 1,
+    "generation_failure": 9,
+    "mrr_sum": 25.578690476190474,
+    "f1_sum": 6.328600385270292
+  },
+  "single-hop": {
+    "total": 32,
+    "correct": 13,
+    "gold_in_any": 25,
+    "gold_in_top5": 14,
+    "gold_in_top10": 18,
+    "retrieval_miss": 6,
+    "retrieval_buried": 3,
+    "generation_failure": 10,
+    "mrr_sum": 11.178448192614152,
+    "f1_sum": 2.843257268193166
+  },
+  "multi-hop": {
+    "total": 13,
+    "correct": 7,
+    "gold_in_any": 6,
+    "gold_in_top5": 2,
+    "gold_in_top10": 2,
+    "retrieval_miss": 5,
+    "retrieval_buried": 1,
+    "generation_failure": 0,
+    "mrr_sum": 1.6718531468531468,
+    "f1_sum": 1.014837107743168
+  },
+  "open-domain": {
+    "total": 70,
+    "correct": 52,
+    "gold_in_any": 67,
+    "gold_in_top5": 47,
+    "gold_in_top10": 52,
+    "retrieval_miss": 3,
+    "retrieval_buried": 8,
+    "generation_failure": 7,
+    "mrr_sum": 39.160190978612036,
+    "f1_sum": 13.73898756843146
+  },
+  "adversarial": {
+    "total": 47,
+    "correct": 3,
+    "gold_in_any": 45,
+    "gold_in_top5": 34,
+    "gold_in_top10": 37,
+    "retrieval_miss": 2,
+    "retrieval_buried": 8,
+    "generation_failure": 34,
+    "mrr_sum": 30.292047181285536,
+    "f1_sum": 5.571226158870765
+  }
+}

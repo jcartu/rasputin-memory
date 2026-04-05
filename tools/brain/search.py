@@ -15,9 +15,20 @@ from brain import entities as entities_module
 from brain import graph
 from brain import scoring
 
+import os as _os
 import re as _re
 
 safe_import = importlib.import_module("pipeline._imports").safe_import
+
+ABLATION_BM25 = _os.environ.get("ABLATION_BM25", "1") == "1"
+ABLATION_KEYWORD_BOOST = _os.environ.get("ABLATION_KEYWORD_BOOST", "1") == "1"
+ABLATION_ENTITY_BOOST = _os.environ.get("ABLATION_ENTITY_BOOST", "1") == "1"
+ABLATION_TEMPORAL_BOOST = _os.environ.get("ABLATION_TEMPORAL_BOOST", "1") == "1"
+ABLATION_TEMPORAL_DECAY = _os.environ.get("ABLATION_TEMPORAL_DECAY", "1") == "1"
+ABLATION_MMR = _os.environ.get("ABLATION_MMR", "1") == "1"
+ABLATION_RERANKER = _os.environ.get("ABLATION_RERANKER", "1") == "1"
+ABLATION_QUERY_EXPAND = _os.environ.get("ABLATION_QUERY_EXPAND", "1") == "1"
+SCORE_BREAKDOWN = _os.environ.get("SCORE_BREAKDOWN", "0") == "1"
 
 _TOKEN_RE = _re.compile(r"\w+", _re.UNICODE)
 _access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
@@ -218,7 +229,12 @@ def qdrant_search(
             }
         )
 
-    return scoring.apply_temporal_decay(out)
+    if ABLATION_TEMPORAL_DECAY:
+        out = scoring.apply_temporal_decay(out)
+    if SCORE_BREAKDOWN:
+        for row in out:
+            row["_sb"] = {"dense_score": row.get("score", 0)}
+    return out
 
 
 _FACTUAL_PREFIXES = ("what is", "what was", "when did", "who is", "how many", "where did", "what does", "how old")
@@ -315,7 +331,7 @@ def hybrid_search(
     start = time.time()
 
     queries = [query]
-    if expand:
+    if expand and ABLATION_QUERY_EXPAND:
         queries = expand_queries(query, max_expansions=5)
         names = _scoring_constants.CAPITALIZED_NAME_RE.findall(query)
         stop = _scoring_constants.NAME_STOPWORDS
@@ -395,7 +411,7 @@ def hybrid_search(
     graph_results = graph.graph_search(query, hops=graph_hops, limit=limit)
 
     bm25_applied = False
-    if _state.BM25_AVAILABLE and qdrant_results:
+    if ABLATION_BM25 and _state.BM25_AVAILABLE and qdrant_results:
         try:
             qdrant_results = bm25_rerank(query, qdrant_results)
             bm25_applied = True
@@ -418,7 +434,11 @@ def hybrid_search(
     llm_applied = False
     cohere_applied = False
     ranking_score_key = "hybrid_score" if any("hybrid_score" in row for row in all_candidates) else "score"
-    if all_candidates:
+    if SCORE_BREAKDOWN:
+        for row in all_candidates:
+            sb = row.setdefault("_sb", {})
+            sb["pre_rerank_score"] = row.get(ranking_score_key, row.get("score", 0))
+    if all_candidates and ABLATION_RERANKER:
         rerank_pool = all_candidates[: limit * 3]
 
         # Priority: Cohere > LLM > Local BGE > no reranking
@@ -512,7 +532,7 @@ def hybrid_search(
     }
     # Additive keyword relevance boost (max +0.15)
     query_content_tokens = query_tokens - _stopwords
-    if query_content_tokens:
+    if ABLATION_KEYWORD_BOOST and query_content_tokens:
         for row in all_candidates:
             text_tokens = set(_TOKEN_RE.findall((row.get("text") or "").lower()))
             overlap = query_content_tokens & text_tokens
@@ -523,7 +543,9 @@ def hybrid_search(
                 row["keyword_boosted"] = True
 
     # Additive entity relevance boost (max +0.15)
-    query_entities = [name for name, _type in entities_module.extract_entities_fast(query)]
+    query_entities = (
+        [name for name, _type in entities_module.extract_entities_fast(query)] if ABLATION_ENTITY_BOOST else []
+    )
     if query_entities:
         query_entity_names_lower = {e.lower() for e in query_entities}
         for row in all_candidates:
@@ -554,7 +576,7 @@ def hybrid_search(
             query_lower,
         )
     )
-    if any(signal in query_lower for signal in _TEMPORAL_SIGNALS) or query_date_tokens:
+    if ABLATION_TEMPORAL_BOOST and (any(signal in query_lower for signal in _TEMPORAL_SIGNALS) or query_date_tokens):
         for row in all_candidates:
             extracted = row.get("extracted_dates") or []
             if extracted and query_date_tokens:
@@ -569,7 +591,8 @@ def hybrid_search(
                 row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + 0.08
                 row["temporal_boosted"] = True
 
-    all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
+    if ABLATION_MMR:
+        all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
 
     all_candidates = sorted(
         all_candidates,
@@ -594,6 +617,16 @@ def hybrid_search(
 
     graph_enrichment = graph.enrich_with_graph(merged, limit=5)
 
+    if SCORE_BREAKDOWN:
+        for row in merged:
+            sb = row.setdefault("_sb", {})
+            sb["final_score"] = row.get(ranking_score_key, row.get("score", 0))
+            sb["keyword_delta"] = row.get("keyword_boosted", False)
+            sb["entity_delta"] = row.get("entity_boosted", False)
+            sb["temporal_delta"] = row.get("temporal_boosted", False)
+            sb["reranker_score"] = row.get("rerank_score") or row.get("llm_rerank_score")
+            sb["contradiction_demoted"] = row.get("contradiction_demoted", False)
+
     elapsed = time.time() - start
 
     _update_access_tracking([row for row in merged if row.get("origin") != "graph"], collection=collection)
@@ -613,6 +646,16 @@ def hybrid_search(
             "graph_enriched_entities": len(graph_enrichment),
             "graph_hop_2_connections": sum(len(v) for v in graph_enrichment.values()),
             "constraint_hits": len(constraint_hits),
+            "ablation": {
+                "bm25": ABLATION_BM25,
+                "keyword_boost": ABLATION_KEYWORD_BOOST,
+                "entity_boost": ABLATION_ENTITY_BOOST,
+                "temporal_boost": ABLATION_TEMPORAL_BOOST,
+                "temporal_decay": ABLATION_TEMPORAL_DECAY,
+                "mmr": ABLATION_MMR,
+                "reranker": ABLATION_RERANKER,
+                "query_expand": ABLATION_QUERY_EXPAND,
+            },
             "bm25_reranked": bm25_applied,
             "cohere_reranked": cohere_applied,
             "llm_reranked": llm_applied,
