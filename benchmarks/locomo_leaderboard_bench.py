@@ -212,16 +212,21 @@ def deduplicate_results(results, overlap_threshold=0.75):
 
 def generate_opus_answer(question, context_chunks, max_chunks=50):
     context = "\n".join(f"- {c.get('text', c) if isinstance(c, dict) else c}" for c in context_chunks[:max_chunks])
-    prompt = f"""You are answering factual questions about a conversation. Use ONLY the memory snippets below.
+    prompt = f"""You are answering questions about a conversation based on retrieved memory snippets.
+Answer concisely in 1-3 sentences. Be direct and specific.
 
-RULES:
-- Extract specific facts directly from the memories. Quote exact names, numbers, dates, and items.
-- Do NOT paraphrase or generalize. If the memory says "abstract art", answer "abstract art", not "paintings".
-- For "when" questions: memories have timestamps in brackets like [2:24 pm on 14 August, 2023]. Use relative phrases like "last week" or "last weekend" together with the timestamp to calculate the actual date.
-- If the question attributes something to Person A but memories show Person B did it, still answer with the fact.
-- If the question names a person/entity not in the memories, say so.
-- If no relevant facts exist, say "I don't have enough information to answer this question."
-- Answer in 1-2 sentences maximum.
+IMPORTANT: If the question attributes an action or fact to Person A, but the memories show
+it was actually Person B who did it, STILL PROVIDE THE FACTUAL ANSWER. For example, if
+asked "What did Alice cook?" but the memories show Bob cooked pasta, answer "pasta."
+The question is asking about the ACTION/FACT, not verifying who did it.
+
+If the question names a person or entity that doesn't appear in the memories, say so
+rather than substituting a similar entity. For example, if asked about "David" but
+only "Daniel" appears in the memories, say you don't have information about David.
+
+If NO relevant facts exist in the memories for ANY person, say "I don't have enough
+information to answer this question." Only refuse when the memories genuinely contain
+nothing relevant — not when the person attribution is wrong.
 
 Memories:
 {context}
