@@ -1,43 +1,43 @@
 # RASPUTIN Memory — LoCoMo Leaderboard Benchmark v1
 
-**Date:** 2026-04-06 01:12
+**Date:** 2026-04-06 04:39
 **Pipeline:** Window chunking → Multi-query search (top-60) → Dedup → claude-haiku-4-5-20251001 → gpt-4o-mini-2024-07-18 judge
 **Mode:** production | top-K 60, 60-chunk context
 **Total questions:** 199 (152 non-adversarial, 47 adversarial)
 
 ## Headline Score (excluding adversarial)
-**LLM-Judge Accuracy: 63.16%**
-- Token F1: 16.04%
+**LLM-Judge Accuracy: 68.42%**
+- Token F1: 16.50%
 
 ## Including adversarial
-- All categories: 49.75%
-- Adversarial only: 6.38%
+- All categories: 54.27%
+- Adversarial only: 8.51%
 
 ## Per-Category Breakdown
-- **adversarial**: 6.4% judge, 13.6% F1 (47 Qs)
-- **multi-hop**: 53.8% judge, 7.3% F1 (13 Qs)
-- **open-domain**: 75.7% judge, 20.3% F1 (70 Qs)
-- **single-hop**: 43.8% judge, 8.5% F1 (32 Qs)
-- **temporal**: 59.5% judge, 17.5% F1 (37 Qs)
+- **adversarial**: 8.5% judge, 14.2% F1 (47 Qs)
+- **multi-hop**: 46.2% judge, 7.0% F1 (13 Qs)
+- **open-domain**: 87.1% judge, 22.6% F1 (70 Qs)
+- **single-hop**: 34.4% judge, 8.2% F1 (32 Qs)
+- **temporal**: 70.3% judge, 15.5% F1 (37 Qs)
 
 ## Per-Conversation
-- **conv-26**: 63.2% (96/152 excl. adv)
+- **conv-26**: 68.4% (104/152 excl. adv)
 
 ## Retrieval Oracle (failure diagnosis)
 | Category | Wrong | Not in top-60 | In 60 not 10 | In top-10 but wrong |
 |----------|-------|---------------|--------------|---------------------|
-| adversarial | 44 | 1 (2%) | 9 (20%) | 34 (77%) |
-| multi-hop | 6 | 5 (83%) | 1 (16%) | 0 (0%) |
-| open-domain | 17 | 4 (23%) | 6 (35%) | 7 (41%) |
-| single-hop | 18 | 6 (33%) | 4 (22%) | 8 (44%) |
-| temporal | 15 | 3 (20%) | 1 (6%) | 11 (73%) |
+| adversarial | 43 | 0 (0%) | 3 (6%) | 40 (93%) |
+| multi-hop | 7 | 3 (42%) | 2 (28%) | 2 (28%) |
+| open-domain | 9 | 0 (0%) | 2 (22%) | 7 (77%) |
+| single-hop | 21 | 2 (9%) | 1 (4%) | 18 (85%) |
+| temporal | 11 | 2 (18%) | 0 (0%) | 9 (81%) |
 
 ## Leaderboard Comparison
 | System | LLM-Judge Accuracy |
 |--------|-------------------|
 | Backboard | 90.00% |
 | MemMachine | 84.87% |
-| **RASPUTIN** | **63.16%** |
+| **RASPUTIN** | **68.42%** |
 | Memobase | 75.78% |
 | Zep | 75.14% |
 | mem0 | 66.88% |
