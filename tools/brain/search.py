@@ -189,6 +189,7 @@ def qdrant_search(
     limit: int = 10,
     source_filter: Optional[str] = None,
     collection: Optional[str] = None,
+    chunk_type_filter: Optional[str] = None,
 ) -> list[dict[str, Any]]:
     try:
         vector = embedding.get_embedding(query)
@@ -196,9 +197,12 @@ def qdrant_search(
         _state.logger.error("Qdrant embedding error: %s", error)
         return []
 
-    search_filter = None
+    conditions: list = []
     if source_filter:
-        search_filter = Filter(must=[FieldCondition(key="source", match=MatchValue(value=source_filter))])
+        conditions.append(FieldCondition(key="source", match=MatchValue(value=source_filter)))
+    if chunk_type_filter:
+        conditions.append(FieldCondition(key="chunk_type", match=MatchValue(value=chunk_type_filter)))
+    search_filter = Filter(must=conditions) if conditions else None
 
     target_collection = collection or _state.COLLECTION
 
@@ -329,6 +333,7 @@ def hybrid_search(
     source_filter: Optional[str] = None,
     expand: bool = True,
     collection: Optional[str] = None,
+    chunk_type: Optional[str] = None,
 ) -> dict[str, Any]:
     start = time.time()
 
@@ -355,6 +360,8 @@ def hybrid_search(
         }
         if collection:
             qdrant_kwargs["collection"] = collection
+        if chunk_type:
+            qdrant_kwargs["chunk_type_filter"] = chunk_type
         all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
 
     constraint_hits: list[dict[str, Any]] = []

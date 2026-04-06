@@ -113,6 +113,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             source = params.get("source", [None])[0]
             expand = params.get("expand", ["true"])[0].lower() != "false"
             collection_override = params.get("collection", [None])[0]
+            chunk_type = params.get("chunk_type", [None])[0]
 
             if not query:
                 self._send_json({"error": "Missing q parameter"}, 400)
@@ -124,6 +125,7 @@ class HybridHandler(BaseHTTPRequestHandler):
                 source_filter=source,
                 expand=expand,
                 collection=collection_override,
+                chunk_type=chunk_type,
             )
             self._send_json(result)
 

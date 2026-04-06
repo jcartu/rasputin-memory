@@ -60,6 +60,9 @@ CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domai
 SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "60"))
 CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "60"))
 FACT_CAP = int(os.environ.get("BENCH_FACT_CAP", "0"))  # 0 = no cap
+TWO_LANE = os.environ.get("BENCH_TWO_LANE", "0") == "1"
+LANE_WINDOWS = int(os.environ.get("BENCH_LANE_WINDOWS", "45"))
+LANE_FACTS = int(os.environ.get("BENCH_LANE_FACTS", "15"))
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -584,9 +587,12 @@ def kill_server(proc):
             proc.wait()
 
 
-def search_query(query, port=BENCH_PORT, limit=SEARCH_LIMIT):
+def search_query(query, port=BENCH_PORT, limit=SEARCH_LIMIT, chunk_type=None):
     url = f"http://localhost:{port}/search"
-    params = urllib.parse.urlencode({"q": query, "limit": limit, "expand": "false"})
+    p = {"q": query, "limit": limit, "expand": "false"}
+    if chunk_type:
+        p["chunk_type"] = chunk_type
+    params = urllib.parse.urlencode(p)
     for attempt in range(4):
         try:
             result = http_json(f"{url}?{params}", timeout=60)
@@ -641,6 +647,34 @@ def apply_fact_cap(results, max_facts):
         else:
             capped.append(r)
     return capped
+
+
+def two_lane_search(question, speakers=None, port=BENCH_PORT):
+    queries = expand_search_queries(question, speakers=speakers)
+    seen_texts = set()
+    window_results = []
+    fact_results = []
+
+    for q in queries:
+        for r in search_query(q, port=port, limit=LANE_WINDOWS, chunk_type="window"):
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                window_results.append(r)
+        for r in search_query(q, port=port, limit=LANE_FACTS, chunk_type="fact"):
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                fact_results.append(r)
+        time.sleep(0.3)
+
+    _score_key = lambda r: r.get("final_score", r.get("rerank_score", r.get("score", 0)))
+    window_results.sort(key=_score_key, reverse=True)
+    fact_results.sort(key=_score_key, reverse=True)
+
+    merged = deduplicate_results(window_results[:LANE_WINDOWS]) + deduplicate_results(fact_results[:LANE_FACTS])
+    merged.sort(key=_score_key, reverse=True)
+    return merged
 
 
 # ─── F1 scoring ──────────────────────────────────────────────
@@ -801,9 +835,12 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                 category = qa.get("category", 0)
                 if not ground_truth:
                     continue
-                chunks = multi_query_search(question, speakers=speakers, port=port)
-                if FACT_CAP > 0:
-                    chunks = apply_fact_cap(chunks, max_facts=FACT_CAP)
+                if TWO_LANE:
+                    chunks = two_lane_search(question, speakers=speakers, port=port)
+                else:
+                    chunks = multi_query_search(question, speakers=speakers, port=port)
+                    if FACT_CAP > 0:
+                        chunks = apply_fact_cap(chunks, max_facts=FACT_CAP)
                 searched.append((qi, question, ground_truth, category, chunks))
                 time.sleep(0.1)
 
