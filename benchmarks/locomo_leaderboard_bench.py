@@ -468,11 +468,57 @@ def commit_conversation(conv, collection):
             if window_committed < 3:
                 print(f"    Window embed error: {e}")
 
+    fact_committed = 0
+    if os.environ.get("FACT_EXTRACTION", "0") == "1":
+        sys.path.insert(0, str(REPO / "tools"))
+        from brain.fact_extractor import extract_facts, fact_to_text
+
+        for turn_info in all_turns:
+            session_date = turn_info.get("session_date", "")
+            facts = extract_facts(turn_info["commit_text"], event_date=session_date, source="locomo_bench")
+            for fact in facts:
+                fact_text = fact_to_text(fact)
+                if len(fact_text) < 20:
+                    continue
+                try:
+                    vec = get_embedding(fact_text[:2000], prefix="search_document: ")
+                    point_id = int(hashlib.md5(fact_text.encode()).hexdigest()[:15], 16)
+                    points.append(
+                        {
+                            "id": point_id,
+                            "vector": vec,
+                            "payload": {
+                                "text": fact_text[:4000],
+                                "source": "locomo_bench",
+                                "source_weight": 1.0,
+                                "date": fact.get("event_date") or datetime.now().isoformat(),
+                                "importance": 75,
+                                "retrieval_count": 0,
+                                "chunk_type": "fact",
+                                "entities": json.dumps(fact.get("entities", [])),
+                            },
+                        }
+                    )
+                    fact_committed += 1
+                    if len(points) >= 50:
+                        http_json(
+                            f"{QDRANT_URL}/collections/{collection}/points",
+                            data={"points": points},
+                            method="PUT",
+                            timeout=30,
+                        )
+                        points = []
+                except Exception as e:
+                    if fact_committed < 3:
+                        print(f"    Fact embed error: {e}")
+
     if points:
         http_json(f"{QDRANT_URL}/collections/{collection}/points", data={"points": points}, method="PUT", timeout=30)
     time.sleep(2)
-    print(f"  Committed {committed} turns + {window_committed} windows across {num_sessions} sessions")
-    return committed + window_committed
+    print(
+        f"  Committed {committed} turns + {window_committed} windows + {fact_committed} facts across {num_sessions} sessions"
+    )
+    return committed + window_committed + fact_committed
 
 
 # ─── Server management ───────────────────────────────────────
