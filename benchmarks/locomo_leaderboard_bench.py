@@ -59,6 +59,7 @@ CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domai
 
 SEARCH_LIMIT = int(os.environ.get("BENCH_SEARCH_LIMIT", "60"))
 CONTEXT_CHUNKS = int(os.environ.get("BENCH_CONTEXT_CHUNKS", "60"))
+FACT_CAP = int(os.environ.get("BENCH_FACT_CAP", "0"))  # 0 = no cap
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -626,6 +627,22 @@ def multi_query_search(question, speakers=None, port=BENCH_PORT):
     return deduplicate_results(merged)
 
 
+def apply_fact_cap(results, max_facts):
+    if max_facts <= 0 or not results:
+        return results
+    capped = []
+    fact_count = 0
+    for r in results:
+        is_fact = r.get("chunk_type") == "fact" or " | Involving: " in (r.get("text") or "")
+        if is_fact:
+            if fact_count < max_facts:
+                capped.append(r)
+                fact_count += 1
+        else:
+            capped.append(r)
+    return capped
+
+
 # ─── F1 scoring ──────────────────────────────────────────────
 
 
@@ -785,6 +802,8 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                 if not ground_truth:
                     continue
                 chunks = multi_query_search(question, speakers=speakers, port=port)
+                if FACT_CAP > 0:
+                    chunks = apply_fact_cap(chunks, max_facts=FACT_CAP)
                 searched.append((qi, question, ground_truth, category, chunks))
                 time.sleep(0.1)
 

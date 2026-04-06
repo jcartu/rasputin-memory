@@ -226,6 +226,7 @@ def qdrant_search(
                 "retrieval_count": payload.get("retrieval_count", 0),
                 "last_accessed": payload.get("last_accessed", ""),
                 "point_id": point.id,
+                "chunk_type": payload.get("chunk_type", ""),
                 "origin": "qdrant",
             }
         )
