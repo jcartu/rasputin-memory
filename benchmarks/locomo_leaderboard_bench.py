@@ -392,7 +392,7 @@ def commit_conversation(conv, collection):
 
     num_sessions = session_idx - 1
 
-    _turns_enabled = os.environ.get("CHUNK_TURNS", "1") == "1"
+    _turns_enabled = os.environ.get("CHUNK_TURNS", "0") == "1"
     for turn_info in all_turns if _turns_enabled else []:
         commit_text = turn_info["commit_text"]
         try:
