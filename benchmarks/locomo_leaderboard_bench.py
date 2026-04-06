@@ -622,7 +622,7 @@ def multi_query_search(question, speakers=None, port=BENCH_PORT):
                 seen_texts.add(text_key)
                 merged.append(r)
         time.sleep(0.3)
-    merged.sort(key=lambda r: r.get("score", 0), reverse=True)
+    merged.sort(key=lambda r: r.get("final_score", r.get("rerank_score", r.get("score", 0))), reverse=True)
     return deduplicate_results(merged)
 
 
@@ -793,7 +793,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
             def process_single_qa(item):
                 qi, question, ground_truth, category, chunks = item
                 try:
-                    prediction = generate_opus_answer(question, chunks)
+                    prediction = generate_opus_answer(question, chunks, max_chunks=CONTEXT_CHUNKS)
                 except Exception as e:
                     print(f"    Opus error on Q{qi}: {e}")
                     prediction = ""
