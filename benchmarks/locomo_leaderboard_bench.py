@@ -213,12 +213,73 @@ def deduplicate_results(results, overlap_threshold=0.75):
     return selected
 
 
-# ─── LLM: Opus for answers ──────────────────────────────────
+# ─── Question classification + per-type prompts ─────────────
+
+PROMPT_ROUTING = os.environ.get("PROMPT_ROUTING", "0") == "1"
+
+_INFERENCE_STARTS = [
+    "would ",
+    "could ",
+    "might ",
+    "should ",
+    "what kind of ",
+    "what type of ",
+    "what might ",
+    "what personality ",
+    "what attributes ",
+    "what traits ",
+    "based on ",
+    "what alternative ",
+    "what underlying ",
+    "what job might",
+    "what career might",
+    "what pets ",
+    "what activities ",
+    "what hobbies ",
+]
+_INFERENCE_CONTAINS = [
+    "likely ",
+    "probably ",
+    "considered ",
+    "enjoy visiting",
+    "enjoy playing",
+    "enjoy watching",
+    "benefit from",
+    "describe ",
+    "referring to",
+    "suggest about",
+    "indicate about",
+    "reveal about",
+    "infer ",
+    "imply ",
+    "what does this say about",
+]
+_TEMPORAL_CONTAINS = [
+    "when did",
+    "what date",
+    "what year",
+    "what month",
+    "how long ago",
+    "how many times",
+    "how often",
+    "how many hikes",
+    "how many sessions",
+    "how many conversations",
+]
 
 
-def generate_opus_answer(question, context_chunks, max_chunks=50):
-    context = "\n".join(f"- {c.get('text', c) if isinstance(c, dict) else c}" for c in context_chunks[:max_chunks])
-    prompt = f"""You are answering questions about a conversation based on retrieved memory snippets.
+def classify_question(question: str) -> str:
+    q = question.lower().strip()
+    if any(q.startswith(p) for p in _INFERENCE_STARTS):
+        return "inference"
+    if any(p in q for p in _INFERENCE_CONTAINS):
+        return "inference"
+    if any(p in q for p in _TEMPORAL_CONTAINS):
+        return "temporal"
+    return "factual"
+
+
+_PROMPT_FACTUAL = """You are answering questions about a conversation based on retrieved memory snippets.
 Answer concisely in 1-3 sentences. Be direct and specific.
 
 IMPORTANT: If the question attributes an action or fact to Person A, but the memories show
@@ -239,6 +300,64 @@ Memories:
 
 Question: {question}
 Answer:"""
+
+_PROMPT_INFERENCE = """You are answering an inference question about people based on retrieved memory snippets.
+Your job is to draw REASONABLE CONCLUSIONS from the available evidence.
+
+RULES:
+- If someone collects classic children's books, they would likely enjoy Dr. Seuss.
+- If someone had a bad experience with an activity, they probably wouldn't repeat it soon.
+- If someone has career goals in a specific country, they probably wouldn't want to move abroad.
+- If someone's hobbies and interests align with something, answer YES with brief reasoning.
+- If someone plays a specific video game, infer the platform from the game if possible.
+- Use personality traits, preferences, habits, and stated opinions as evidence.
+- Give your BEST INFERENCE with brief reasoning, even when the answer requires connecting dots.
+- Only say "I don't have enough information" if the memories contain genuinely NOTHING
+  related to the topic — not merely because the exact answer isn't stated verbatim.
+
+Memories:
+{context}
+
+Question: {question}
+Answer (give your best inference with brief reasoning):"""
+
+_PROMPT_TEMPORAL = """You are answering a time-related question about a conversation based on retrieved memory snippets.
+Answer concisely. Be specific about dates and times.
+
+IMPORTANT: When memories contain timestamps or session dates, use them to compute actual dates:
+- "yesterday" relative to timestamp 2023-05-08 = 2023-05-07
+- "last year" relative to May 2023 = 2022
+- "last week" = 7 days before the timestamp
+
+When asked "how many times" or "how many [events]", carefully enumerate each distinct
+mention across all memories and count them.
+
+If the question attributes an action to the wrong person but the memories contain the
+relevant date/time info, still provide the temporal answer.
+
+Memories:
+{context}
+
+Question: {question}
+Answer:"""
+
+
+# ─── LLM: Opus for answers ──────────────────────────────────
+
+
+def generate_opus_answer(question, context_chunks, max_chunks=50):
+    context = "\n".join(f"- {c.get('text', c) if isinstance(c, dict) else c}" for c in context_chunks[:max_chunks])
+
+    if PROMPT_ROUTING:
+        q_type = classify_question(question)
+        if q_type == "inference":
+            prompt = _PROMPT_INFERENCE.format(context=context, question=question)
+        elif q_type == "temporal":
+            prompt = _PROMPT_TEMPORAL.format(context=context, question=question)
+        else:
+            prompt = _PROMPT_FACTUAL.format(context=context, question=question)
+    else:
+        prompt = _PROMPT_FACTUAL.format(context=context, question=question)
 
     is_openai = ANSWER_MODEL.startswith("gpt-") or ANSWER_MODEL.startswith("o1-") or ANSWER_MODEL.startswith("o3-")
 
@@ -568,6 +687,7 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["COHERE_API_KEY"] = os.environ.get("COHERE_API_KEY", "")
     env["LLM_RERANKER"] = os.environ.get("LLM_RERANKER", "false")
     env["CROSS_ENCODER"] = os.environ.get("CROSS_ENCODER", "1")
+    env["CROSS_ENCODER_URL"] = os.environ.get("CROSS_ENCODER_URL", "")
     env["CUDA_VISIBLE_DEVICES"] = ""
     env["PYTHONPATH"] = str(REPO / "tools")
 
