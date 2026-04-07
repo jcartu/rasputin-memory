@@ -63,6 +63,8 @@ FACT_CAP = int(os.environ.get("BENCH_FACT_CAP", "0"))  # 0 = no cap
 TWO_LANE = os.environ.get("BENCH_TWO_LANE", "0") == "1"
 LANE_WINDOWS = int(os.environ.get("BENCH_LANE_WINDOWS", "45"))
 LANE_FACTS = int(os.environ.get("BENCH_LANE_FACTS", "15"))
+BM25_LANE = os.environ.get("BENCH_BM25_LANE", "0") == "1"
+LANE_BM25 = int(os.environ.get("BENCH_LANE_BM25", "10"))
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -345,6 +347,22 @@ def create_collection(name):
         },
         method="PUT",
     )
+    if BM25_LANE:
+        time.sleep(0.3)
+        http_json(
+            f"{QDRANT_URL}/collections/{name}/index",
+            data={
+                "field_name": "text",
+                "field_schema": {
+                    "type": "text",
+                    "tokenizer": "word",
+                    "min_token_len": 2,
+                    "max_token_len": 20,
+                    "lowercase": True,
+                },
+            },
+            method="PUT",
+        )
 
 
 def delete_collection(name):
@@ -673,9 +691,84 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT):
     window_results.sort(key=_score_key, reverse=True)
     fact_results.sort(key=_score_key, reverse=True)
 
-    merged = deduplicate_results(window_results[:LANE_WINDOWS]) + deduplicate_results(fact_results[:LANE_FACTS])
+    deduped_windows = deduplicate_results(window_results[:LANE_WINDOWS])
+    deduped_facts = deduplicate_results(fact_results[:LANE_FACTS])
+
+    if BM25_LANE:
+        bm25_results = keyword_search(question, seen_texts, limit=LANE_BM25)
+        merged = deduped_windows + deduped_facts + bm25_results
+    else:
+        merged = deduped_windows + deduped_facts
+
     merged.sort(key=_score_key, reverse=True)
     return merged
+
+
+_STOP_WORDS = frozenset(
+    "a an the is was were are be been being have has had do does did will would shall should "
+    "can could may might must need dare to of in for on with at by from as into through during "
+    "before after above below between under again further then once here there when where why "
+    "how all each every both few more most other some such no nor not only own same so than too "
+    "very what which who whom this that these those i me my myself we our ours ourselves you your "
+    "yours yourself yourselves he him his himself she her hers herself it its itself they them "
+    "their theirs themselves about and but if or because until while also just don didn doesn "
+    "haven hasn hadn isn wasn weren won wouldn couldn shouldn".split()
+)
+
+
+def extract_keywords(question):
+    tokens = re.findall(r"\w+", question.lower())
+    keywords = [t for t in tokens if t not in _STOP_WORDS and len(t) > 1]
+    return keywords[:8]
+
+
+def keyword_search(question, exclude_texts, limit=10):
+    keywords = extract_keywords(question)
+    if not keywords:
+        return []
+    query_text = " ".join(keywords)
+    try:
+        result = http_json(
+            f"{QDRANT_URL}/collections/{_active_collection}/points/scroll",
+            data={
+                "filter": {
+                    "must": [
+                        {"key": "text", "match": {"text": query_text}},
+                        {"key": "chunk_type", "match": {"value": "window"}},
+                    ]
+                },
+                "limit": limit * 3,
+                "with_payload": True,
+            },
+            method="POST",
+            timeout=15,
+        )
+        hits = []
+        for pt in result.get("result", {}).get("points", []):
+            payload = pt.get("payload", {})
+            text_key = (payload.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in exclude_texts:
+                exclude_texts.add(text_key)
+                hits.append(
+                    {
+                        "text": payload.get("text", ""),
+                        "source": payload.get("source", ""),
+                        "date": payload.get("date", ""),
+                        "chunk_type": payload.get("chunk_type", ""),
+                        "score": 0.5,
+                        "origin": "bm25",
+                    }
+                )
+                if len(hits) >= limit:
+                    break
+        return hits
+    except Exception as e:
+        if "text" not in str(e).lower():
+            print(f"    BM25 search error: {e}")
+        return []
+
+
+_active_collection = ""
 
 
 # ─── F1 scoring ──────────────────────────────────────────────
@@ -810,6 +903,8 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
         print(f"{'=' * 60}")
 
         collection = f"locomo_lb_{conv_id.replace('-', '_')}"
+        global _active_collection
+        _active_collection = collection
         proc = None
 
         try:
