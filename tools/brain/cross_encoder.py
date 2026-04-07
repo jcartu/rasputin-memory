@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
 import math
 import os
+import urllib.request
+import urllib.error
 from datetime import datetime, timezone
 from typing import Any
 
@@ -11,8 +14,42 @@ logger = logging.getLogger(__name__)
 _MODEL_NAME = os.environ.get("CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 _MAX_LENGTH = int(os.environ.get("CROSS_ENCODER_MAX_LENGTH", "512"))
 _BATCH_SIZE = int(os.environ.get("CROSS_ENCODER_BATCH_SIZE", "32"))
+_REMOTE_URL = os.environ.get("CROSS_ENCODER_URL", "")
+_REMOTE_TIMEOUT = int(os.environ.get("CROSS_ENCODER_TIMEOUT", "30"))
 
 _model = None
+_remote_ok: bool | None = None
+
+
+def _check_remote() -> bool:
+    global _remote_ok
+    if not _REMOTE_URL:
+        _remote_ok = False
+        return False
+    if _remote_ok is not None:
+        return _remote_ok
+    try:
+        url = _REMOTE_URL.rstrip("/").rsplit("/", 1)[0] + "/health"
+        req = urllib.request.Request(url, method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        _remote_ok = data.get("status") == "ok"
+        if _remote_ok:
+            logger.info("Remote cross-encoder at %s (device=%s)", _REMOTE_URL, data.get("device"))
+        return bool(_remote_ok)
+    except Exception as e:
+        logger.warning("Remote cross-encoder unavailable (%s), falling back to local", e)
+        _remote_ok = False
+        return False
+
+
+def _predict_remote(pairs: list[list[str]]) -> list[float]:
+    body = json.dumps({"pairs": pairs}).encode()
+    req = urllib.request.Request(_REMOTE_URL, data=body, method="POST")
+    req.add_header("Content-Type", "application/json")
+    with urllib.request.urlopen(req, timeout=_REMOTE_TIMEOUT) as resp:
+        data = json.loads(resp.read().decode())
+    return data["scores"]
 
 
 def _load_model():
@@ -22,9 +59,16 @@ def _load_model():
     try:
         from sentence_transformers import CrossEncoder
 
-        logger.info("Loading cross-encoder: %s", _MODEL_NAME)
-        _model = CrossEncoder(_MODEL_NAME, max_length=_MAX_LENGTH, device="cpu")
-        logger.info("Cross-encoder loaded (CPU)")
+        device = "cpu" if os.environ.get("CUDA_VISIBLE_DEVICES") == "" else "cuda"
+        logger.info("Loading cross-encoder: %s (device=%s)", _MODEL_NAME, device)
+        try:
+            _model = CrossEncoder(_MODEL_NAME, max_length=_MAX_LENGTH, device=device)
+        except Exception:
+            if device != "cpu":
+                logger.warning("GPU load failed, falling back to CPU")
+                _model = CrossEncoder(_MODEL_NAME, max_length=_MAX_LENGTH, device="cpu")
+                device = "cpu"
+        logger.info("Cross-encoder loaded (%s)", device)
         return _model
     except ImportError:
         logger.warning("sentence-transformers not installed, cross-encoder disabled")
@@ -35,18 +79,12 @@ def _load_model():
 
 
 def is_available() -> bool:
+    if _check_remote():
+        return True
     return _load_model() is not None
 
 
-def rerank(
-    query: str,
-    results: list[dict[str, Any]],
-    top_k: int | None = None,
-) -> list[dict[str, Any]]:
-    model = _load_model()
-    if model is None or not results:
-        return results[:top_k] if top_k else results
-
+def _build_pairs(query: str, results: list[dict[str, Any]]) -> list[list[str]]:
     pairs = []
     for r in results:
         doc_text = (r.get("text") or "")[:1000]
@@ -57,12 +95,35 @@ def rerank(
         if source:
             doc_text = f"[Source: {source}] {doc_text}"
         pairs.append([query, doc_text])
+    return pairs
 
-    try:
-        raw_scores = model.predict(pairs, batch_size=_BATCH_SIZE)
-    except Exception as e:
-        logger.error("Cross-encoder predict failed: %s", e)
+
+def rerank(
+    query: str,
+    results: list[dict[str, Any]],
+    top_k: int | None = None,
+) -> list[dict[str, Any]]:
+    if not results:
         return results[:top_k] if top_k else results
+
+    pairs = _build_pairs(query, results)
+    raw_scores = None
+
+    if _check_remote():
+        try:
+            raw_scores = _predict_remote(pairs)
+        except Exception as e:
+            logger.warning("Remote cross-encoder failed (%s), falling back to local", e)
+
+    if raw_scores is None:
+        model = _load_model()
+        if model is None:
+            return results[:top_k] if top_k else results
+        try:
+            raw_scores = model.predict(pairs, batch_size=_BATCH_SIZE)
+        except Exception as e:
+            logger.error("Cross-encoder predict failed: %s", e)
+            return results[:top_k] if top_k else results
 
     for r, raw_score in zip(results, raw_scores):
         score = float(raw_score)
