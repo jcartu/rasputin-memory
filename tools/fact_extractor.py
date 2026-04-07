@@ -349,9 +349,16 @@ Just return the JSON array:"""
 
         filtered = json.loads(text)
 
-        # Convert back to fact objects
+        # Convert back to fact objects — LLM returns dicts ({"fact": "..."}),
+        # so extract the text before building the set (dicts are unhashable).
         kept_facts = []
-        kept_texts = set(filtered) if isinstance(filtered, list) else set()
+        kept_texts = set()
+        if isinstance(filtered, list):
+            for f in filtered:
+                if isinstance(f, dict):
+                    kept_texts.add(f.get("fact", ""))
+                elif isinstance(f, str):
+                    kept_texts.add(f)
 
         for fact in new_facts:
             fact_text = fact.get("fact", "")
