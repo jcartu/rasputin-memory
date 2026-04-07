@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import concurrent.futures
 import time
-import importlib
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -11,76 +10,23 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 from brain import _state
 from brain import embedding
-from brain import entities as entities_module
 from brain import graph
 from brain import scoring
 
 import os as _os
-import re as _re
 
-safe_import = importlib.import_module("pipeline._imports").safe_import
-
-ABLATION_BM25 = _os.environ.get("ABLATION_BM25", "1") == "1"
-ABLATION_KEYWORD_BOOST = _os.environ.get("ABLATION_KEYWORD_BOOST", "1") == "1"
-ABLATION_ENTITY_BOOST = _os.environ.get("ABLATION_ENTITY_BOOST", "1") == "1"
-ABLATION_TEMPORAL_BOOST = _os.environ.get("ABLATION_TEMPORAL_BOOST", "1") == "1"
-ABLATION_TEMPORAL_DECAY = _os.environ.get("ABLATION_TEMPORAL_DECAY", "1") == "1"
-ABLATION_MMR = _os.environ.get("ABLATION_MMR", "1") == "1"
-ABLATION_RERANKER = _os.environ.get("ABLATION_RERANKER", "1") == "1"
-ABLATION_QUERY_EXPAND = _os.environ.get("ABLATION_QUERY_EXPAND", "1") == "1"
 SCORE_BREAKDOWN = _os.environ.get("SCORE_BREAKDOWN", "0") == "1"
 CROSS_ENCODER_ENABLED = _os.environ.get("CROSS_ENCODER", "1") == "1"
 
-_TOKEN_RE = _re.compile(r"\w+", _re.UNICODE)
 _access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
 
-try:
-    from bm25_search import hybrid_rerank as bm25_rerank
-except ModuleNotFoundError:
-    from tools.bm25_search import hybrid_rerank as bm25_rerank  # type: ignore[no-redef]
 
-_query_expansion = safe_import("pipeline.query_expansion", "tools.pipeline.query_expansion")
-expand_queries = _query_expansion.expand_queries
-_scoring_constants = safe_import("pipeline.scoring_constants", "tools.pipeline.scoring_constants")
+def expand_queries(query: str, max_expansions: int = 5) -> list[str]:
+    return [query]
 
 
-def _neural_rerank(query: str, results: list[dict[str, Any]], top_k: Optional[int] = None) -> list[dict[str, Any]]:
-    if not results:
-        return results
-
-    passages = []
-    for row in results:
-        text = row.get("text", "")[:1000]
-        source = row.get("source", "")
-        title = row.get("title", "")
-        parts = []
-        if title:
-            parts.append(f"Title: {title}")
-        if source:
-            parts.append(f"Source: {source}")
-        parts.append(text)
-        passages.append(" | ".join(parts))
-
-    try:
-        response = _state.requests.post(
-            _state.RERANKER_URL,
-            json={"query": query, "passages": passages},
-            timeout=_state.RERANKER_TIMEOUT,
-        )
-        response.raise_for_status()
-        scores = response.json().get("scores", [])
-
-        if len(scores) != len(results):
-            return results
-
-        for idx, row in enumerate(results):
-            row["rerank_score"] = scores[idx]
-
-        reranked = sorted(results, key=lambda value: value.get("rerank_score", 0), reverse=True)
-        return reranked[:top_k] if top_k else reranked
-    except Exception as error:
-        _state.logger.error("Reranker error: %s", error)
-        return results
+def bm25_rerank(_query: str, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return results
 
 
 def _llm_rerank(query: str, results: list[dict[str, Any]], top_k: int = 10) -> list[dict[str, Any]]:
@@ -150,40 +96,6 @@ Respond with ONLY the JSON array, nothing else."""
         return results[:top_k]
 
 
-_TEMPORAL_SIGNALS = frozenset({"when", "date", "year", "month", "how long", "ago", "before", "after", "since"})
-_DATE_PATTERN = _re.compile(
-    r"\b(?:19|20)\d{2}\b|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b|"
-    r"\b(?:yesterday|last\s+\w+|ago|before|after)\b",
-    _re.IGNORECASE,
-)
-
-
-def _mmr_diversify(
-    results: list[dict[str, Any]], score_key: str, max_results: int, overlap_threshold: float = 0.75
-) -> list[dict[str, Any]]:
-    if len(results) <= max_results:
-        return results
-    tokenize = _re.compile(r"\w+", _re.UNICODE)
-    selected: list[dict[str, Any]] = []
-    selected_token_sets: list[set[str]] = []
-    for r in results:
-        tokens = set(tokenize.findall((r.get("text") or "").lower()))
-        if not tokens:
-            continue
-        if selected_token_sets:
-            max_overlap = max(
-                (len(tokens & existing) / min(len(tokens), len(existing)) if existing else 0.0)
-                for existing in selected_token_sets
-            )
-            if max_overlap > overlap_threshold:
-                continue
-        selected.append(r)
-        selected_token_sets.append(tokens)
-        if len(selected) >= max_results:
-            break
-    return selected
-
-
 def qdrant_search(
     query: str,
     limit: int = 10,
@@ -235,8 +147,6 @@ def qdrant_search(
             }
         )
 
-    if ABLATION_TEMPORAL_DECAY:
-        out = scoring.apply_temporal_decay(out)
     if SCORE_BREAKDOWN:
         for row in out:
             row["_sb"] = {"dense_score": row.get("score", 0)}
@@ -338,18 +248,11 @@ def hybrid_search(
     start = time.time()
 
     queries = [query]
-    if expand and ABLATION_QUERY_EXPAND:
-        queries = expand_queries(query, max_expansions=5)
-        names = _scoring_constants.CAPITALIZED_NAME_RE.findall(query)
-        stop = _scoring_constants.NAME_STOPWORDS
-        for name in names[:2]:
-            if not any(w in stop for w in name.split()):
-                queries.append(name)
-                topic = query.replace(name, "").strip(" ?.,")
-                if len(topic) > 10 and topic not in queries:
-                    queries.append(topic)
-        seen = set()
-        queries = [q for q in queries if not (q in seen or seen.add(q))]  # type: ignore[func-returns-value]
+    if expand:
+        expanded = expand_queries(query, max_expansions=5)
+        if expanded:
+            seen: set[str] = set()
+            queries = [q for q in expanded if not (q in seen or seen.add(q))]  # type: ignore[func-returns-value]
 
     fetch_limit = limit * 4
     all_qdrant_results = []
@@ -419,14 +322,6 @@ def hybrid_search(
     qdrant_results = sorted(deduped_by_text.values(), key=lambda value: value.get("score", 0), reverse=True)
     graph_results = graph.graph_search(query, hops=graph_hops, limit=limit)
 
-    bm25_applied = False
-    if ABLATION_BM25 and _state.BM25_AVAILABLE and qdrant_results:
-        try:
-            qdrant_results = bm25_rerank(query, qdrant_results)
-            bm25_applied = True
-        except Exception as error:
-            _state.logger.error("BM25 rerank error: %s", error)
-
     if qdrant_results and any("source_weight" in row for row in qdrant_results):
         qdrant_results = scoring.apply_multifactor_scoring(qdrant_results)
 
@@ -439,9 +334,6 @@ def hybrid_search(
 
     all_candidates = list(qdrant_results[: limit * 2]) + graph_memory_results
 
-    neural_applied = False
-    llm_applied = False
-    cohere_applied = False
     ranking_score_key = "hybrid_score" if any("hybrid_score" in row for row in all_candidates) else "score"
     if SCORE_BREAKDOWN:
         for row in all_candidates:
@@ -458,161 +350,6 @@ def hybrid_search(
                 ranking_score_key = "final_score"
         except ImportError:
             pass
-
-    if all_candidates and ABLATION_RERANKER and not ce_applied:
-        rerank_pool = all_candidates[: limit * 3]
-
-        try:
-            from brain.rerank_providers import RERANK_PROVIDER, rerank_cohere, COHERE_API_KEY
-
-            if RERANK_PROVIDER == "cohere" and COHERE_API_KEY:
-                all_candidates = rerank_cohere(query, rerank_pool, top_k=limit)
-                cohere_applied = any(r.get("reranker") == "cohere" for r in all_candidates)
-                if cohere_applied:
-                    ranking_score_key = "rerank_score"
-        except ImportError:
-            pass
-
-        if not cohere_applied:
-            if _state.LLM_RERANKER_ENABLED and _state.ANTHROPIC_API_KEY:
-                all_candidates = _llm_rerank(query, rerank_pool, top_k=limit)
-                llm_applied = any(row.get("llm_rerank_position") is not None for row in all_candidates)
-                if llm_applied:
-                    top_span = max(len(all_candidates), 1)
-                    for idx, row in enumerate(all_candidates):
-                        llm_position = row.get("llm_rerank_position")
-                        if llm_position is None:
-                            llm_position = idx + top_span
-                            row["llm_rerank_position"] = llm_position
-                        row["llm_rerank_score"] = float((2 * top_span) - int(llm_position))
-                    ranking_score_key = "llm_rerank_score"
-            elif embedding.is_reranker_available():
-                pre_count = len(all_candidates)
-                all_candidates = _neural_rerank(query, rerank_pool, top_k=limit)
-                neural_applied = len(all_candidates) <= pre_count and any(
-                    row.get("rerank_score") is not None for row in all_candidates
-                )
-                if neural_applied:
-                    ranking_score_key = "rerank_score"
-            else:
-                all_candidates = sorted(
-                    all_candidates,
-                    key=lambda value: float(value.get(ranking_score_key) or value.get("score", 0)),
-                    reverse=True,
-                )[:limit]
-
-    query_tokens = set(_TOKEN_RE.findall(query.lower()))
-    _stopwords = {
-        "the",
-        "a",
-        "an",
-        "is",
-        "was",
-        "are",
-        "were",
-        "do",
-        "does",
-        "did",
-        "what",
-        "where",
-        "when",
-        "how",
-        "who",
-        "which",
-        "that",
-        "this",
-        "in",
-        "on",
-        "at",
-        "to",
-        "for",
-        "of",
-        "with",
-        "by",
-        "from",
-        "and",
-        "or",
-        "not",
-        "it",
-        "we",
-        "he",
-        "she",
-        "they",
-        "i",
-        "you",
-        "my",
-        "about",
-        "know",
-        "now",
-        "has",
-        "have",
-        "had",
-        "be",
-        "been",
-    }
-    # Additive keyword relevance boost (max +0.15)
-    query_content_tokens = query_tokens - _stopwords
-    if ABLATION_KEYWORD_BOOST and query_content_tokens:
-        for row in all_candidates:
-            text_tokens = set(_TOKEN_RE.findall((row.get("text") or "").lower()))
-            overlap = query_content_tokens & text_tokens
-            if overlap:
-                overlap_ratio = len(overlap) / len(query_content_tokens)
-                bonus = 0.15 * (overlap_ratio**2)
-                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
-                row["keyword_boosted"] = True
-
-    # Additive entity relevance boost (max +0.15)
-    query_entities = (
-        [name for name, _type in entities_module.extract_entities_fast(query)] if ABLATION_ENTITY_BOOST else []
-    )
-    if query_entities:
-        query_entity_names_lower = {e.lower() for e in query_entities}
-        for row in all_candidates:
-            text = row.get("text") or ""
-            text_lower = text.lower()
-            matched = [e for e in query_entities if e.lower() in text_lower]
-            if matched:
-                all_text_entities = entities_module.extract_entities_fast(text)
-                total_entities = max(len(all_text_entities), 1)
-                matched_count = sum(1 for name, _ in all_text_entities if name.lower() in query_entity_names_lower)
-                focus_ratio = matched_count / total_entities
-                position_bonus = 0.0
-                for e in matched:
-                    pos = text_lower.find(e.lower())
-                    if pos >= 0:
-                        text_len = max(len(text_lower), 1)
-                        position_bonus = max(position_bonus, 1.0 - (pos / text_len))
-                bonus = 0.10 * focus_ratio + 0.05 * position_bonus
-                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
-                row["entity_boosted"] = True
-                row["entity_focus"] = round(focus_ratio, 2)
-
-    # Additive temporal boost (+0.08 base, +0.12 if extracted dates match query tokens)
-    query_lower = query.lower()
-    query_date_tokens = set(
-        _re.findall(
-            r"\b(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|\d{4})\b",
-            query_lower,
-        )
-    )
-    if ABLATION_TEMPORAL_BOOST and (any(signal in query_lower for signal in _TEMPORAL_SIGNALS) or query_date_tokens):
-        for row in all_candidates:
-            extracted = row.get("extracted_dates") or []
-            if extracted and query_date_tokens:
-                extracted_lower = " ".join(extracted).lower()
-                matching = sum(1 for t in query_date_tokens if t in extracted_lower)
-                if matching:
-                    bonus = 0.08 + 0.04 * min(matching, 3)
-                    row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + bonus
-                    row["temporal_boosted"] = True
-                    continue
-            if _DATE_PATTERN.search(row.get("text") or ""):
-                row[ranking_score_key] = row.get(ranking_score_key, row.get("score", 0)) + 0.08
-                row["temporal_boosted"] = True
-
-    if ABLATION_MMR:
-        all_candidates = _mmr_diversify(all_candidates, ranking_score_key, max_results=limit * 3)
 
     all_candidates = sorted(
         all_candidates,
@@ -641,9 +378,6 @@ def hybrid_search(
         for row in merged:
             sb = row.setdefault("_sb", {})
             sb["final_score"] = row.get(ranking_score_key, row.get("score", 0))
-            sb["keyword_delta"] = row.get("keyword_boosted", False)
-            sb["entity_delta"] = row.get("entity_boosted", False)
-            sb["temporal_delta"] = row.get("temporal_boosted", False)
             sb["reranker_score"] = row.get("rerank_score") or row.get("llm_rerank_score")
             sb["contradiction_demoted"] = row.get("contradiction_demoted", False)
 
@@ -666,21 +400,7 @@ def hybrid_search(
             "graph_enriched_entities": len(graph_enrichment),
             "graph_hop_2_connections": sum(len(v) for v in graph_enrichment.values()),
             "constraint_hits": len(constraint_hits),
-            "ablation": {
-                "bm25": ABLATION_BM25,
-                "keyword_boost": ABLATION_KEYWORD_BOOST,
-                "entity_boost": ABLATION_ENTITY_BOOST,
-                "temporal_boost": ABLATION_TEMPORAL_BOOST,
-                "temporal_decay": ABLATION_TEMPORAL_DECAY,
-                "mmr": ABLATION_MMR,
-                "reranker": ABLATION_RERANKER,
-                "query_expand": ABLATION_QUERY_EXPAND,
-            },
-            "bm25_reranked": bm25_applied,
             "cross_encoder_reranked": ce_applied,
-            "cohere_reranked": cohere_applied,
-            "llm_reranked": llm_applied,
-            "neural_reranked": neural_applied,
         },
     }
 

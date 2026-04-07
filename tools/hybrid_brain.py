@@ -36,10 +36,10 @@ check_duplicate = embedding.check_duplicate
 def get_embedding_safe(
     text: str,
     default_action: str = "fail",
-    prefix: str = _state.EMBED_PREFIX_QUERY,
+    prefix: Optional[str] = _state.EMBED_PREFIX_QUERY,
 ) -> Optional[list[float]]:
     try:
-        return get_embedding(text, prefix=prefix)
+        return get_embedding(text, prefix=prefix or "")
     except Exception as error:
         _state.logger.error("Embedding failed (%s): %s", default_action, error)
         if default_action == "empty":
@@ -49,7 +49,7 @@ def get_embedding_safe(
         raise
 
 
-neural_rerank = search._neural_rerank
+neural_rerank = getattr(search, "_neural_rerank", lambda _q, rows, top_k=None: rows[:top_k] if top_k else rows)
 _inc_metric = amac._inc_metric
 AMAC_PROMPT_TEMPLATE = amac.AMAC_PROMPT_TEMPLATE
 amac_score = amac.amac_score
@@ -71,8 +71,8 @@ commit_memory = commit.commit_memory
 list_contradictions = commit.list_contradictions
 apply_relevance_feedback = commit.apply_relevance_feedback
 
-expand_queries = search.expand_queries
-bm25_rerank = search.bm25_rerank
+expand_queries = getattr(search, "expand_queries", lambda q, max_expansions=5: [q])
+bm25_rerank = getattr(search, "bm25_rerank", lambda _q, rows: rows)
 qdrant_search = search.qdrant_search
 _update_access_tracking = search._update_access_tracking
 hybrid_search = search.hybrid_search
