@@ -9,41 +9,39 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [0.7.0] - 2026-04-03
 
-**LoCoMo: 91.36% — #1 on the leaderboard.** Also: LongMemEval 89.40%, FRAMES 50.4%.
+LoCoMo conv-0: 69.7% production, 72.4% compare (non-adversarial). Scientific ablation program proved which pipeline stages contribute and which don't.
 
 ### Benchmarks
-- **LoCoMo 91.36%** (1,986 QA) — #1, beating Backboard (90.00%). LLM-judge accuracy, non-adversarial.
-- **LongMemEval 89.40%** (500 QA, ICLR 2025) — conversational memory across 6 question types
-- **FRAMES 50.4%** (824 QA, Google 2024) — multi-hop factual reasoning over Wikipedia
-- **LoCoMo-Plus** (2,387 QA, ARR 2026) — cognitive memory evaluation with implicit constraint recall (harness shipped, baseline running)
+- **LoCoMo 69.7%** (conv-0, 199 QA) — production mode (Haiku answers, neutral judge)
+- **LoCoMo 72.4%** (conv-0, 199 QA) — compare mode (gpt-4o-mini answers, generous judge)
 - Benchmark harnesses: `locomo_leaderboard_bench.py`, `longmemeval_bench.py`, `frames_bench.py`, `locomo_plus_bench.py`
+- `bench_runner.py` with production/compare modes, git integrity, batch API (50% savings)
+- `analyze_failures.py` — retrieval oracle diagnostic (Gold-in-Top-N, failure taxonomy)
+- 12 documented experiments in `experiments/` with keep/revert verdicts
 
 ### Added — Retrieval Pipeline
-- Conversation-window chunking: 5-turn overlapping windows (stride 2) alongside individual turns
-- Multi-query retrieval: name + topic decomposition with merged deduplication
-- Token-overlap deduplication (>75% overlap removed before answer generation)
-- Temporal-aware retrieval boost: 1.5× for date-bearing passages on temporal queries
-- MMR diversity selection: token-overlap filtering reduces redundant results
-- Boost cap at `MAX_TOTAL_BOOST = 3.0` (was unbounded)
-- Multi-query name + topic decomposition backported to production `hybrid_search`
-- `/commit_conversation` endpoint for windowed multi-turn ingestion
-- `speaker`, `mentioned_names`, `has_date`, `constraint_summary` payload fields on commit
-- Latin name extraction fallback (no longer requires `known_entities.json`)
-- Configurable search rate limit (`RATE_LIMIT_SEARCH` env var)
-- `ThreadPoolExecutor` for access tracking (replaces fire-and-forget `Thread()`)
+- Two-lane search: windows (45 slots) + facts (15 slots) with guaranteed coverage
+- LLM fact extraction at ingest (Claude Haiku): date resolution, coreference, self-contained facts
+- Cross-encoder reranker (ms-marco-MiniLM-L-6-v2, 22MB, CPU, 76ms/60 docs)
+- Windows-only chunking: 5-turn overlapping windows, stride 2 (individual turns add 0pp — proven)
+- Ablation config: env vars to toggle every pipeline stage independently
+- Score breakdown instrumentation: `_score_breakdown` dict per result
+
+### Proven Dead Weight (ablation-tested, 0pp contribution)
+- BM25 + RRF fusion (IDF computed on retrieved set, not corpus)
+- Keyword/entity/temporal additive boosts (too small to change rank order)
+- MMR diversity filtering
+- Cohere reranker at 60-chunk context
+- Cross-encoder at 60-chunk context (helps only at smaller context)
 
 ### Added — Constraint Extraction (experimental)
-- `tools/brain/constraints.py`: extracts implicit constraints (goals, states, values, causal chains) from text via local LLM
-- Query intent decomposition: for non-factual queries, generates intent-based sub-queries
-- `[constraints]` config section with `enabled`, `model`, `timeout`
+- `tools/brain/constraints.py`: extracts implicit constraints via LLM
 - Disabled by default; designed for cognitive memory evaluation
 
 ### Changed
-- Benchmark answer prompt rewritten for adversarial resistance (entity-swap tolerant)
-- Multi-query search: 5 sub-queries × top-60 per query, merged and deduplicated
-- Answer generation context window: 30 → 50 chunks
-- Temporal regex: `\d{4}` → `\b(19|20)\d{2}\b` (avoids false positives on apartment numbers, IDs)
-- Unified name extraction regex + stopwords in `pipeline/scoring_constants.py`
+- Multi-query search: 5 sub-queries per query, merged and deduplicated
+- Answer generation context window: 60 chunks
+- Benchmark methodology: production mode (Haiku, neutral) vs compare mode (gpt-4o-mini, generous)
 
 ### Fixed — Security & Quality
 - `hmac.compare_digest` for timing-safe auth token comparison

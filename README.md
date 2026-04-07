@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.7 — #1 on LoCoMo (91.36%)
+# RASPUTIN Memory v0.7
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -6,16 +6,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-A self-hosted memory backend for AI agents that goes beyond simple vector search. RASPUTIN combines four retrieval strategies — semantic vectors, keyword matching, knowledge graph traversal, and neural reranking — into a single API, with an LLM quality gate that prevents junk from entering the memory store.
+A self-hosted memory backend for AI agents. RASPUTIN stores conversations as overlapping windows and LLM-extracted facts in Qdrant, with an LLM quality gate that prevents junk from entering the memory store.
 
-**Why not just use pgvector / Pinecone / plain RAG?** Because vector similarity alone misses keyword-exact matches, can't follow entity relationships, and treats "ok thanks" the same as a critical business decision. RASPUTIN solves all three.
+Production-grade long-term memory for AI agents:
 
-Production-grade long-term memory for AI agents using a hybrid retrieval pipeline:
-
-- Vector search (Qdrant)
-- Keyword search (BM25)
-- Knowledge graph traversal (FalkorDB)
-- Neural reranking (BGE cross-encoder)
+- Vector search (Qdrant) with two-lane retrieval (windows + facts)
+- LLM-based fact extraction at ingest time
+- Cross-encoder reranking (local, CPU)
+- A-MAC quality gate on commits
 
 Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 
@@ -24,32 +22,30 @@ Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 ## Architecture Overview (v0.7)
 
 ```text
-User Query
-   │
-   ├─► Multi-Query Expansion (name + topic decomposition)
-   ├─► Query Embedding (nomic-embed-text, 768d)
-   │
-   ├─► Qdrant Vector Search (top-60, multi-query) ──┐
-   ├─► BM25 Keyword Search ─────────────┼─► RRF ─► Temporal Boost ─► MMR Diversity ─► Final Top-K
-   └─► FalkorDB Graph Search ───────────┘
-
 Memory Commit
    │
    ├─► A-MAC quality gate (relevance/novelty/specificity)
-   ├─► Duplicate detection
-   ├─► Entity + name extraction (speaker, mentioned_names, has_date)
-   └─► Persist to Qdrant (+ graph links where applicable)
+   ├─► 5-turn overlapping windows (stride 2)
+   ├─► LLM fact extraction (optional, Haiku)
+   ├─► Embedding (nomic-embed-text, 768d)
+   └─► Persist to Qdrant
+
+Search (two-lane)
+   │
+   ├─► Multi-Query Expansion
+   ├─► Query Embedding (nomic-embed-text, 768d)
+   │
+   ├─► Lane 1: Window search (45 slots) ──┐
+   ├─► Lane 2: Fact search (15 slots)   ──┼─► Merge ─► Cross-encoder rerank ─► Top-60 to LLM
+   └─► (Optional: BM25 keyword lane)    ──┘
 ```
 
 ### Core components
 
 - API server: `tools/hybrid_brain.py`
-- BM25 fusion layer: `tools/bm25_search.py`
-- Reranker API: `tools/brain/reranker.py`
-- Maintenance jobs:
-  - `tools/memory_decay.py`
-  - `tools/memory_dedup.py`
-  - `tools/fact_extractor.py`
+- Fact extraction: `tools/brain/fact_extractor.py`
+- Cross-encoder reranker: `tools/brain/cross_encoder.py`
+- Maintenance jobs: `tools/memory_decay.py`, `tools/memory_dedup.py`
 
 ---
 
@@ -58,72 +54,63 @@ Memory Commit
 | Feature | RASPUTIN | Mem0 | Zep | LightRAG |
 |---------|----------|------|-----|----------|
 | Vector search | ✅ Qdrant | ✅ | ✅ | ✅ |
-| BM25 keyword search | ✅ | ❌ | ❌ | ❌ |
-| Knowledge graph | ✅ FalkorDB | ❌ | ✅ | ✅ |
-| Neural reranking | ✅ BGE cross-encoder | ❌ | ❌ | ❌ |
+| LLM fact extraction | ✅ | ❌ | ❌ | ❌ |
+| Two-lane retrieval | ✅ windows + facts | ❌ | ❌ | ❌ |
+| Cross-encoder reranking | ✅ local CPU | ❌ | ❌ | ❌ |
 | LLM quality gate | ✅ A-MAC | ❌ | ❌ | ❌ |
-| Memory decay model | ✅ Ebbinghaus-inspired | ❌ | ❌ | ❌ |
 | Contradiction detection | ✅ | ❌ | ❌ | ❌ |
 | Self-hosted / no vendor lock | ✅ | ✅ | ❌ (SaaS) | ✅ |
-| Sub-200ms p95 latency | ✅ | ✅ | ✅ | ❓ |
 
 ---
 
 ## Benchmarks
 
-### LoCoMo — 91.36% (#1 on the leaderboard)
+Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024), conv-0 (199 QA pairs). Two benchmark modes: production (Haiku answers, neutral judge — measures retrieval quality) and compare (gpt-4o-mini answers, generous judge — field-comparable). See [benchmarks/README.md](benchmarks/README.md) for methodology details.
 
-Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024), the standard benchmark for conversational memory systems. 10 conversations, 1,986 QA pairs.
+### LoCoMo conv-0 (current best: two-lane retrieval)
 
-| Rank | System | Accuracy |
-|------|--------|----------|
-| **🥇** | **RASPUTIN Memory v0.7** | **91.36%** |
-| 🥈 | Backboard | 90.00% |
-| 🥉 | Memvid | 85.70% |
-| 4 | MemMachine | 84.87% |
-| 5 | Memobase | 75.78% |
-| 6 | Zep | 75.14% |
-| 7 | mem0 | 66.88% |
+| Mode | Non-adversarial | Overall |
+|------|----------------|---------|
+| Production (retrieval signal) | **69.7%** | 53.3% |
+| Compare (field-comparable) | 72.4% | — |
 
-| Category | Accuracy | Questions |
-|----------|----------|-----------|
-| Open-domain | 93.7% | 841 |
-| Temporal | 90.3% | 321 |
-| Single-hop | 87.2% | 282 |
-| Multi-hop | 86.5% | 96 |
-| Adversarial | 58.3% | 446 |
+| Category | Production | Questions |
+|----------|-----------|-----------|
+| Open-domain | 82.9% | 70 |
+| Temporal | 73.0% | 37 |
+| Multi-hop | 53.8% | 13 |
+| Single-hop | 43.8% | 32 |
+| Adversarial | 6.4% | 47 |
 
-### LongMemEval — 89.40% (ICLR 2025)
+### Retrieval Quality (the actual signal)
 
-500 conversational memory questions across 6 categories. Tests long-context recall over multi-session dialogues.
+| Metric | Value |
+|--------|-------|
+| Gold-in-ANY-chunk | 88.4% |
+| Gold-in-Top-5 | 63.8% |
+| Gold-in-Top-10 | 71.4% |
 
-| Category | Accuracy |
-|----------|----------|
-| Single-session (user) | 98.6% |
-| Single-session (assistant) | 96.4% |
-| Knowledge update | 92.3% |
-| Multi-session | 91.0% |
-| Single-session (preference) | 83.3% |
-| Temporal reasoning | 79.7% |
+### Leaderboard Context
 
-### FRAMES — 50.4% (Google Research 2024)
+Other published systems use different methodologies (strong answer models, generous judges). Direct score comparison is not valid. RASPUTIN's compare-mode (72.4% non-adv, conv-0 only) uses gpt-4o-mini for answers.
 
-824 multi-hop factual reasoning questions over Wikipedia. Tests retrieval + complex reasoning (numerical, tabular, temporal, multi-constraint).
+| System | Reported Score | Methodology |
+|--------|---------------|-------------|
+| Backboard | 90.00% | GPT-4.1, generous judge |
+| Memvid | 85.70% | GPT-4o, generous judge |
+| MemMachine | 84.87% | Unknown |
+| Memobase | 75.78% | Unknown |
+| RASPUTIN (compare) | 72.4% | gpt-4o-mini, generous judge, conv-0 only |
+| Zep | 75.14% | Unknown |
+| mem0 | 66.88% | Unknown |
 
 ### Pipeline
 
-All benchmarks use the same retrieval pipeline:
-
 ```
-nomic-embed-text (768d) → Multi-query expansion → Qdrant top-60 → Dedup → Claude Opus 4 → GPT-4o-mini judge
+nomic-embed-text (768d) → Two-lane search (windows + facts) → Cross-encoder rerank → Haiku/gpt-4o-mini → gpt-4o-mini judge
 ```
 
-Run benchmarks:
-```bash
-python3 benchmarks/locomo_leaderboard_bench.py    # LoCoMo
-python3 benchmarks/longmemeval_bench.py            # LongMemEval
-python3 benchmarks/frames_bench.py                 # FRAMES
-```
+See `benchmarks/README.md` for how to run benchmarks and reproduce numbers.
 
 ---
 
@@ -344,14 +331,15 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ## Version Notes
 
-### v0.7.0 — #1 on LoCoMo (91.36%)
-- **LoCoMo 91.36%** — beat Backboard (90.00%) for #1 on the leaderboard
-- **LongMemEval 89.40%** — 500 conversational memory questions (ICLR 2025)
-- **FRAMES 50.4%** — 824 multi-hop factual reasoning questions (Google 2024)
-- Conversation-window chunking, multi-query retrieval, MMR diversity
-- Temporal boost, adversarial-resistant prompts, boost cap at 3×
-- Constraint extraction architecture (implicit goal/state/value/causal memory)
-- Timing-safe auth, UTC datetimes, schema v0.7, expanded protected fields
+### v0.7.0
+- Two-lane retrieval: windows (45 slots) + LLM-extracted facts (15 slots)
+- Cross-encoder reranker (ms-marco-MiniLM-L-6-v2, CPU)
+- Structured fact extraction via Claude Haiku at ingest
+- Windows-only chunking (individual turns proven to add 0pp)
+- Ablation-tested: BM25, keyword/entity/temporal boosts, MMR, Cohere reranker all proven 0pp
+- Benchmark infrastructure: production/compare modes, batch API (50% savings), failure analysis
+- LoCoMo conv-0: 69.7% production, 72.4% compare (non-adversarial)
+- Timing-safe auth, UTC datetimes, schema v0.7
 
 ### v0.6.0 — LoCoMo 89.81% (#2)
 - LLM reranker (Claude Haiku), professional benchmark harness

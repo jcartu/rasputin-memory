@@ -28,10 +28,12 @@ The leaderboard comparison table uses compare-mode numbers because that is the o
 
 | Setup | Embeddings | Reranker | Answers | Cost/LoCoMo run |
 |---|---|---|---|---|
-| Full cloud (default) | Gemini | Cohere | Claude Haiku | ~$2-5 |
-| OpenAI-only | text-embedding-3-small | none | gpt-4o-mini | ~$3-6 |
-| Fully local (free) | nomic via Ollama | BGE local | Ollama qwen | $0 |
+| Default | nomic via Ollama | Cross-encoder (local) | Claude Haiku | ~$2-5 |
+| OpenAI-only | nomic via Ollama | Cross-encoder (local) | gpt-4o-mini | ~$3-6 |
+| Fully local (free) | nomic via Ollama | Cross-encoder (local) | Ollama qwen | $0 |
 | Batch mode | any | any | any | 50% of above |
+
+Note: Cohere reranker and Gemini embeddings are available but ablation testing proved they add 0pp at 60-chunk context. nomic-embed-text + local cross-encoder is the proven default.
 
 ## Reproducing Published Numbers
 
@@ -44,8 +46,8 @@ The leaderboard comparison table uses compare-mode numbers because that is the o
 
 ### Optional
 
-- `COHERE_API_KEY` — enables Cohere rerank-v3.5 (improves retrieval quality)
-- `GEMINI_API_KEY` — enables Gemini embedding (alternative to local nomic)
+- `COHERE_API_KEY` — enables Cohere rerank-v3.5 (ablation showed 0pp at 60-chunk context)
+- `GEMINI_API_KEY` — enables Gemini embedding (ablation showed identical to nomic at 768d)
 
 ### Compare mode (leaderboard numbers)
 
