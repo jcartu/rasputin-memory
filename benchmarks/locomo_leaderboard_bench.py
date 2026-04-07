@@ -687,7 +687,9 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT):
                 fact_results.append(r)
         time.sleep(0.5)
 
-    _score_key = lambda r: r.get("final_score", r.get("rerank_score", r.get("score", 0)))
+    def _score_key(r):
+        return r.get("final_score", r.get("rerank_score", r.get("score", 0)))
+
     window_results.sort(key=_score_key, reverse=True)
     fact_results.sort(key=_score_key, reverse=True)
 

@@ -90,19 +90,53 @@ Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024), conv-
 | Gold-in-Top-5 | 63.8% |
 | Gold-in-Top-10 | 71.4% |
 
-### Leaderboard Context
+### On Benchmark Methodology
 
-Other published systems use different methodologies (strong answer models, generous judges). Direct score comparison is not valid. RASPUTIN's compare-mode (72.4% non-adv, conv-0 only) uses gpt-4o-mini for answers.
+Published LoCoMo scores across memory systems are not directly comparable. Each system measures something different, uses different models, and reports under different conditions.
 
-| System | Reported Score | Methodology |
-|--------|---------------|-------------|
-| Backboard | 90.00% | GPT-4.1, generous judge |
-| Memvid | 85.70% | GPT-4o, generous judge |
-| MemMachine | 84.87% | Unknown |
-| Memobase | 75.78% | Unknown |
-| RASPUTIN (compare) | 72.4% | gpt-4o-mini, generous judge, conv-0 only |
-| Zep | 75.14% | Unknown |
-| mem0 | 66.88% | Unknown |
+**What varies across systems:**
+
+| Variable | Effect on Score | Example |
+|----------|----------------|---------|
+| Answer generation model | GPT-4o vs Haiku: ~20pp difference | A strong model rescues poor retrieval |
+| Judge prompt leniency | "Be generous" vs neutral: ~5-10pp | Generous judges forgive vague answers |
+| Context window size | 60 chunks vs 10: ~15pp | More context means ranking doesn't matter |
+| Metric type | Retrieval recall vs answer accuracy | Fundamentally different measurements |
+
+**What each system actually measures:**
+
+| System | Metric | What It Tests |
+|--------|--------|---------------|
+| MemPalace | Retrieval recall | Whether the right evidence was found (no answer generated, no LLM) |
+| LoCoMo original | Token F1 | Answer quality against gold standard (algorithmic, no LLM judge) |
+| AMB/Hindsight | LLM judge accuracy | End-to-end: retrieval + answer + LLM evaluation |
+| RASPUTIN | LLM judge accuracy | End-to-end with fixed, disclosed methodology |
+| Memvid | LLM judge (claimed) | Methodology not published |
+
+MemPalace's 96.6% LongMemEval score, for instance, is a retrieval recall metric — it measures whether the system found the right passage, not whether it generated a correct answer. This is a valid and useful metric, but it is not comparable to answer-accuracy scores reported by other systems.
+
+Similarly, systems that use GPT-4o or Claude Opus for answer generation are primarily measuring LLM capability, not retrieval quality. A strong model can extract the correct answer from a large, poorly-ranked context window — which is exactly what our ablation program proved: at 60-chunk context, the entire ranking pipeline (BM25, keyword boosts, entity boosts, Cohere reranking, cross-encoder reranking) contributes 0pp because the answer model compensates.
+
+**RASPUTIN's methodology is fully disclosed:**
+- Production mode: Claude Haiku answers + neutral judge (isolates retrieval quality)
+- Compare mode: gpt-4o-mini answers + generous judge (field-comparable baseline)
+- Judge model pinned to `gpt-4o-mini-2024-07-18` (prevents version drift)
+- All benchmark code, judge prompts, and experiment results are in this repository
+
+We report production-mode numbers as primary because they reflect actual retrieval quality. Compare-mode numbers are provided for rough context against other systems, with the caveat that methodology differences make direct comparison approximate at best.
+
+For a standardized comparison, we recommend the [Agent Memory Benchmark](https://github.com/vectorize-io/agent-memory-benchmark) (AMB), which evaluates all systems under identical conditions with a published judge prompt.
+
+| System | Reported Score | Benchmark | Methodology |
+|--------|---------------|-----------|-------------|
+| Backboard | 90.00% | LoCoMo | GPT-4.1, generous judge |
+| Memvid | 85.70% | LoCoMo | Claimed LLM-as-judge, methodology not published |
+| MemMachine | 84.87% | LoCoMo | Not published |
+| Memobase | 75.78% | LoCoMo | Not published |
+| Zep | 75.14% | LoCoMo | Not published |
+| RASPUTIN (compare) | 72.4% | LoCoMo conv-0 | gpt-4o-mini answers, generous judge |
+| RASPUTIN (production) | 69.7% | LoCoMo conv-0 | Haiku answers, neutral judge |
+| mem0 | 66.88% | LoCoMo | Not published |
 
 ### Pipeline
 
@@ -110,7 +144,7 @@ Other published systems use different methodologies (strong answer models, gener
 nomic-embed-text (768d) → Two-lane search (windows + facts) → Cross-encoder rerank → Haiku/gpt-4o-mini → gpt-4o-mini judge
 ```
 
-See `benchmarks/README.md` for how to run benchmarks and reproduce numbers.
+See `benchmarks/README.md` for how to run benchmarks and reproduce numbers. See `experiments/` for the full ablation program and scientific record.
 
 ---
 
