@@ -37,31 +37,36 @@ Controlled by `PROMPT_ROUTING=1` env var. No LLM calls — pure regex, zero late
 | open-domain | 81.9% | 82.9% | +1.0pp |
 | adversarial | 2.5% | 14.9% | +12.4pp |
 
-## 3-Conv Running Total (497 Qs)
+## Full 10-Conv Final Results (1986 Qs)
 
 | Category | Baseline | Phase 1 | Change |
 |----------|----------|---------|--------|
-| non-adv overall | 67.5% | **72.2%** | **+4.7pp** |
-| multi-hop | 38.5% | **61.9%** | **+23.4pp** |
-| temporal | 64.8% | **82.5%** | **+17.7pp** |
-| single-hop | 37.2% | **44.6%** | **+7.4pp** |
-| open-domain | 81.9% | 76.3% | -5.6pp |
+| non-adv overall | 67.5% | **69.1%** | **+1.6pp** |
+| multi-hop | 38.5% | **55.2%** | **+16.7pp** |
+| single-hop | 37.2% | **41.1%** | **+3.9pp** |
+| temporal | 64.8% | **66.4%** | **+1.6pp** |
+| open-domain | 81.9% | 81.1% | -0.8pp |
+| adversarial | 2.5% | 11.7% | +9.2pp |
+
+Per-conversation:
+- conv-26: 73.0%, conv-30: 70.4%, conv-41: 72.4%, conv-42: 67.8%
+- conv-43: 64.0%, conv-44: 64.2%, conv-47: 76.0%, conv-48: 73.8%
+- conv-49: 64.1%, conv-50: 65.2%
 
 ## Analysis
 
-Multi-hop gains are massive — the inference prompt stops the model from abstaining
-when evidence is present but requires connecting dots. The explicit instruction
-"Only say I don't have enough information if memories contain genuinely NOTHING"
-directly addresses the 71% abstention rate.
+Multi-hop gains confirmed at scale (+16.7pp). The inference prompt stops the model
+from abstaining when evidence requires connecting dots.
 
-Temporal gains come from the date-computation instructions — "yesterday relative to
-timestamp 2023-05-08 = 2023-05-07" directly helps the model resolve relative dates.
+Temporal gains smaller at scale (+1.6pp vs +19pp on conv-0) — conv-0 was likely an
+outlier. The date-computation instructions help specific questions but don't
+generalize as broadly.
 
-Open-domain slight regression in 3-conv total may be noise or some factual questions
-being misclassified as inference. Will monitor in full 10-conv.
+Open-domain flat (-0.8pp) — prompt routing doesn't harm factual questions.
+Single-hop improved +3.9pp — some single-hop questions benefit from inference prompt.
 
-## Status
+Note: conv-43 was rescored after OpenAI credit outage during original run.
 
-Full 10-conv validation in progress. Will update with final numbers.
-Success gate: non-adv ≥ 69%, multi-hop ≥ 50%.
-Both gates already passed on conv-0.
+## Result
+
+**SHIPPED.** Success gates passed: non-adv ≥ 69% ✅, multi-hop ≥ 50% ✅.
