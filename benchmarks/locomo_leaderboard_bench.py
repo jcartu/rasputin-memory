@@ -1475,6 +1475,7 @@ def main():
     parser.add_argument("--conversations", type=str, default=None)
     parser.add_argument("--rescore-only", action="store_true")
     parser.add_argument("--search-only", action="store_true")
+    parser.add_argument("--ingest-only", action="store_true")
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
@@ -1505,6 +1506,18 @@ def main():
 
     if args.search_only:
         run_search_only(conversations, conv_indices, args.port)
+        return
+
+    if args.ingest_only:
+        indices = conv_indices or list(range(len(conversations)))
+        for idx in indices:
+            conv_data = conversations[idx]
+            conv_id = conv_data.get("sample_id", f"conv-{idx}")
+            collection = f"locomo_lb_{conv_id.replace('-', '_')}"
+            print(f"\n[{idx + 1}] Ingesting {conv_id} → {collection}")
+            create_collection(collection)
+            commit_conversation(conv_data["conversation"], collection)
+        print(f"\nIngest complete: {len(indices)} conversations")
         return
 
     results = run_full_pipeline(conversations, conv_indices, args.port)
