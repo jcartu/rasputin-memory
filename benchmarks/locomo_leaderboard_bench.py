@@ -65,6 +65,11 @@ LANE_WINDOWS = int(os.environ.get("BENCH_LANE_WINDOWS", "45"))
 LANE_FACTS = int(os.environ.get("BENCH_LANE_FACTS", "15"))
 BM25_LANE = os.environ.get("BENCH_BM25_LANE", "0") == "1"
 LANE_BM25 = int(os.environ.get("BENCH_LANE_BM25", "10"))
+KEEP_COLLECTIONS = os.environ.get("BENCH_KEEP_COLLECTIONS", "0") == "1"
+OBSERVATIONS = os.environ.get("OBSERVATIONS", "0") == "1"
+LANE_OBS = int(os.environ.get("BENCH_LANE_OBS", "15"))
+GRAPH_EXPANSION = os.environ.get("GRAPH_EXPANSION", "0") == "1"
+LANE_GRAPH = int(os.environ.get("BENCH_LANE_GRAPH", "5"))
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -826,6 +831,138 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT):
     return merged
 
 
+def search_observations(question, obs_collection, limit=15):
+    vec = get_embedding(question[:2000], prefix="search_query: ")
+    body = json.dumps(
+        {
+            "query": vec,
+            "limit": limit,
+            "with_payload": True,
+            "score_threshold": 0.3,
+        }
+    ).encode()
+    req = urllib.request.Request(f"{QDRANT_URL}/collections/{obs_collection}/points/query", data=body, method="POST")
+    req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return [
+            {
+                "text": p.get("payload", {}).get("text", ""),
+                "score": p.get("score", 0),
+                "source": "observation",
+                "chunk_type": "observation",
+                "point_id": p["id"],
+            }
+            for p in data.get("result", {}).get("points", [])
+        ]
+    except Exception:
+        return []
+
+
+def expand_graph(seed_results, collection, limit=5):
+    seed_ids = set(str(r.get("point_id")) for r in seed_results[:5] if r.get("point_id"))
+    neighbors = []
+
+    for r in seed_results[:5]:
+        pid = r.get("point_id")
+        if not pid:
+            continue
+        try:
+            data = http_json(
+                f"{QDRANT_URL}/collections/{collection}/points",
+                data={"ids": [pid], "with_payload": True},
+                method="POST",
+                timeout=10,
+            )
+            for point in data.get("result", []):
+                for link in point.get("payload", {}).get("semantic_links", []):
+                    to_id = link.get("to_id")
+                    if to_id and to_id not in seed_ids:
+                        seed_ids.add(to_id)
+                        try:
+                            n_data = http_json(
+                                f"{QDRANT_URL}/collections/{collection}/points",
+                                data={"ids": [int(to_id)], "with_payload": True},
+                                method="POST",
+                                timeout=10,
+                            )
+                            for np in n_data.get("result", []):
+                                payload = np.get("payload", {})
+                                neighbors.append(
+                                    {
+                                        "text": payload.get("text", ""),
+                                        "score": link.get("sim", 0.5),
+                                        "source": "graph",
+                                        "point_id": np["id"],
+                                        "chunk_type": payload.get("chunk_type", "fact"),
+                                    }
+                                )
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        if len(neighbors) >= limit:
+            break
+    return neighbors[:limit]
+
+
+def three_lane_search(question, speakers=None, port=BENCH_PORT, obs_collection=None, collection=None):
+    queries = expand_search_queries(question, speakers=speakers)
+    seen_texts = set()
+    window_results = []
+    fact_results = []
+
+    w_limit = LANE_WINDOWS if OBSERVATIONS else LANE_WINDOWS
+    f_limit = LANE_FACTS if OBSERVATIONS else LANE_FACTS
+    if OBSERVATIONS:
+        w_limit = 35
+        f_limit = 10
+
+    for q in queries:
+        for r in search_query(q, port=port, limit=w_limit, chunk_type="window"):
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                window_results.append(r)
+        time.sleep(0.5)
+        for r in search_query(q, port=port, limit=f_limit, chunk_type="fact"):
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                fact_results.append(r)
+        time.sleep(0.5)
+
+    def _score_key(r):
+        return r.get("final_score", r.get("rerank_score", r.get("score", 0)))
+
+    window_results.sort(key=_score_key, reverse=True)
+    fact_results.sort(key=_score_key, reverse=True)
+
+    deduped_windows = deduplicate_results(window_results[:w_limit])
+    deduped_facts = deduplicate_results(fact_results[:f_limit])
+    merged = deduped_windows + deduped_facts
+
+    if OBSERVATIONS and obs_collection:
+        obs_results = search_observations(question, obs_collection, limit=LANE_OBS)
+        for r in obs_results:
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                merged.append(r)
+
+    if GRAPH_EXPANSION and collection:
+        graph_results = expand_graph(merged[:5], collection, limit=LANE_GRAPH)
+        for r in graph_results:
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                merged.append(r)
+
+    merged.sort(key=_score_key, reverse=True)
+    return merged[:60]
+
+
 _STOP_WORDS = frozenset(
     "a an the is was were are be been being have has had do does did will would shall should "
     "can could may might must need dare to of in for on with at by from as into through during "
@@ -1053,7 +1190,12 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                 category = qa.get("category", 0)
                 if not ground_truth:
                     continue
-                if TWO_LANE:
+                obs_col = f"{collection}_obs" if OBSERVATIONS else None
+                if OBSERVATIONS or GRAPH_EXPANSION:
+                    chunks = three_lane_search(
+                        question, speakers=speakers, port=port, obs_collection=obs_col, collection=collection
+                    )
+                elif TWO_LANE:
                     chunks = two_lane_search(question, speakers=speakers, port=port)
                 else:
                     chunks = multi_query_search(question, speakers=speakers, port=port)
@@ -1139,7 +1281,8 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
 
         finally:
             kill_server(proc)
-            delete_collection(collection)
+            if not KEEP_COLLECTIONS:
+                delete_collection(collection)
             time.sleep(1)
 
     return checkpoint["results"]
