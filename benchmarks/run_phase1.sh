@@ -14,14 +14,14 @@ export CHUNK_STRIDE=2
 export PROMPT_ROUTING=1
 export BENCH_MODE=production
 export BENCH_CUDA_DEVICES=""
-export CROSS_ENCODER_URL=""
+export CROSS_ENCODER_URL="http://192.168.1.41:9091/rerank"
 export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
 export OPENAI_API_KEY="$OPENAI_API_KEY"
 export GEMINI_API_KEY="$GEMINI_API_KEY"
 
 echo "=== Phase 1: Prompt Routing Benchmark ==="
 echo "Start: $(date)"
-echo "Config: PROMPT_ROUTING=1 CROSS_ENCODER=1 (CPU fallback) FACT_EXTRACTION=1"
+echo "Config: PROMPT_ROUTING=1 CROSS_ENCODER=1 (Arcstrider 5090 GPU) FACT_EXTRACTION=1"
 echo ""
 
 echo "--- Resuming full 10-conv (checkpoint has 3 convs done) ---"
