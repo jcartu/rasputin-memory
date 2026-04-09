@@ -912,11 +912,13 @@ def three_lane_search(question, speakers=None, port=BENCH_PORT, obs_collection=N
     window_results = []
     fact_results = []
 
-    w_limit = LANE_WINDOWS if OBSERVATIONS else LANE_WINDOWS
-    f_limit = LANE_FACTS if OBSERVATIONS else LANE_FACTS
-    if OBSERVATIONS:
-        w_limit = 35
-        f_limit = 10
+    q_type = classify_question(question) if PROMPT_ROUTING else "factual"
+    use_obs = OBSERVATIONS and obs_collection and q_type in ("inference", "temporal")
+
+    if use_obs:
+        w_limit, f_limit = 35, 10
+    else:
+        w_limit, f_limit = LANE_WINDOWS, LANE_FACTS
 
     for q in queries:
         for r in search_query(q, port=port, limit=w_limit, chunk_type="window"):
@@ -941,10 +943,8 @@ def three_lane_search(question, speakers=None, port=BENCH_PORT, obs_collection=N
     deduped_facts = deduplicate_results(fact_results[:f_limit])
     merged = deduped_windows + deduped_facts
 
-    if OBSERVATIONS and obs_collection:
-        q_type = classify_question(question) if PROMPT_ROUTING else "factual"
-        obs_limit = LANE_OBS if q_type in ("inference", "temporal") else 5
-        obs_results = search_observations(question, obs_collection, limit=obs_limit)
+    if use_obs:
+        obs_results = search_observations(question, obs_collection, limit=LANE_OBS)
         for r in obs_results:
             text_key = (r.get("text") or "").strip().lower()[:200]
             if text_key and text_key not in seen_texts:
