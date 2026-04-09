@@ -28,9 +28,9 @@ EMBED_URL = os.environ.get("EMBED_URL", "http://localhost:11434/api/embed")
 EMBED_MODEL = os.environ.get("EMBED_MODEL", "nomic-embed-text")
 EMBED_DIM = 768
 
-CONSOLIDATION_URL = os.environ.get("CONSOLIDATION_URL", "https://api.cerebras.ai/v1/chat/completions")
-CONSOLIDATION_MODEL = os.environ.get("CONSOLIDATION_MODEL", "qwen-3-235b-a22b-instruct-2507")
-CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+CONSOLIDATION_URL = os.environ.get("CONSOLIDATION_URL", "https://api.groq.com/openai/v1/chat/completions")
+CONSOLIDATION_MODEL = os.environ.get("CONSOLIDATION_MODEL", "llama-3.3-70b-versatile")
+LLM_API_KEY = os.environ.get("GROQ_API_KEY", "") or os.environ.get("CEREBRAS_API_KEY", "")
 
 BATCH_SIZE = int(os.environ.get("CONSOLIDATION_BATCH_SIZE", "30"))
 
@@ -98,7 +98,7 @@ def llm_call(prompt):
     ).encode()
     req = urllib.request.Request(CONSOLIDATION_URL, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
-    req.add_header("Authorization", f"Bearer {CEREBRAS_API_KEY}")
+    req.add_header("Authorization", f"Bearer {LLM_API_KEY}")
     req.add_header("User-Agent", "rasputin-memory/1.0")
     for attempt in range(5):
         try:
