@@ -317,7 +317,7 @@ def consolidate_collection(collection):
         if existing:
             obs_lines = []
             for obs in existing:
-                src = ", ".join(obs.get("source_fact_ids", [])[:5])
+                src = ", ".join(str(x) for x in obs.get("source_fact_ids", [])[:5])
                 obs_lines.append(f"[obs_id={obs['id']}] {obs['text']} (source facts: {src})")
             obs_text = "\n".join(obs_lines)
         else:
