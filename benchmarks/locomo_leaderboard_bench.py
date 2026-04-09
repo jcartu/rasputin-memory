@@ -942,7 +942,9 @@ def three_lane_search(question, speakers=None, port=BENCH_PORT, obs_collection=N
     merged = deduped_windows + deduped_facts
 
     if OBSERVATIONS and obs_collection:
-        obs_results = search_observations(question, obs_collection, limit=LANE_OBS)
+        q_type = classify_question(question) if PROMPT_ROUTING else "factual"
+        obs_limit = LANE_OBS if q_type in ("inference", "temporal") else 5
+        obs_results = search_observations(question, obs_collection, limit=obs_limit)
         for r in obs_results:
             text_key = (r.get("text") or "").strip().lower()[:200]
             if text_key and text_key not in seen_texts:
