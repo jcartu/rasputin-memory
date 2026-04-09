@@ -99,6 +99,7 @@ def llm_call(prompt):
     req = urllib.request.Request(CONSOLIDATION_URL, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
     req.add_header("Authorization", f"Bearer {CEREBRAS_API_KEY}")
+    req.add_header("User-Agent", "rasputin-memory/1.0")
     for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:
