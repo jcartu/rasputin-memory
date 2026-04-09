@@ -1184,12 +1184,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                 category = qa.get("category", 0)
                 if not ground_truth:
                     continue
-                obs_col = f"{collection}_obs" if OBSERVATIONS else None
-                if OBSERVATIONS or GRAPH_EXPANSION:
-                    chunks = three_lane_search(
-                        question, speakers=speakers, port=port, obs_collection=obs_col, collection=collection
-                    )
-                elif TWO_LANE:
+                if TWO_LANE:
                     chunks = two_lane_search(question, speakers=speakers, port=port)
                 else:
                     chunks = multi_query_search(question, speakers=speakers, port=port)

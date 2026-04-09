@@ -172,12 +172,18 @@ def scroll_facts(collection):
     return all_facts
 
 
-def recall_for_fact(fact_text, obs_collection, limit=5):
+def recall_for_fact(fact_text, collection, limit=5):
     vec = get_embedding(fact_text[:2000], prefix="search_query: ")
     try:
         data = http_json(
-            f"{QDRANT_URL}/collections/{obs_collection}/points/query",
-            data={"query": vec, "limit": limit, "with_payload": True, "score_threshold": 0.3},
+            f"{QDRANT_URL}/collections/{collection}/points/query",
+            data={
+                "query": vec,
+                "limit": limit,
+                "with_payload": True,
+                "score_threshold": 0.3,
+                "filter": {"must": [{"key": "chunk_type", "match": {"value": "observation"}}]},
+            },
             method="POST",
             timeout=10,
         )
@@ -194,11 +200,11 @@ def recall_for_fact(fact_text, obs_collection, limit=5):
         return []
 
 
-def store_observation(text, source_ids, obs_collection):
+def store_observation(text, source_ids, collection):
     vec = get_embedding(text[:2000], prefix="search_document: ")
     point_id = int(hashlib.md5(text.encode()).hexdigest()[:15], 16)
     http_json(
-        f"{QDRANT_URL}/collections/{obs_collection}/points",
+        f"{QDRANT_URL}/collections/{collection}/points",
         data={
             "points": [
                 {
@@ -222,10 +228,10 @@ def store_observation(text, source_ids, obs_collection):
     return point_id
 
 
-def delete_observation(obs_id, obs_collection):
+def delete_observation(obs_id, collection):
     try:
         http_json(
-            f"{QDRANT_URL}/collections/{obs_collection}/points/delete",
+            f"{QDRANT_URL}/collections/{collection}/points/delete",
             data={"points": [int(obs_id)]},
             method="POST",
             timeout=10,
@@ -234,16 +240,19 @@ def delete_observation(obs_id, obs_collection):
         pass
 
 
-def dedup_observations(obs_collection):
+def dedup_observations(collection):
     all_obs = []
     offset = None
     while True:
-        body = {"limit": 100, "with_payload": True, "with_vector": True}
+        body = {
+            "limit": 100,
+            "with_payload": True,
+            "with_vector": True,
+            "filter": {"must": [{"key": "chunk_type", "match": {"value": "observation"}}]},
+        }
         if offset is not None:
             body["offset"] = offset
-        data = http_json(
-            f"{QDRANT_URL}/collections/{obs_collection}/points/scroll", data=body, method="POST", timeout=30
-        )
+        data = http_json(f"{QDRANT_URL}/collections/{collection}/points/scroll", data=body, method="POST", timeout=30)
         points = data.get("result", {}).get("points", [])
         for p in points:
             if p.get("vector"):
@@ -283,14 +292,43 @@ def dedup_observations(obs_collection):
                 merged += 1
 
     for obs_id in to_delete:
-        delete_observation(obs_id, obs_collection)
+        delete_observation(obs_id, collection)
 
     return merged
 
 
+def purge_old_observations(collection):
+    offset = None
+    deleted = 0
+    while True:
+        body = {
+            "limit": 100,
+            "with_payload": False,
+            "filter": {"must": [{"key": "chunk_type", "match": {"value": "observation"}}]},
+        }
+        if offset is not None:
+            body["offset"] = offset
+        data = http_json(f"{QDRANT_URL}/collections/{collection}/points/scroll", data=body, method="POST", timeout=30)
+        points = data.get("result", {}).get("points", [])
+        if not points:
+            break
+        ids = [p["id"] for p in points]
+        http_json(
+            f"{QDRANT_URL}/collections/{collection}/points/delete", data={"points": ids}, method="POST", timeout=10
+        )
+        deleted += len(ids)
+        next_offset = data.get("result", {}).get("next_page_offset")
+        if not next_offset:
+            break
+        offset = next_offset
+    return deleted
+
+
 def consolidate_collection(collection):
-    obs_col = f"{collection}_obs"
-    create_collection(obs_col)
+    purged = purge_old_observations(collection)
+    if purged:
+        print(f"  {collection}: purged {purged} old observations")
+        time.sleep(1)
 
     facts = scroll_facts(collection)
     if not facts:
@@ -308,7 +346,7 @@ def consolidate_collection(collection):
 
         seen_obs = {}
         for fact in batch:
-            results = recall_for_fact(fact["text"], obs_col, limit=RECALL_PER_FACT)
+            results = recall_for_fact(fact["text"], collection, limit=RECALL_PER_FACT)
             for obs in results:
                 if obs["id"] not in seen_obs or obs["score"] > seen_obs[obs["id"]].get("score", 0):
                     seen_obs[obs["id"]] = obs
@@ -333,7 +371,7 @@ def consolidate_collection(collection):
             for create in actions.get("creates", []):
                 text = create.get("text", "")
                 if text and len(text) >= 15:
-                    store_observation(text, create.get("source_fact_ids", []), obs_col)
+                    store_observation(text, create.get("source_fact_ids", []), collection)
                     creates += 1
                     total_created += 1
 
@@ -343,15 +381,15 @@ def consolidate_collection(collection):
                 obs_id = update.get("observation_id", "")
                 if text and len(text) >= 15:
                     if obs_id:
-                        delete_observation(obs_id, obs_col)
-                    store_observation(text, update.get("source_fact_ids", []), obs_col)
+                        delete_observation(obs_id, collection)
+                    store_observation(text, update.get("source_fact_ids", []), collection)
                     updates += 1
                     total_updated += 1
 
             for delete in actions.get("deletes", []):
                 obs_id = delete.get("observation_id", "")
                 if obs_id:
-                    delete_observation(obs_id, obs_col)
+                    delete_observation(obs_id, collection)
 
             if batch_num % 5 == 0 or batch_num == 1:
                 print(
@@ -363,16 +401,22 @@ def consolidate_collection(collection):
 
         time.sleep(2)
 
-    merged = dedup_observations(obs_col)
+    merged = dedup_observations(collection)
 
+    obs_count = "?"
     try:
-        data = http_json(f"{QDRANT_URL}/collections/{obs_col}", timeout=10)
-        final_count = data.get("result", {}).get("points_count", 0)
+        data = http_json(
+            f"{QDRANT_URL}/collections/{collection}/points/count",
+            data={"filter": {"must": [{"key": "chunk_type", "match": {"value": "observation"}}]}},
+            method="POST",
+            timeout=10,
+        )
+        obs_count = data.get("result", {}).get("count", 0)
     except Exception:
-        final_count = "?"
+        pass
 
     print(
-        f"  {collection}: {total_created} created, {total_updated} updated, {merged} deduped → {final_count} final observations"
+        f"  {collection}: {total_created} created, {total_updated} updated, {merged} deduped → {obs_count} observations in main collection"
     )
     return total_created + total_updated
 
