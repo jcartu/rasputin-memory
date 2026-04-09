@@ -804,13 +804,12 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT):
             if text_key and text_key not in seen_texts:
                 seen_texts.add(text_key)
                 window_results.append(r)
-        time.sleep(0.5)
         for r in search_query(q, port=port, limit=LANE_FACTS, chunk_type="fact"):
             text_key = (r.get("text") or "").strip().lower()[:200]
             if text_key and text_key not in seen_texts:
                 seen_texts.add(text_key)
                 fact_results.append(r)
-        time.sleep(0.5)
+        time.sleep(0.3)
 
     def _score_key(r):
         return r.get("final_score", r.get("rerank_score", r.get("score", 0)))
@@ -925,13 +924,12 @@ def three_lane_search(question, speakers=None, port=BENCH_PORT, obs_collection=N
             if text_key and text_key not in seen_texts:
                 seen_texts.add(text_key)
                 window_results.append(r)
-        time.sleep(0.5)
         for r in search_query(q, port=port, limit=f_limit, chunk_type="fact"):
             text_key = (r.get("text") or "").strip().lower()[:200]
             if text_key and text_key not in seen_texts:
                 seen_texts.add(text_key)
                 fact_results.append(r)
-        time.sleep(0.5)
+        time.sleep(0.3)
 
     def _score_key(r):
         return r.get("final_score", r.get("rerank_score", r.get("score", 0)))
