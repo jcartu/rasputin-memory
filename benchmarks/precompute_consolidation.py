@@ -32,7 +32,7 @@ CONSOLIDATION_URL = os.environ.get("CONSOLIDATION_URL", "https://api.cerebras.ai
 CONSOLIDATION_MODEL = os.environ.get("CONSOLIDATION_MODEL", "qwen-3-235b-a22b-instruct-2507")
 CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
 
-BATCH_SIZE = 10
+BATCH_SIZE = int(os.environ.get("CONSOLIDATION_BATCH_SIZE", "30"))
 
 
 def http_json(url, data=None, method=None, timeout=60, headers=None):
@@ -99,13 +99,20 @@ def llm_call(prompt):
     req = urllib.request.Request(CONSOLIDATION_URL, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
     req.add_header("Authorization", f"Bearer {CEREBRAS_API_KEY}")
-    for attempt in range(3):
+    for attempt in range(5):
         try:
             with urllib.request.urlopen(req, timeout=120) as resp:
                 data = json.loads(resp.read().decode())
             return data["choices"][0]["message"]["content"].strip()
+        except urllib.error.HTTPError as e:
+            wait = 10 * (attempt + 1) if e.code in (403, 429) else 2**attempt
+            if attempt < 4:
+                print(f"      LLM retry {attempt + 1}/5 (HTTP {e.code}), waiting {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
         except Exception as e:
-            if attempt < 2:
+            if attempt < 4:
                 time.sleep(2**attempt)
             else:
                 raise
@@ -250,6 +257,7 @@ def consolidate_collection(collection):
                     total_created += 1
         except Exception as e:
             print(f"    Batch {i // BATCH_SIZE + 1} failed: {e}")
+        time.sleep(3)
 
     print(f"  {collection}: created {total_created} observations")
     return total_created
