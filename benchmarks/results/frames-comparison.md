@@ -16,4 +16,4 @@
 ## Comparison
 | System | Accuracy |
 |--------|----------|
-| **RASPUTIN Memory v0.7** | **50.36%** |
+| **RASPUTIN Memory v0.8** | **50.36%** |

@@ -488,7 +488,7 @@ def generate_report(state):
     lines.append("\n## Comparison")
     lines.append("| System | Accuracy |")
     lines.append("|--------|----------|")
-    lines.append(f"| **RASPUTIN Memory v0.7** | **{overall:.2f}%** |")
+    lines.append(f"| **RASPUTIN Memory v0.8** | **{overall:.2f}%** |")
 
     report = "\n".join(lines)
     with open(COMPARISON_FILE, "w") as f:

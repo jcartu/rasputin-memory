@@ -162,7 +162,7 @@ Key payload fields used by the memory pipeline:
 | `retrieval_count` | int | Times retrieved in search |
 | `last_accessed` | string | ISO timestamp of last retrieval |
 | `embedding_model` | string | Embedding model identifier |
-| `schema_version` | string | Current schema version (`0.7`) |
+| `schema_version` | string | Current schema version (`0.8`) |
 | `contradicts` | list[int] | Point IDs contradicted by this memory |
 | `supersedes` | list[int] | Point IDs superseded by this memory |
 | `has_contradictions` | bool | Fast filter for contradiction listing |

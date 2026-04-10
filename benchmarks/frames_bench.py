@@ -76,7 +76,7 @@ def fetch_wikipedia_text(url):
     api_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(title)}"
     try:
         req = urllib.request.Request(api_url)
-        req.add_header("User-Agent", "RASPUTIN-Memory-Bench/0.7")
+        req.add_header("User-Agent", "RASPUTIN-Memory-Bench/0.8")
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode())
         extract = data.get("extract", "")
@@ -439,7 +439,7 @@ def generate_report(state):
     lines.append("\n## Comparison")
     lines.append("| System | Accuracy |")
     lines.append("|--------|----------|")
-    lines.append(f"| **RASPUTIN Memory v0.7** | **{overall:.2f}%** |")
+    lines.append(f"| **RASPUTIN Memory v0.8** | **{overall:.2f}%** |")
 
     report = "\n".join(lines)
     with open(COMPARISON_FILE, "w") as f:

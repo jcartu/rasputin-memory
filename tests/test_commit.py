@@ -120,7 +120,7 @@ def test_protected_fields_not_overwritten(monkeypatch, mock_qdrant):
     assert payload["text"] != "override"
     assert payload["source"] == "conversation"
     assert payload["importance"] == 61
-    assert payload["schema_version"] == "0.7"
+    assert payload["schema_version"] == "0.8"
     assert payload["custom_tag"] == "ok"
 
 
