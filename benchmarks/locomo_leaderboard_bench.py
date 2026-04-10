@@ -70,6 +70,8 @@ OBSERVATIONS = os.environ.get("OBSERVATIONS", "0") == "1"
 LANE_OBS = int(os.environ.get("BENCH_LANE_OBS", "15"))
 GRAPH_EXPANSION = os.environ.get("GRAPH_EXPANSION", "0") == "1"
 LANE_GRAPH = int(os.environ.get("BENCH_LANE_GRAPH", "5"))
+ENTITY_SEARCH = os.environ.get("ENTITY_SEARCH", "0") == "1"
+LANE_ENTITY = int(os.environ.get("BENCH_LANE_ENTITY", "10"))
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -792,6 +794,60 @@ def apply_fact_cap(results, max_facts):
     return capped
 
 
+_ENTITY_STOP = frozenset(
+    "What When Where Who Why How Does Did Would Could Should The This That Which "
+    "Is Are Was Were Be Been Being Have Has Had Do Can May Might Must Need "
+    "Based If Not Also Some Any Many Much Most Other Such No".split()
+)
+
+
+def extract_entities(question):
+    entities = []
+    for word in question.split():
+        clean = word.strip("'s?.,!\"()[]")
+        if clean and clean[0].isupper() and clean not in _ENTITY_STOP and len(clean) > 1:
+            entities.append(clean)
+    return list(dict.fromkeys(entities))
+
+
+def entity_search(entities, collection, limit=10):
+    if not entities or not collection:
+        return []
+    results = []
+    seen_ids = set()
+    for entity in entities[:3]:
+        try:
+            data = http_json(
+                f"{QDRANT_URL}/collections/{collection}/points/scroll",
+                data={
+                    "limit": limit,
+                    "with_payload": True,
+                    "with_vector": False,
+                    "filter": {
+                        "must": [{"key": "text", "match": {"text": entity}}],
+                    },
+                },
+                method="POST",
+                timeout=10,
+            )
+            for p in data.get("result", {}).get("points", []):
+                if p["id"] not in seen_ids:
+                    seen_ids.add(p["id"])
+                    payload = p.get("payload", {})
+                    results.append(
+                        {
+                            "text": payload.get("text", ""),
+                            "score": 0.5,
+                            "source": "entity",
+                            "point_id": p["id"],
+                            "chunk_type": payload.get("chunk_type", "fact"),
+                        }
+                    )
+        except Exception:
+            pass
+    return results[:limit]
+
+
 def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
     queries = expand_search_queries(question, speakers=speakers)
     seen_texts = set()
@@ -833,6 +889,16 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
             if text_key and text_key not in seen_texts:
                 seen_texts.add(text_key)
                 merged.append(r)
+
+    if ENTITY_SEARCH and collection:
+        entities = extract_entities(question)
+        if entities:
+            ent_results = entity_search(entities, collection, limit=LANE_ENTITY)
+            for r in ent_results:
+                text_key = (r.get("text") or "").strip().lower()[:200]
+                if text_key and text_key not in seen_texts:
+                    seen_texts.add(text_key)
+                    merged.append(r)
 
     merged.sort(key=_score_key, reverse=True)
     return merged
