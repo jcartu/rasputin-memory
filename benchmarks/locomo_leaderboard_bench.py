@@ -897,7 +897,7 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
         time.sleep(0.3)
 
     def _score_key(r):
-        return r.get("final_score", r.get("rerank_score", r.get("score", 0)))
+        return r.get("final_score", r.get("rerank_score", r.get("ce_score", r.get("score", 0))))
 
     window_results.sort(key=_score_key, reverse=True)
     fact_results.sort(key=_score_key, reverse=True)
@@ -922,17 +922,18 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
     if ENTITY_SEARCH and collection:
         entities = extract_entities(question)
         if entities:
+            new_ent = []
             ent_results = entity_search(entities, collection, limit=LANE_ENTITY)
             for r in ent_results:
                 text_key = (r.get("text") or "").strip().lower()[:200]
                 if text_key and text_key not in seen_texts:
                     seen_texts.add(text_key)
-                    merged.append(r)
+                    new_ent.append(r)
+            if new_ent and CROSS_ENCODER_URL:
+                new_ent = ce_rerank(question, new_ent, top_k=len(new_ent))
+            merged.extend(new_ent)
 
-    if ENTITY_SEARCH and CROSS_ENCODER_URL and len(merged) > 60:
-        merged = ce_rerank(question, merged, top_k=60)
-    else:
-        merged.sort(key=_score_key, reverse=True)
+    merged.sort(key=_score_key, reverse=True)
 
     return merged
 
