@@ -1,4 +1,4 @@
-# RASPUTIN Memory v0.7
+# RASPUTIN Memory v0.8
 
 ![RASPUTIN Memory](assets/social-preview-1280x640.png)
 
@@ -6,38 +6,44 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-A self-hosted memory backend for AI agents. RASPUTIN stores conversations as overlapping windows and LLM-extracted facts in Qdrant, with an LLM quality gate that prevents junk from entering the memory store.
+A self-hosted memory backend for AI agents. RASPUTIN stores conversations as overlapping 
+windows and LLM-extracted facts in Qdrant, with cross-encoder reranking and per-question 
+prompt routing.
 
 Production-grade long-term memory for AI agents:
 
 - Vector search (Qdrant) with two-lane retrieval (windows + facts)
 - LLM-based fact extraction at ingest time
-- Cross-encoder reranking (local, CPU)
+- Cross-encoder reranking (local CPU or remote GPU)
+- Per-question prompt routing (inference/factual/temporal)
 - A-MAC quality gate on commits
+- 21 ablation experiments with scientific methodology
 
 Main server: [`tools/hybrid_brain.py`](tools/hybrid_brain.py)
 
 ---
 
-## Architecture Overview (v0.7)
+## Architecture Overview
 
 ```text
 Memory Commit
    │
    ├─► A-MAC quality gate (relevance/novelty/specificity)
    ├─► 5-turn overlapping windows (stride 2)
-   ├─► LLM fact extraction (optional, Haiku)
+   ├─► LLM fact extraction (Haiku or local model)
    ├─► Embedding (nomic-embed-text, 768d)
    └─► Persist to Qdrant
 
-Search (two-lane)
+Search
    │
    ├─► Multi-Query Expansion
    ├─► Query Embedding (nomic-embed-text, 768d)
    │
    ├─► Lane 1: Window search (45 slots) ──┐
    ├─► Lane 2: Fact search (15 slots)   ──┼─► Merge ─► Cross-encoder rerank ─► Top-60 to LLM
-   └─► (Optional: BM25 keyword lane)    ──┘
+   │                                       │
+   └─► Answer Prompt Routing ──────────────┘
+       (inference / factual / temporal)
 ```
 
 ### Core components
@@ -65,30 +71,48 @@ Search (two-lane)
 
 ## Benchmarks
 
-Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024), conv-0 (199 QA pairs). Two benchmark modes: production (Haiku answers, neutral judge — measures retrieval quality) and compare (gpt-4o-mini answers, generous judge — field-comparable). See [benchmarks/README.md](benchmarks/README.md) for methodology details.
+Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024). Full 10-conversation 
+dataset (1986 QA pairs). Two benchmark modes: production (Haiku answers, neutral judge — measures 
+retrieval quality) and compare (gpt-4o-mini answers, generous judge — field-comparable).
 
-### LoCoMo conv-0 (current best: two-lane retrieval)
+### LoCoMo Full 10-Conv (v0.8 — current)
 
-| Mode | Non-adversarial | Overall |
-|------|----------------|---------|
-| Production (retrieval signal) | **69.7%** | 53.3% |
-| Compare (field-comparable) | 72.4% | — |
+| Mode | Non-adversarial | Questions |
+|------|----------------|-----------|
+| Production (retrieval signal) | **69.1%** | 1540 |
 
-| Category | Production | Questions |
-|----------|-----------|-----------|
-| Open-domain | 82.9% | 70 |
-| Temporal | 73.0% | 37 |
-| Multi-hop | 53.8% | 13 |
-| Single-hop | 43.8% | 32 |
-| Adversarial | 6.4% | 47 |
+| Category | Accuracy | Questions | Notes |
+|----------|----------|-----------|-------|
+| Open-domain | 81.1% | 841 | Rock solid |
+| Temporal | 66.4% | 321 | 61% of failures are generation, not retrieval |
+| Multi-hop | 55.2% | 96 | +16.7pp from prompt routing |
+| Single-hop | 41.1% | 282 | 46% retrieval miss — needs multi-path retrieval |
+| Adversarial | 11.7% | 446 | Not an optimization target |
 
-### Retrieval Quality (the actual signal)
+### Retrieval Quality
 
-| Metric | Value |
-|--------|-------|
-| Gold-in-ANY-chunk | 88.4% |
-| Gold-in-Top-5 | 63.8% |
-| Gold-in-Top-10 | 71.4% |
+| Metric | v0.7 (conv-0) | v0.8 (full 10-conv) |
+|--------|---------------|---------------------|
+| Gold-in-ANY-chunk | 88.4% | — |
+| Gold-in-Top-5 | 63.8% | — |
+| Gold-in-Top-10 | 71.4% | — |
+
+### What's Been Tested (21 Experiments)
+
+| Experiment | Result | Status |
+|-----------|--------|--------|
+| Prompt routing (inference/factual/temporal) | +16.7pp multi-hop | ✅ Shipped |
+| Two-lane search (windows + facts) | +6.5pp overall | ✅ Shipped |
+| Cross-encoder reranking | Essential at two-lane (+5.2pp) | ✅ Shipped |
+| Pipeline strip (700→427 lines) | 0pp change, cleaner code | ✅ Shipped |
+| Windows-only chunking (w5s2) | +5.2pp | ✅ Shipped |
+| Consolidation (6 variants) | Net negative with dense-only retrieval | ⏸ Parked |
+| Graph expansion (kNN links) | Testing in progress | 🔬 Active |
+| BM25 third lane | -3.9pp | ❌ Reverted |
+| L-12 cross-encoder | -12.6pp single-hop | ❌ Reverted |
+| Embedding upgrades (Qwen3 768d, 4096d) | 0pp or worse | ❌ No improvement |
+
+Full experiment records in `experiments/`.
 
 ### On Benchmark Methodology
 
@@ -129,13 +153,12 @@ For a standardized comparison, we recommend the [Agent Memory Benchmark](https:/
 
 | System | Reported Score | Benchmark | Methodology |
 |--------|---------------|-----------|-------------|
+| Hindsight | 92.0% | LoCoMo | AMB harness, published methodology |
 | Backboard | 90.00% | LoCoMo | GPT-4.1, generous judge |
-| Memvid | 85.70% | LoCoMo | Claimed LLM-as-judge, methodology not published |
 | MemMachine | 84.87% | LoCoMo | Not published |
 | Memobase | 75.78% | LoCoMo | Not published |
 | Zep | 75.14% | LoCoMo | Not published |
-| RASPUTIN (compare) | 72.4% | LoCoMo conv-0 | gpt-4o-mini answers, generous judge |
-| RASPUTIN (production) | 69.7% | LoCoMo conv-0 | Haiku answers, neutral judge |
+| **RASPUTIN (production)** | **69.1%** | **LoCoMo full 10-conv** | **Haiku answers, neutral judge** |
 | mem0 | 66.88% | LoCoMo | Not published |
 
 ### Pipeline
@@ -365,18 +388,22 @@ Coverage threshold is configured in `pyproject.toml` (`fail_under = 40`).
 
 ## Version Notes
 
+### v0.8.0
+- Full 10-conv validation: 69.1% non-adv (1986 questions, production mode)
+- Prompt routing: +16.7pp multi-hop, +3.9pp single-hop
+- Pipeline stripped from 700→427 lines (ablation-proven dead weight removed)
+- Cross-encoder GPU server for remote inference
+- Fact extraction module, consolidation engine, kNN link computation
+- 21 experiments with scientific methodology
+- Consolidation tested (6 variants) and parked — net negative with dense-only retrieval
+
 ### v0.7.0
 - Two-lane retrieval: windows (45 slots) + LLM-extracted facts (15 slots)
 - Cross-encoder reranker (ms-marco-MiniLM-L-6-v2, CPU)
 - Structured fact extraction via Claude Haiku at ingest
 - Windows-only chunking (individual turns proven to add 0pp)
 - Ablation-tested: BM25, keyword/entity/temporal boosts, MMR, Cohere reranker all proven 0pp
-- Benchmark infrastructure: production/compare modes, batch API (50% savings), failure analysis
 - LoCoMo conv-0: 69.7% production, 72.4% compare (non-adversarial)
-- Timing-safe auth, UTC datetimes, schema v0.7
-
-### v0.6.0 — LoCoMo 89.81% (#2)
-- LLM reranker (Claude Haiku), professional benchmark harness
 
 ### v0.5.0 — Search Quality Breakthrough
 - Keyword overlap boosting, entity focus scoring

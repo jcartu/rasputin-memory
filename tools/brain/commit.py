@@ -144,7 +144,7 @@ def commit_memory(
             "auto_committed": True,
             "retrieval_count": 0,
             "embedding_model": _state.EMBED_MODEL,
-            "schema_version": "0.7",
+            "schema_version": "0.8",
             "contradicts": contradiction_ids,
             "supersedes": supersedes_ids,
             "has_contradictions": bool(contradiction_ids),

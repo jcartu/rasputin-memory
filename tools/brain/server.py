@@ -172,7 +172,7 @@ class HybridHandler(BaseHTTPRequestHandler):
             health: dict[str, Any] = {
                 "status": "ok",
                 "engine": "hybrid-brain",
-                "version": "0.7.0",
+                "version": "0.8.0",
                 "components": {
                     "qdrant": "unknown",
                     "falkordb": "unknown",

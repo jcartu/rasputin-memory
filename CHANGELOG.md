@@ -7,6 +7,53 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-04-10
+
+Full 10-conversation LoCoMo validation: **69.1% non-adv** (1986 questions, production mode).
+21 documented experiments with scientific methodology. Major pipeline simplification.
+
+### Benchmarks — Honest Numbers
+- **LoCoMo full 10-conv production: 69.1%** non-adv (1540 non-adversarial questions)
+  - Open-domain: 81.1% (841 Qs) — rock solid
+  - Temporal: 66.4% (321 Qs)
+  - Multi-hop: 55.2% (96 Qs) — +16.7pp from prompt routing
+  - Single-hop: 41.1% (282 Qs)
+  - Adversarial: 11.7% (446 Qs) — not an optimization target
+- Previous conv-0-only claim (69.7%) replaced with honest full-dataset number
+- 21 experiments in `experiments/` with keep/revert verdicts and full data
+
+### Added — Retrieval Architecture
+- **Prompt routing**: per-question classification (inference/factual/temporal) with tailored answer prompts — validated +16.7pp multi-hop, +3.9pp single-hop
+- **Cross-encoder GPU server**: `tools/brain/cross_encoder_server.py` for remote GPU inference (33ms/60 pairs on RTX 5090)
+- **Structured fact extraction module**: `tools/brain/fact_extractor.py` — 5-dimension decomposition (what/when/where/who/why) with coreference resolution
+- **Consolidation engine**: `benchmarks/precompute_consolidation.py` — Hindsight-style observation synthesis (gpt-4o-mini, 30-80 obs/conv)
+- **kNN link computation**: `benchmarks/precompute_links.py` — semantic graph (48,200 links across 10 conversations)
+- **Graph expansion**: follow kNN links from search seeds to find connected facts
+- **CE A/B test infrastructure**: compare cross-encoder models (L-6 vs L-12)
+
+### Changed — Pipeline Simplification
+- `search.py` stripped from 700 → 427 lines via ablation-proven dead stage removal
+- BM25, keyword boost, entity boost, temporal boost, MMR diversity — all removed (proven 0pp)
+- Cross-encoder reranking enabled by default (`CROSS_ENCODER=1`)
+- Remote cross-encoder support via `CROSS_ENCODER_URL` env var
+
+### Tested and Parked
+- **Consolidation**: 6 variants tested (636 obs Groq, 33 obs gpt-4o-mini, separate collection, same collection, gated, additive). Net negative in all configurations with dense-only retrieval. Parked pending multi-path retrieval infrastructure (graph + entity + temporal search).
+- **L-12 cross-encoder**: +1.3pp non-adv but -12.6pp single-hop. L-6 remains default.
+- **BM25 third lane**: -3.9pp regression. Qdrant text search doesn't provide real corpus-level IDF.
+
+### Proven Dead Weight (ablation-tested, 0pp contribution)
+- BM25 + RRF fusion
+- Keyword/entity/temporal additive boosts
+- MMR diversity filtering
+- Cohere reranker at 60-chunk context
+- Cross-encoder at 60-chunk single-lane (essential at two-lane)
+
+### Fixed
+- Cloudflare User-Agent blocking on API calls
+- Ephemeral port exhaustion from search sleeps
+- GPU deadlock with Flask cross-encoder server
+
 ## [0.7.0] - 2026-04-03
 
 LoCoMo conv-0: 69.7% production, 72.4% compare (non-adversarial). Scientific ablation program proved which pipeline stages contribute and which don't.
@@ -163,7 +210,8 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jcartu/rasputin-memory/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jcartu/rasputin-memory/compare/v0.4.0...v0.5.0
