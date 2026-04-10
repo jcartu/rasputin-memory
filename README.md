@@ -71,6 +71,8 @@ Search
 
 ## Benchmarks
 
+> **Full-dataset, fully-disclosed evaluation.** All numbers below are from the complete 10-conversation LoCoMo dataset (1986 questions), not a cherry-picked subset. Methodology, judge prompts, and all 21 experiment records are public in this repository.
+
 Evaluated on [LoCoMo](https://github.com/snap-research/locomo) (ACL 2024). Full 10-conversation 
 dataset (1986 QA pairs). Two benchmark modes: production (Haiku answers, neutral judge — measures 
 retrieval quality) and compare (gpt-4o-mini answers, generous judge — field-comparable).
@@ -160,6 +162,8 @@ For a standardized comparison, we recommend the [Agent Memory Benchmark](https:/
 | Zep | 75.14% | LoCoMo | Not published |
 | **RASPUTIN (production)** | **69.1%** | **LoCoMo full 10-conv** | **Haiku answers, neutral judge** |
 | mem0 | 66.88% | LoCoMo | Not published |
+
+† Only RASPUTIN and Hindsight publish their full evaluation methodology, judge prompts, and experiment data. Other scores are self-reported under undisclosed conditions. See [On Benchmark Methodology](#on-benchmark-methodology) below for why these numbers are not directly comparable.
 
 ### Pipeline
 
