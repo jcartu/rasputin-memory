@@ -19,6 +19,7 @@ Usage:
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import signal
@@ -72,6 +73,7 @@ GRAPH_EXPANSION = os.environ.get("GRAPH_EXPANSION", "0") == "1"
 LANE_GRAPH = int(os.environ.get("BENCH_LANE_GRAPH", "5"))
 ENTITY_SEARCH = os.environ.get("ENTITY_SEARCH", "0") == "1"
 LANE_ENTITY = int(os.environ.get("BENCH_LANE_ENTITY", "10"))
+CROSS_ENCODER_URL = os.environ.get("CROSS_ENCODER_URL", "")
 
 _DEFAULT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
@@ -801,6 +803,33 @@ _ENTITY_STOP = frozenset(
 )
 
 
+def ce_rerank(question, results, top_k=60):
+    if not CROSS_ENCODER_URL or not results:
+        return results[:top_k]
+    pairs = []
+    for r in results:
+        doc = (r.get("text") or "")[:1000]
+        date = r.get("date") or ""
+        if date and len(date) >= 10:
+            doc = f"[Date: {date[:10]}] {doc}"
+        pairs.append([question, doc])
+    try:
+        body = json.dumps({"pairs": pairs}).encode()
+        req = urllib.request.Request(CROSS_ENCODER_URL, data=body, method="POST")
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+        scores = data["scores"]
+        for r, score in zip(results, scores):
+            sig = 1.0 / (1.0 + math.exp(-float(score))) if not math.isnan(float(score)) else 0.0
+            r["ce_score"] = round(sig, 6)
+            r["ce_raw"] = round(float(score), 4)
+        results.sort(key=lambda x: x.get("ce_score", 0), reverse=True)
+    except Exception:
+        pass
+    return results[:top_k]
+
+
 def extract_entities(question):
     entities = []
     for word in question.split():
@@ -900,7 +929,11 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
                     seen_texts.add(text_key)
                     merged.append(r)
 
-    merged.sort(key=_score_key, reverse=True)
+    if ENTITY_SEARCH and CROSS_ENCODER_URL and len(merged) > 60:
+        merged = ce_rerank(question, merged, top_k=60)
+    else:
+        merged.sort(key=_score_key, reverse=True)
+
     return merged
 
 
