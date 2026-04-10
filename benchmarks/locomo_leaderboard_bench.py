@@ -792,7 +792,7 @@ def apply_fact_cap(results, max_facts):
     return capped
 
 
-def two_lane_search(question, speakers=None, port=BENCH_PORT):
+def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
     queries = expand_search_queries(question, speakers=speakers)
     seen_texts = set()
     window_results = []
@@ -825,6 +825,14 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT):
         merged = deduped_windows + deduped_facts + bm25_results
     else:
         merged = deduped_windows + deduped_facts
+
+    if GRAPH_EXPANSION and collection:
+        graph_results = expand_graph(merged[:5], collection, limit=LANE_GRAPH)
+        for r in graph_results:
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                merged.append(r)
 
     merged.sort(key=_score_key, reverse=True)
     return merged
@@ -1185,7 +1193,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
                 if not ground_truth:
                     continue
                 if TWO_LANE:
-                    chunks = two_lane_search(question, speakers=speakers, port=port)
+                    chunks = two_lane_search(question, speakers=speakers, port=port, collection=collection)
                 else:
                     chunks = multi_query_search(question, speakers=speakers, port=port)
                     if FACT_CAP > 0:
