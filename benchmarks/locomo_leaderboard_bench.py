@@ -52,9 +52,14 @@ BENCH_PORT = 7779
 
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
-JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
 BENCH_MODE = os.environ.get("BENCH_MODE", "production")
+
+if BENCH_MODE == "compare":
+    ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "gpt-4o-mini-2024-07-18")
+    JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
+else:
+    ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
+    JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
 
 CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domain", 5: "adversarial"}
 
@@ -74,13 +79,36 @@ LANE_GRAPH = int(os.environ.get("BENCH_LANE_GRAPH", "5"))
 ENTITY_SEARCH = os.environ.get("ENTITY_SEARCH", "0") == "1"
 LANE_ENTITY = int(os.environ.get("BENCH_LANE_ENTITY", "10"))
 CROSS_ENCODER_URL = os.environ.get("CROSS_ENCODER_URL", "")
+BM25_SEARCH = os.environ.get("BM25_SEARCH", "0") == "1"
+LANE_BM25_SEARCH = int(os.environ.get("BENCH_LANE_BM25_SEARCH", "10"))
 
-_DEFAULT_JUDGE_PROMPT = (
+_bm25_index = None
+
+
+def get_bm25_index():
+    global _bm25_index
+    if _bm25_index is None:
+        from bm25_sidecar import BM25Index
+
+        _bm25_index = BM25Index()
+    return _bm25_index
+
+
+_STRICT_JUDGE_PROMPT = (
     "Is the system's answer correct? Score CORRECT only if the answer contains the specific "
     "information asked for. Score WRONG if the answer is vague, missing key facts, or incorrect. "
     "Do not give credit for answers that are technically true but don't answer the question."
 )
-JUDGE_INSTRUCTION = os.environ.get("BENCH_JUDGE_PROMPT", _DEFAULT_JUDGE_PROMPT)
+_GENEROUS_JUDGE_PROMPT = (
+    "Does the system's answer capture the key information from the ground truth? "
+    "Score CORRECT if the answer conveys the same essential meaning, even if worded differently "
+    "or includes additional context. Score WRONG only if the answer is factually incorrect, "
+    "contradicts the ground truth, or completely misses the point of the question."
+)
+if BENCH_MODE == "compare":
+    JUDGE_INSTRUCTION = os.environ.get("BENCH_JUDGE_PROMPT", _GENEROUS_JUDGE_PROMPT)
+else:
+    JUDGE_INSTRUCTION = os.environ.get("BENCH_JUDGE_PROMPT", _STRICT_JUDGE_PROMPT)
 
 
 def http_json(url, data=None, method=None, timeout=60, headers=None):
@@ -387,6 +415,7 @@ def generate_opus_answer(question, context_chunks, max_chunks=50):
                 )
                 req.add_header("Content-Type", "application/json")
                 req.add_header("Authorization", f"Bearer {OPENAI_API_KEY}")
+                req.add_header("User-Agent", "rasputin-memory/1.0")
                 with urllib.request.urlopen(req, timeout=60) as resp:
                     data = json.loads(resp.read().decode())
                 return data["choices"][0]["message"]["content"].strip()
@@ -664,6 +693,29 @@ def commit_conversation(conv, collection):
 
     if points:
         http_json(f"{QDRANT_URL}/collections/{collection}/points", data={"points": points}, method="PUT", timeout=30)
+
+    if BM25_SEARCH:
+        idx = get_bm25_index()
+        try:
+            body = {"limit": 100, "with_payload": True, "with_vector": False}
+            offset = None
+            while True:
+                if offset is not None:
+                    body["offset"] = offset
+                data = http_json(
+                    f"{QDRANT_URL}/collections/{collection}/points/scroll", data=body, method="POST", timeout=30
+                )
+                for p in data.get("result", {}).get("points", []):
+                    payload = p.get("payload", {})
+                    idx.add(collection, p["id"], payload.get("text", ""), payload.get("chunk_type", ""))
+                next_off = data.get("result", {}).get("next_page_offset")
+                if not next_off:
+                    break
+                offset = next_off
+            idx.commit()
+        except Exception as e:
+            print(f"    BM25 index error: {e}")
+
     time.sleep(2)
     print(
         f"  Committed {committed} turns + {window_committed} windows + {fact_committed} facts across {num_sessions} sessions"
@@ -932,6 +984,19 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
             if new_ent and CROSS_ENCODER_URL:
                 new_ent = ce_rerank(question, new_ent, top_k=len(new_ent))
             merged.extend(new_ent)
+
+    if BM25_SEARCH and collection:
+        idx = get_bm25_index()
+        bm25_hits = idx.search(collection, question, limit=LANE_BM25_SEARCH)
+        new_bm25 = []
+        for r in bm25_hits:
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                new_bm25.append(r)
+        if new_bm25 and CROSS_ENCODER_URL:
+            new_bm25 = ce_rerank(question, new_bm25, top_k=len(new_bm25))
+        merged.extend(new_bm25)
 
     merged.sort(key=_score_key, reverse=True)
 
