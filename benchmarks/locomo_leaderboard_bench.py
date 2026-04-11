@@ -986,17 +986,19 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
             merged.extend(new_ent)
 
     if BM25_SEARCH and collection:
-        idx = get_bm25_index()
-        bm25_hits = idx.search(collection, question, limit=LANE_BM25_SEARCH)
-        new_bm25 = []
-        for r in bm25_hits:
-            text_key = (r.get("text") or "").strip().lower()[:200]
-            if text_key and text_key not in seen_texts:
-                seen_texts.add(text_key)
-                new_bm25.append(r)
-        if new_bm25 and CROSS_ENCODER_URL:
-            new_bm25 = ce_rerank(question, new_bm25, top_k=len(new_bm25))
-        merged.extend(new_bm25)
+        q_type = classify_question(question) if PROMPT_ROUTING else "factual"
+        if q_type == "inference":
+            idx = get_bm25_index()
+            bm25_hits = idx.search(collection, question, limit=LANE_BM25_SEARCH)
+            new_bm25 = []
+            for r in bm25_hits:
+                text_key = (r.get("text") or "").strip().lower()[:200]
+                if text_key and text_key not in seen_texts:
+                    seen_texts.add(text_key)
+                    new_bm25.append(r)
+            if new_bm25 and CROSS_ENCODER_URL:
+                new_bm25 = ce_rerank(question, new_bm25, top_k=len(new_bm25))
+            merged.extend(new_bm25)
 
     merged.sort(key=_score_key, reverse=True)
 
