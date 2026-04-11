@@ -54,12 +54,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 BENCH_MODE = os.environ.get("BENCH_MODE", "production")
 
-if BENCH_MODE == "compare":
-    ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "gpt-4o-mini-2024-07-18")
-    JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
-else:
-    ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
-    JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
+ANSWER_MODEL = os.environ.get("BENCH_ANSWER_MODEL", "claude-haiku-4-5-20251001")
+JUDGE_MODEL = os.environ.get("BENCH_JUDGE_MODEL", "gpt-4o-mini-2024-07-18")
 
 CATEGORY_NAMES = {1: "single-hop", 2: "temporal", 3: "multi-hop", 4: "open-domain", 5: "adversarial"}
 
@@ -986,19 +982,45 @@ def two_lane_search(question, speakers=None, port=BENCH_PORT, collection=None):
             merged.extend(new_ent)
 
     if BM25_SEARCH and collection:
-        q_type = classify_question(question) if PROMPT_ROUTING else "factual"
-        if q_type == "inference":
-            idx = get_bm25_index()
-            bm25_hits = idx.search(collection, question, limit=LANE_BM25_SEARCH)
-            new_bm25 = []
-            for r in bm25_hits:
-                text_key = (r.get("text") or "").strip().lower()[:200]
-                if text_key and text_key not in seen_texts:
-                    seen_texts.add(text_key)
-                    new_bm25.append(r)
-            if new_bm25 and CROSS_ENCODER_URL:
-                new_bm25 = ce_rerank(question, new_bm25, top_k=len(new_bm25))
-            merged.extend(new_bm25)
+        idx = get_bm25_index()
+        bm25_hits = idx.search(collection, question, limit=LANE_BM25_SEARCH)
+        bm25_new = []
+        for r in bm25_hits:
+            text_key = (r.get("text") or "").strip().lower()[:200]
+            if text_key and text_key not in seen_texts:
+                seen_texts.add(text_key)
+                bm25_new.append(r)
+
+        if bm25_new:
+            RRF_K = 60
+            rrf_scores = {}
+            for rank, r in enumerate(merged):
+                key = (r.get("text") or "")[:200]
+                rrf_scores[key] = rrf_scores.get(key, 0) + 1.0 / (rank + RRF_K)
+                r["_rrf_key"] = key
+            for rank, r in enumerate(bm25_new):
+                key = (r.get("text") or "")[:200]
+                rrf_scores[key] = rrf_scores.get(key, 0) + 1.0 / (rank + RRF_K)
+                r["_rrf_key"] = key
+
+            all_candidates = merged + bm25_new
+            seen_keys = set()
+            deduped = []
+            for r in all_candidates:
+                key = r.get("_rrf_key", "")
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    r["rrf_score"] = rrf_scores.get(key, 0)
+                    deduped.append(r)
+            deduped.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
+            merged = deduped[:75]
+
+            if CROSS_ENCODER_URL:
+                merged = ce_rerank(question, merged, top_k=60)
+            else:
+                merged = merged[:60]
+
+            return merged
 
     merged.sort(key=_score_key, reverse=True)
 
