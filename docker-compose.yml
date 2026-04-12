@@ -61,6 +61,20 @@ services:
       timeout: 5s
       retries: 3
 
+  rasputin-mcp:
+    build:
+      context: .
+      dockerfile: tools/mcp/Dockerfile
+    ports:
+      - "127.0.0.1:8808:8808"
+    environment:
+      - RASPUTIN_URL=http://brain:7777
+      - RASPUTIN_TOKEN=${MEMORY_API_TOKEN:-}
+      - MCP_HOST=0.0.0.0
+    depends_on:
+      brain:
+        condition: service_healthy
+
 volumes:
   qdrant_storage:
   falkordb_data:

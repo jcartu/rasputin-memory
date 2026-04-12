@@ -59,5 +59,10 @@ model = "claude-sonnet-4-6"
 timeout = 15
 provider = "anthropic"
 
+[reflect]
+provider = "anthropic"
+model = "claude-haiku-4-5-20251001"
+max_tokens = 1000
+
 [entities]
 known_entities_path = "config/known_entities.json"

@@ -412,6 +412,28 @@ class HybridHandler(BaseHTTPRequestHandler):
             status = 200 if result.get("ok") else 404
             self._send_json(result, status)
 
+        elif parsed.path == "/reflect":
+            if not self._enforce_rate_limit("/search"):
+                return
+            query = data.get("q", data.get("query", ""))
+            limit = min(max(int(data.get("limit", 20)), 1), 30)
+            source = data.get("source", None)
+            collection_override = data.get("collection", None)
+
+            if not query:
+                self._send_json({"error": "Missing query"}, 400)
+                return
+
+            from brain import reflect as _reflect
+
+            result = _reflect.reflect(
+                query,
+                limit=limit,
+                source_filter=source,
+                collection=collection_override,
+            )
+            self._send_json(result)
+
         else:
             self._send_json({"error": f"Unknown path: {parsed.path}"}, 404)
 

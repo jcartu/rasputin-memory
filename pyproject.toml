@@ -28,7 +28,7 @@ Changelog = "https://github.com/jcartu/rasputin-memory/blob/main/CHANGELOG.md"
 [project.optional-dependencies]
 reranker = ["fastapi>=0.110.0", "uvicorn>=0.29.0", "transformers>=4.40.0", "torch>=2.0.0"]
 storm = ["knowledge-storm>=0.2.0", "dspy-ai>=2.4.0"]
-mcp = ["mcp>=1.0.0"]
+mcp = ["fastmcp>=3.2.0"]
 dev = ["ruff>=0.3.0", "pytest>=8.0.0"]
 all = ["rasputin-memory[reranker,storm,mcp,dev]"]
 
