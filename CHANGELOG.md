@@ -7,6 +7,21 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+- **MCP server** (`tools/mcp/server.py`): 6 tools via FastMCP 3.2 streamable-http transport — native support for Claude Code, Cursor, Codex, and any MCP client
+  - `memory_store`, `memory_search`, `memory_reflect`, `memory_stats`, `memory_feedback`, `memory_commit_conversation`
+- **`/reflect` endpoint**: LLM synthesis over retrieved memories — retrieves, formats context, calls Anthropic or Ollama, returns coherent answer with source citations
+- `tools/brain/reflect.py`: reflect module with Anthropic + Ollama providers, automatic fallback, configurable via `[reflect]` TOML section
+- Docker service for MCP server (`tools/mcp/Dockerfile`, `docker-compose.yml`)
+- `docs/CLAUDE-CODE.md`: Claude Code setup guide
+- `docs/INTEGRATIONS.md`: integration guide for Claude Code, Cursor, Codex, LangChain, curl
+- 36 new tests: `test_mcp.py` (22 tests, FastMCP shimmed) + `test_reflect.py` (14 tests) — total 142 tests
+- `AGENTS.md`: project guide for AI coding agents
+
+### Changed
+- `fastmcp>=3.2.0` replaces `mcp>=1.0.0` in optional dependencies
+- `config/rasputin.toml`: added `[reflect]` section (provider, model, max_tokens)
+
 ## [0.8.0] - 2026-04-10
 
 Full 10-conversation LoCoMo validation: **69.1% non-adv** (1986 questions, production mode).

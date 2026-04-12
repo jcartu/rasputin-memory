@@ -100,6 +100,40 @@ curl -X POST http://localhost:7777/commit \
 
 ---
 
+### POST /reflect
+
+Retrieve relevant memories and synthesize a coherent answer via LLM.
+
+```bash
+curl -X POST http://localhost:7777/reflect \
+  -H 'Content-Type: application/json' \
+  -d '{"q": "What do we know about the auth service architecture?", "limit": 20}'
+```
+
+**Request body:**
+- `q` or `query` (required) — the question to answer from memory
+- `limit` (optional, default 20) — how many memories to retrieve for synthesis (1-30)
+- `source` (optional) — filter memories by source type
+- `collection` (optional) — override Qdrant collection
+
+**Response:**
+```json
+{
+  "answer": "Based on stored memories, the auth service uses PostgreSQL...",
+  "sources": [
+    {"point_id": 123, "text": "We chose PostgreSQL for auth...", "score": 0.92},
+    {"point_id": 456, "text": "MySQL was rejected due to...", "score": 0.71}
+  ],
+  "search_elapsed_ms": 55.2,
+  "total_elapsed_ms": 1230.5,
+  "reflect_model": "claude-haiku-4-5-20251001"
+}
+```
+
+The reflect endpoint uses the LLM configured in `config/rasputin.toml` `[reflect]` section (default: Anthropic Claude Haiku). Falls back to Ollama if no Anthropic API key is set.
+
+---
+
 ### GET /health
 
 Check health of all components.

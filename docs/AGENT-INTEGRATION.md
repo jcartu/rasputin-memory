@@ -1,6 +1,51 @@
 # Agent Integration
 
-RASPUTIN Memory is designed to integrate with any AI agent framework via its HTTP API. This guide covers the built-in integration patterns.
+RASPUTIN Memory integrates with any AI agent framework. The recommended path is the **MCP server** for MCP-compatible clients, or the **HTTP API** for everything else.
+
+## MCP Server (Recommended for Claude Code, Cursor, Codex)
+
+The fastest path to integration. The MCP server (`tools/mcp/server.py`) is a thin HTTP proxy that exposes 6 tools over the Model Context Protocol:
+
+| Tool | Description |
+|------|-------------|
+| `memory_store` | Store facts, decisions, preferences to long-term memory |
+| `memory_search` | Search memories with cross-encoder reranking |
+| `memory_reflect` | Synthesize answers from multiple memories via LLM |
+| `memory_stats` | Check memory system health and counts |
+| `memory_feedback` | Mark memories as helpful/unhelpful |
+| `memory_commit_conversation` | Bulk-commit conversation transcripts |
+
+```bash
+pip install "fastmcp>=3.2.0"
+python3 tools/mcp/server.py   # port 8808
+
+# Claude Code
+claude mcp add --transport http rasputin http://localhost:8808/mcp
+
+# Cursor — add to .cursor/mcp.json:
+# {"mcpServers": {"rasputin": {"url": "http://localhost:8808/mcp"}}}
+```
+
+See [`docs/CLAUDE-CODE.md`](CLAUDE-CODE.md) and [`docs/INTEGRATIONS.md`](INTEGRATIONS.md) for full setup.
+
+## HTTP API (Direct Integration)
+
+For agents without MCP support, call the REST API directly:
+
+```bash
+# Search
+curl "http://localhost:7777/search?q=your+query&limit=5"
+
+# Commit
+curl -X POST http://localhost:7777/commit \
+  -H 'Content-Type: application/json' \
+  -d '{"text": "Something worth remembering", "source": "my-agent"}'
+
+# Reflect (LLM synthesis)
+curl -X POST http://localhost:7777/reflect \
+  -H 'Content-Type: application/json' \
+  -d '{"q": "What do we know about X?", "limit": 20}'
+```
 
 ## Auto-Recall Hook
 
@@ -45,4 +90,4 @@ Theory of Mind / psychological modeling via [Honcho](https://github.com/plastic-
 
 ## MCP Protocol
 
-For MCP-compatible agents, map MCP tools to the HTTP API endpoints (`/search`, `/commit`, `/proactive`, `/stats`) in your MCP gateway/runtime.
+For MCP-compatible agents, use the built-in MCP server (`tools/mcp/server.py`) which maps all tools to the HTTP API. See the [MCP Server](#mcp-server-recommended-for-claude-code-cursor-codex) section at the top of this document.

@@ -22,6 +22,7 @@ Sections:
 - `[amac]` — A-MAC threshold, timeout, model, and URL
 - `[scoring]` — temporal half-life controls
 - `[constraints]` — constraint extraction provider and model
+- `[reflect]` — LLM synthesis provider, model, and max tokens
 - `[entities]` — known entities dictionary path
 
 ---
@@ -111,7 +112,8 @@ Each level overrides the one above:
 | 7777 | hybrid_brain | Main memory API |
 | 8006 | reranker_server | Neural reranker API |
 | 11434 | Ollama / local LLM API | Embeddings and chat-completions endpoint |
-| 18790 | openclaw-mem | Hook/MCP integration endpoint |
+| 8808 | MCP server | MCP protocol for Claude Code, Cursor, etc. |
+| 18790 | openclaw-mem | Hook/MCP integration endpoint (OpenClaw-specific) |
 
 ---
 

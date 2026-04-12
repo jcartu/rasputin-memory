@@ -40,4 +40,10 @@ pytest tests/           # full suite
 
 ## Architecture
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the 4-stage pipeline works internally. Start there before modifying core retrieval logic.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pipeline works internally. Start there before modifying core retrieval logic.
+
+Key modules:
+- `tools/brain/` — core memory engine (search, commit, graph, reflect)
+- `tools/mcp/` — MCP server (thin HTTP proxy, requires `fastmcp>=3.2.0`)
+- `tools/brain/reflect.py` — LLM synthesis over search results
+- `tools/pipeline/` — shared utilities (scoring, dateparse, etc.)

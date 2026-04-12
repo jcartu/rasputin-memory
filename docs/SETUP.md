@@ -41,6 +41,14 @@ ollama pull nomic-embed-text
 # 7. Start the Hybrid Brain API
 python3 tools/hybrid_brain.py
 # Starts on http://localhost:7777
+
+# 8. (Optional) Start MCP server for Claude Code / Cursor / any MCP client
+pip install "fastmcp>=3.2.0"
+python3 tools/mcp/server.py
+# Starts on http://localhost:8808/mcp
+
+# Connect Claude Code:
+# claude mcp add --transport http rasputin http://localhost:8808/mcp
 ```
 
 Or use the Makefile:
@@ -150,6 +158,7 @@ python3 tools/hybrid_brain.py --port 7777
 | FalkorDB | 6380 | Knowledge graph |
 | Ollama | 11434 | Embeddings (nomic-embed-text) |
 | Reranker | 8006 | Neural reranker (optional) |
-| Hybrid Brain API | 7777 | Main search/commit API |
+| Hybrid Brain API | 7777 | Main search/commit/reflect API |
+| MCP Server | 8808 | MCP protocol for Claude Code, Cursor, etc. (optional) |
 
 See [CONFIGURATION.md](CONFIGURATION.md) for all options.

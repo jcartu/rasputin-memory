@@ -129,14 +129,38 @@ results = requests.get("http://localhost:7777/search", params={"q": "project dea
 requests.post("http://localhost:7777/commit", json={"text": "Important fact here", "source": "my-agent"})
 ```
 
-### MCP Server
+### MCP Server (Claude Code, Cursor, Codex)
 
-For MCP-compatible agents:
+The MCP server exposes 6 tools over the Model Context Protocol, providing native integration with Claude Code, Cursor, Codex CLI, and any MCP-compatible client.
 
 ```bash
-# Example: map MCP tools to HTTP API endpoints in your MCP runtime
-curl -s "http://localhost:7777/stats"
+# Install and start
+pip install "fastmcp>=3.2.0"
+python3 tools/mcp/server.py
+# Runs on http://127.0.0.1:8808/mcp
+
+# Connect Claude Code
+claude mcp add --transport http rasputin http://localhost:8808/mcp
+
+# Connect Cursor — add to .cursor/mcp.json:
+# {"mcpServers": {"rasputin": {"url": "http://localhost:8808/mcp"}}}
 ```
+
+Available tools: `memory_store`, `memory_search`, `memory_reflect`, `memory_stats`, `memory_feedback`, `memory_commit_conversation`.
+
+See [`docs/CLAUDE-CODE.md`](CLAUDE-CODE.md) and [`docs/INTEGRATIONS.md`](INTEGRATIONS.md) for full setup.
+
+### Reflect — Ask Questions About Your Memories
+
+The `/reflect` endpoint retrieves relevant memories and synthesizes a coherent answer via LLM:
+
+```bash
+curl -X POST http://localhost:7777/reflect \
+  -H 'Content-Type: application/json' \
+  -d '{"q": "What do we know about the auth service?", "limit": 20}'
+```
+
+Returns a synthesized answer with source citations. Requires an Anthropic API key (falls back to Ollama).
 
 ## 8. Troubleshooting
 

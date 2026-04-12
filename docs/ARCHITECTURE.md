@@ -9,6 +9,12 @@ Deep dive on the 7-layer hybrid retrieval pipeline, data flow, and design decisi
 │                      RASPUTIN Memory System                     │
 └─────────────────────────────────────────────────────────────────┘
 
+LAYER 0: MCP INTERFACE (Model Context Protocol)
+└── tools/mcp/server.py (port 8808, FastMCP 3.2)
+    ├── memory_store, memory_search, memory_reflect
+    ├── memory_stats, memory_feedback, memory_commit_conversation
+    └── Thin HTTP proxy → Hybrid Brain API (port 7777)
+
 LAYER 1: SEMANTIC SEARCH (on-demand retrieval)
 ├── Qdrant (port 6333) — 768d nomic-embed-text v1
 ├── BM25 sparse keyword search (bm25_search.py)
@@ -23,13 +29,15 @@ LAYER 3: HYBRID SEARCH ENGINE (orchestration)
 └── hybrid_brain.py (port 7777)
     ├── /search — vector + graph + BM25 + neural rerank
     ├── /commit — embed + A-MAC + store + entity extract + graph
+    ├── /reflect — LLM synthesis over retrieved memories
     ├── /graph — direct Cypher queries
     ├── /stats — counts + health
     └── /health — component health check
 
-LAYER 4: LLM ENRICHMENT (quality gate + extraction)
+LAYER 4: LLM ENRICHMENT (quality gate + extraction + synthesis)
 ├── A-MAC quality gate — LLM scores every commit
 ├── Entity extraction — fast NER + graph writes
+├── Reflect — LLM synthesis over search results (Anthropic / Ollama)
 └── fact_extractor.py — cron, mines sessions for facts
 
 LAYER 5: CONTINUOUS MAINTENANCE
