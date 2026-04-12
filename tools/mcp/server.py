@@ -32,7 +32,7 @@ MCP_PORT = int(os.environ.get("MCP_PORT", "8808"))
 
 mcp = FastMCP(
     "rasputin-memory",
-    description="Persistent long-term memory for AI agents. Store, search, and synthesize memories.",
+    instructions="Persistent long-term memory for AI agents. Store, search, and synthesize memories.",
 )
 
 
