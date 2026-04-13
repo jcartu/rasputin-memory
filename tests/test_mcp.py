@@ -107,6 +107,13 @@ def test_store_error(mcp_server):
     assert "Embedding failed" in result
 
 
+def test_store_rejects_oversized_content_without_http(mcp_server):
+    with patch.object(mcp_server.urllib.request, "urlopen") as mocked:
+        result = mcp_server.memory_store("x" * (mcp_server._MAX_COMMIT_TEXT_CHARS + 1))
+    assert "content too long" in result
+    mocked.assert_not_called()
+
+
 # -- memory_search ----------------------------------------------------------
 
 
@@ -149,20 +156,24 @@ def test_search_empty(mcp_server):
     assert result == "No matching memories found."
 
 
-def test_search_limit_clamped(mcp_server):
-    captured_url = {}
+def test_search_limit_clamped_and_uses_post_body(mcp_server):
+    captured = {}
 
     def fake_urlopen(req, **kwargs):
-        captured_url["url"] = req.full_url
+        captured["url"] = req.full_url
+        captured["method"] = req.get_method()
+        captured["data"] = json.loads(req.data.decode())
         return _make_response({"results": [], "elapsed_ms": 0})
 
     with patch.object(mcp_server.urllib.request, "urlopen", side_effect=fake_urlopen):
         mcp_server.memory_search("q", limit=999)
-    assert "limit=30" in captured_url["url"]
+    assert captured["url"] == "http://test:7777/search"
+    assert captured["method"] == "POST"
+    assert captured["data"]["limit"] == 30
 
     with patch.object(mcp_server.urllib.request, "urlopen", side_effect=fake_urlopen):
         mcp_server.memory_search("q", limit=-5)
-    assert "limit=1" in captured_url["url"]
+    assert captured["data"]["limit"] == 1
 
 
 def test_search_score_fallback_chain(mcp_server):
@@ -375,12 +386,16 @@ def test_collection_params_custom_bank(mcp_server, monkeypatch):
 
 def test_search_includes_collection_param(mcp_server, monkeypatch):
     monkeypatch.setattr(mcp_server, "BANK_ID", "custom-bank")
-    captured_url = {}
+    captured = {}
 
     def fake_urlopen(req, **kwargs):
-        captured_url["url"] = req.full_url
+        captured["url"] = req.full_url
+        captured["method"] = req.get_method()
+        captured["data"] = json.loads(req.data.decode())
         return _make_response({"results": [], "elapsed_ms": 0})
 
     with patch.object(mcp_server.urllib.request, "urlopen", side_effect=fake_urlopen):
         mcp_server.memory_search("test")
-    assert "collection=custom-bank" in captured_url["url"]
+    assert captured["url"] == "http://test:7777/search"
+    assert captured["method"] == "POST"
+    assert captured["data"]["collection"] == "custom-bank"
