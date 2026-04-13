@@ -180,7 +180,7 @@ def commit_memory(
                 "constraint_summary",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
-            payload.update(safe_metadata)
+            payload.update(safe_metadata)  # type: ignore[typeddict-item]
 
         constraint_texts: list[str] = []
         try:
@@ -220,7 +220,7 @@ def commit_memory(
         try:
             _state.qdrant.upsert(
                 collection_name=collection or _state.COLLECTION,
-                points=[PointStruct(id=point_id, vector=vector, payload=payload)],
+                points=[PointStruct(id=point_id, vector=vector, payload=dict(payload))],
             )
         except Exception as error:
             return {"ok": False, "error": str(error)}
