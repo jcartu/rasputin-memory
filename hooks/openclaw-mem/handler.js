@@ -93,6 +93,205 @@ function hashContent(text) {
   return hash.toString(16);
 }
 
+
+function resolveSemanticAgent(workspaceDir) {
+  const ws = String(workspaceDir || '');
+  if (ws.includes('workspace-bd')) return 'kalki-bd';
+  if (ws.includes('workspace-rs')) return 'kalki-rs';
+  return 'kalki';
+}
+
+function stripAnsi(text) {
+  return String(text || '').replace(/\[[0-9;]*[A-Za-z]/g, '');
+}
+
+function normalizeRecallText(text, maxChars = 300) {
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  if (clean.length <= maxChars) return clean;
+  return `${clean.slice(0, Math.max(0, maxChars - 1))}…`;
+}
+
+function formatRasputinResults(results, {
+  title = '## 🧠 Rasputin Primary Recall',
+  maxResults = 8,
+  maxTextChars = 300
+} = {}) {
+  const hits = Array.isArray(results) ? results : [];
+  const seen = new Set();
+  const lines = [];
+
+  for (const hit of hits) {
+    if (!hit || typeof hit !== 'object') continue;
+    const metadata = (hit.metadata && typeof hit.metadata === 'object')
+      ? hit.metadata
+      : ((hit.payload && typeof hit.payload === 'object') ? hit.payload : {});
+    const canonicalId = metadata.canonical_id || hit.id || null;
+    const dedupeKey = canonicalId || `${metadata.source || ''}:${metadata.lane || ''}:${hit.text || ''}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    const text = normalizeRecallText(hit.text || metadata.text || '', maxTextChars);
+    if (!text) continue;
+
+    const score = Number.isFinite(hit.score) ? hit.score.toFixed(2) : 'n/a';
+    const lane = metadata.lane || metadata.kind || metadata.memory_type || '?';
+    const source = metadata.source || metadata.source_type || metadata.source_path || metadata.namespace || '?';
+    const idLabel = canonicalId || hit.id || '-';
+
+    lines.push(`- [score ${score}] ${idLabel}
+  source: ${source} | lane: ${lane}
+  text: ${text}`);
+    if (lines.length >= maxResults) break;
+  }
+
+  if (lines.length === 0) return '';
+  return `
+
+---
+${title}
+
+${lines.join('\n\n')}`;
+}
+
+async function runOpenClawMemorySearch(query, {
+  workspaceDir,
+  limit = 6,
+  timeoutMs = 3000
+} = {}) {
+  return new Promise((resolve) => {
+    const agent = resolveSemanticAgent(workspaceDir);
+    const child = spawn('openclaw', ['memory', 'search', '--agent', agent, '--max-results', String(limit), query], {
+      cwd: workspaceDir || process.cwd(),
+      env: process.env
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let finished = false;
+    const finish = (result) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      finish({ ok: false, agent, error: 'timeout' });
+    }, timeoutMs);
+
+    child.stdout?.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', (err) => {
+      finish({ ok: false, agent, error: err.message });
+    });
+    child.on('close', (code) => {
+      const cleanStdout = stripAnsi(stdout).trim();
+      const cleanStderr = stripAnsi(stderr).trim();
+      if (code === 0 && cleanStdout) {
+        finish({ ok: true, agent, text: cleanStdout });
+        return;
+      }
+      finish({ ok: false, agent, error: cleanStderr || `exit ${code}` });
+    });
+  });
+}
+
+async function buildSemanticRecallBundle(query, {
+  workspaceDir,
+  primaryLimit = 8,
+  fallbackLimit = 6,
+  fallbackMinResults = 3,
+  timeoutMs = 3000,
+  title = '## 🧠 Rasputin Primary Recall',
+  maxTextChars = 300
+} = {}) {
+  let primaryResults = [];
+  let primaryStatus = 'unavailable';
+
+  try {
+    const resp = await fetch(`${MEMORY_API_BASE}/search?q=${encodeURIComponent(query)}&limit=${primaryLimit}`, {
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      primaryResults = Array.isArray(data.results) ? data.results : [];
+      primaryStatus = 'ok';
+    } else {
+      primaryStatus = `http_${resp.status}`;
+    }
+  } catch (err) {
+    primaryStatus = err?.message || 'unavailable';
+  }
+
+  const primarySection = formatRasputinResults(primaryResults, {
+    title,
+    maxResults: primaryLimit,
+    maxTextChars
+  });
+  const primaryCount = (primarySection.match(/^- \[score/mg) || []).length;
+
+  let fallbackReason = null;
+  if (primaryStatus !== 'ok') {
+    fallbackReason = 'rasputin_unavailable';
+  } else if (primaryCount < fallbackMinResults) {
+    fallbackReason = 'rasputin_thin';
+  }
+
+  let fallbackSection = '';
+  if (fallbackReason) {
+    const fallback = await runOpenClawMemorySearch(query, {
+      workspaceDir,
+      limit: fallbackLimit,
+      timeoutMs
+    });
+    if (fallback.ok && fallback.text) {
+      fallbackSection = `
+
+---
+## 🪂 Fallback Semantic Recall (OpenClaw index)
+
+fallback_reason: ${fallbackReason}
+agent: ${fallback.agent}
+
+${fallback.text}`;
+    }
+  }
+
+  return {
+    primarySection,
+    fallbackSection,
+    section: `${primarySection}${fallbackSection}`,
+    primaryCount,
+    primaryStatus,
+    fallbackReason
+  };
+}
+
+async function buildAutoRecallFileContent(query, workspaceDir, timestamp = new Date().toISOString()) {
+  const bundle = await buildSemanticRecallBundle(query, {
+    workspaceDir,
+    primaryLimit: 8,
+    fallbackLimit: 6,
+    fallbackMinResults: 3,
+    timeoutMs: 3000,
+    title: '## Rasputin Primary Semantic Recall',
+    maxTextChars: 300
+  });
+
+  const header = [`# Auto-Recall — ${timestamp}`, '', `Query: ${query}`];
+  const body = bundle.section.trim();
+  if (body) {
+    return `${header.join('\n')}\n${body.startsWith('---') ? '\n' : '\n\n'}${body}\n`;
+  }
+  return `${header.join('\n')}\n\n(no semantic recall results)\n`;
+}
+
 /**
  * Read session transcript and extract conversation
  */
@@ -438,29 +637,24 @@ async function handleAgentBootstrap(event) {
       console.log(`[openclaw-mem] Hot-context load failed (silent): ${err.message}`);
     }
 
-    // Qdrant bootstrap search — pre-load relevant memories for this session
+    // Rasputin-first bootstrap search — pre-load relevant memories for this session
     let qdrantSection = '';
     try {
-      const resp = await fetch(`${MEMORY_API_BASE}/search?q=active+tasks+recent+decisions+important+context&limit=25`, {
-        signal: AbortSignal.timeout(5000)
+      const semanticBundle = await buildSemanticRecallBundle('active tasks recent decisions important context', {
+        workspaceDir,
+        primaryLimit: 8,
+        fallbackLimit: 6,
+        fallbackMinResults: 3,
+        timeoutMs: 5000,
+        title: '## 🧠 Pre-loaded Memory (Rasputin primary)',
+        maxTextChars: 400
       });
-      if (resp.ok) {
-        const data = await resp.json();
-        const results = data.results || [];
-        if (results.length > 0) {
-          const lines = results.map(r => {
-            const text = (r.text || r.payload?.text || '').slice(0, 400);
-            const score = r.score ? ` [${r.score.toFixed(2)}]` : '';
-            return text ? `• ${text}${score}` : null;
-          }).filter(Boolean);
-          if (lines.length > 0) {
-            qdrantSection = `\n\n---\n## 🧠 Pre-loaded Memory (Qdrant)\n\n${lines.join('\n')}`;
-            console.log(`[openclaw-mem] ✓ Qdrant bootstrap: ${results.length} memories pre-loaded`);
-          }
-        }
+      qdrantSection = semanticBundle.section;
+      if (qdrantSection) {
+        console.log(`[openclaw-mem] ✓ Semantic bootstrap: primary=${semanticBundle.primaryCount} status=${semanticBundle.primaryStatus} fallback=${semanticBundle.fallbackReason || 'none'}`);
       }
     } catch (err) {
-      console.log(`[openclaw-mem] Qdrant bootstrap failed (silent): ${err.message}`);
+      console.log(`[openclaw-mem] Semantic bootstrap failed (silent): ${err.message}`);
     }
 
     // Strategy: Write memory context to a dedicated file on disk
@@ -753,44 +947,13 @@ async function handleMessage(event) {
 
     (async () => {
       try {
-        const resp = await fetch(`${MEMORY_API_BASE}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
-          signal: AbortSignal.timeout(3000)
-        });
-        if (!resp.ok) {
-          console.log(`[openclaw-mem] Auto-recall search failed: ${resp.status}`);
-          return;
-        }
-        const data = await resp.json();
-        const results = data.results || [];
-        if (results.length === 0) {
-          console.log('[openclaw-mem] Auto-recall: no results found');
-          return;
-        }
-
-        // Filter results to only include those with actual text content
-        const filteredResults = results.filter(r => {
-          const text = r.text || r.payload?.text || '';
-          return text && text.length > 0;
-        });
-
-        if (filteredResults.length === 0) {
-          console.log('[openclaw-mem] Auto-recall: no results with text content');
-          return;
-        }
-
-        const lines = [`# Auto-Recall — ${new Date().toISOString()}\n`, `Query: ${keywords}\n`];
-        for (const r of filteredResults) {
-          const score = r.score ? ` [${r.score.toFixed(2)}]` : '';
-          const text = (r.text || r.payload?.text || '').slice(0, 300);
-          if (text) lines.push(`• ${text}${score}`);
-        }
-
+        const content = await buildAutoRecallFileContent(keywords, workspaceDir, new Date().toISOString());
         await fs.writeFile(
           path.join(workspaceDir, 'memory', 'last-recall.md'),
-          lines.join('\n'),
+          content,
           'utf-8'
         );
-        console.log(`[openclaw-mem] ✓ Auto-recall: ${filteredResults.length} results written to last-recall.md`);
+        console.log('[openclaw-mem] ✓ Auto-recall written to last-recall.md');
       } catch (err) {
         console.log(`[openclaw-mem] Auto-recall search failed (silent): ${err.message}`);
       }
@@ -1162,27 +1325,13 @@ async function handleUserPromptSubmit(event) {
     if (keywords.length > 5) {
       (async () => {
         try {
-          const resp = await fetch(`${MEMORY_API_BASE}/search?q=${encodeURIComponent(keywords)}&limit=8`, {
-            signal: AbortSignal.timeout(3000)
-          });
-          if (!resp.ok) return;
-          const data = await resp.json();
-          const results = data.results || [];
-          if (results.length === 0) return;
-
-          const lines = [`# Auto-Recall — ${new Date().toISOString()}\n`, `Query: ${keywords}\n`];
-          for (const r of results) {
-            const score = r.score ? ` [${r.score.toFixed(2)}]` : '';
-            const text = (r.text || r.payload?.text || '').slice(0, 300);
-            if (text) lines.push(`• ${text}${score}`);
-          }
-
+          const content = await buildAutoRecallFileContent(keywords, workspaceDir, new Date().toISOString());
           await fs.writeFile(
             path.join(workspaceDir, 'memory', 'last-recall.md'),
-            lines.join('\n'),
+            content,
             'utf-8'
           );
-          console.log(`[openclaw-mem] ✓ Auto-recall: ${results.length} results written to last-recall.md`);
+          console.log('[openclaw-mem] ✓ Auto-recall written to last-recall.md');
         } catch (err) {
           console.log(`[openclaw-mem] Auto-recall search failed (silent): ${err.message}`);
         }

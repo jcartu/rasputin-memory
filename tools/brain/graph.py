@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 from brain import _state
@@ -18,6 +17,16 @@ def _safe_graph_label(label: str) -> str:
     return label if label in allowed else "Entity"
 
 
+def _cypher_string(value: Any) -> str:
+    text = _decode(value)
+    text = text.replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{text}'"
+
+
+def _cypher_list(values: list[Any]) -> str:
+    return "[" + ", ".join(_cypher_string(value) for value in values) + "]"
+
+
 def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], timestamp: str) -> tuple[bool, list[str]]:
     if _state.FALKORDB_DISABLED:
         return True, []
@@ -32,12 +41,14 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
     ts = timestamp
 
     try:
+        memory_query = (
+            f"MERGE (m:Memory {{id: {_cypher_string(str(point_id))}}}) "
+            f"SET m.text = {_cypher_string(text_preview)}, m.created_at = {_cypher_string(ts)}"
+        )
         redis_client.execute_command(
             "GRAPH.QUERY",
             _state.GRAPH_NAME,
-            "MERGE (m:Memory {id: $id}) SET m.text = $text, m.created_at = $ts",
-            "--params",
-            json.dumps({"id": str(point_id), "text": text_preview, "ts": ts}),
+            memory_query,
         )
     except Exception as error:
         _state.logger.error("Graph commit memory node error: %s", error)
@@ -49,14 +60,15 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
             safe_label = (
                 entity_type if entity_type in ("Person", "Organization", "Project", "Topic", "Location") else "Entity"
             )
+            entity_query = (
+                f"MERGE (n:{safe_label} {{name: {_cypher_string(name)}}}) "
+                f"ON CREATE SET n.type = {_cypher_string(entity_type)}, n.created_at = {_cypher_string(ts)} "
+                f"WITH n MATCH (m:Memory {{id: {_cypher_string(str(point_id))}}}) MERGE (m)-[:MENTIONS]->(n)"
+            )
             redis_client.execute_command(
                 "GRAPH.QUERY",
                 _state.GRAPH_NAME,
-                f"MERGE (n:{safe_label} {{name: $name}}) "
-                f"ON CREATE SET n.type = $etype, n.created_at = $ts "
-                f"WITH n MATCH (m:Memory {{id: $id}}) MERGE (m)-[:MENTIONS]->(n)",
-                "--params",
-                json.dumps({"name": name, "etype": entity_type, "ts": ts, "id": str(point_id)}),
+                entity_query,
             )
             connected_entities.append(name)
         except Exception as error:
@@ -100,18 +112,17 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         for label in labels:
             try:
                 safe_label = _safe_graph_label(label)
-                params: dict[str, Any] = {"name": entity_name}
+                entity_name_cypher = _cypher_string(entity_name)
                 memory_result = redis_client.execute_command(
                     "GRAPH.QUERY",
                     _state.GRAPH_NAME,
                     "MATCH (m:Memory)-[:MENTIONS]->(n:{label}) "
-                    "WHERE toLower(n.name) CONTAINS toLower($name) "
+                    "WHERE toLower(n.name) CONTAINS toLower({entity_name}) "
                     "RETURN m.id, m.text, m.created_at, n.name LIMIT {limit}".format(
                         label=safe_label,
+                        entity_name=entity_name_cypher,
                         limit=limit,
                     ),
-                    "--params",
-                    json.dumps(params),
                 )
                 for row in memory_result[1] or []:
                     memory_id = _decode(row[0])
@@ -137,22 +148,23 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
             for label in labels:
                 try:
                     safe_label = _safe_graph_label(label)
-                    two_hop_params: dict[str, Any] = {"name": entity_name, "seen": list(seen_memory_ids)}
+                    entity_name_cypher = _cypher_string(entity_name)
+                    seen_ids_cypher = _cypher_list(sorted(seen_memory_ids))
                     two_hop = redis_client.execute_command(
                         "GRAPH.QUERY",
                         _state.GRAPH_NAME,
                         "MATCH (m1:Memory)-[:MENTIONS]->(n:{label}) "
                         "MATCH (m1)-[:MENTIONS]->(co) "
-                        "WHERE toLower(n.name) CONTAINS toLower($name) AND n <> co "
+                        "WHERE toLower(n.name) CONTAINS toLower({entity_name}) AND n <> co "
                         "WITH DISTINCT co, count(m1) AS shared ORDER BY shared DESC LIMIT 5 "
                         "MATCH (m2:Memory)-[:MENTIONS]->(co) "
-                        "WHERE NOT m2.id IN $seen "
+                        "WHERE NOT m2.id IN {seen_ids} "
                         "RETURN m2.id, m2.text, m2.created_at, co.name, labels(co)[0] LIMIT {limit}".format(
                             label=safe_label,
+                            entity_name=entity_name_cypher,
+                            seen_ids=seen_ids_cypher,
                             limit=limit,
                         ),
-                        "--params",
-                        json.dumps(two_hop_params),
                     )
                     for row in two_hop[1] or []:
                         memory_id = _decode(row[0])
@@ -179,13 +191,12 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
 
         if entity_type == "Keyword" and len(entity_name) > 3:
             try:
+                entity_name_cypher = _cypher_string(entity_name)
                 keyword_result = redis_client.execute_command(
                     "GRAPH.QUERY",
                     _state.GRAPH_NAME,
-                    "MATCH (m:Memory) WHERE toLower(m.text) CONTAINS toLower($name) "
-                    "RETURN m.id, m.text, m.created_at LIMIT 5",
-                    "--params",
-                    json.dumps({"name": entity_name}),
+                    "MATCH (m:Memory) WHERE toLower(m.text) CONTAINS toLower({entity_name}) "
+                    "RETURN m.id, m.text, m.created_at LIMIT 5".format(entity_name=entity_name_cypher),
                 )
                 for row in keyword_result[1] or []:
                     memory_id = _decode(row[0])
@@ -209,16 +220,17 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         for label in labels:
             try:
                 safe_label = _safe_graph_label(label)
-                context_params: dict[str, Any] = {"name": entity_name}
+                entity_name_cypher = _cypher_string(entity_name)
                 context_result = redis_client.execute_command(
                     "GRAPH.QUERY",
                     _state.GRAPH_NAME,
                     "MATCH (n:{label})-[rel]-(connected) "
-                    "WHERE toLower(n.name) CONTAINS toLower($name) "
+                    "WHERE toLower(n.name) CONTAINS toLower({entity_name}) "
                     "AND NOT labels(connected)[0] = 'Memory' "
-                    "RETURN labels(connected)[0], connected.name, type(rel), n.name LIMIT 8".format(label=safe_label),
-                    "--params",
-                    json.dumps(context_params),
+                    "RETURN labels(connected)[0], connected.name, type(rel), n.name LIMIT 8".format(
+                        label=safe_label,
+                        entity_name=entity_name_cypher,
+                    ),
                 )
                 for row in context_result[1] or []:
                     connected_type = _decode(row[0])
