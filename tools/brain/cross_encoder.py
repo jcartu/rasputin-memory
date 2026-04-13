@@ -11,8 +11,8 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-_MODEL_NAME = os.environ.get("CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
-_MAX_LENGTH = int(os.environ.get("CROSS_ENCODER_MAX_LENGTH", "512"))
+_MODEL_NAME = os.environ.get("CROSS_ENCODER_MODEL", "Qwen/Qwen3-Reranker-0.6B")
+_MAX_LENGTH = int(os.environ.get("CROSS_ENCODER_MAX_LENGTH", "8192"))
 _BATCH_SIZE = int(os.environ.get("CROSS_ENCODER_BATCH_SIZE", "32"))
 _REMOTE_URL = os.environ.get("CROSS_ENCODER_URL", "")
 _REMOTE_TIMEOUT = int(os.environ.get("CROSS_ENCODER_TIMEOUT", "30"))

@@ -22,14 +22,12 @@ prefix_query = "search_query: "
 prefix_doc = "search_document: "
 
 [reranker]
-provider = "cohere"
+provider = "qwen3"
 fallback = "local"
-model = "rerank-v3.5"
-url = "http://localhost:8006/rerank"
-timeout = 15
+model = "Qwen/Qwen3-Reranker-0.6B"
+url = "http://192.168.1.41:9091/rerank"
+timeout = 30
 enabled = true
-llm_reranker = true
-llm_reranker_model = "claude-haiku-4-20250414"
 
 [llm]
 provider = "anthropic"
