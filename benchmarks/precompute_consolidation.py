@@ -112,7 +112,7 @@ def llm_call(prompt):
                 time.sleep(wait)
             else:
                 raise
-        except Exception as e:
+        except Exception:
             if attempt < 4:
                 time.sleep(2**attempt)
             else:
