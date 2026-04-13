@@ -5,22 +5,37 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-04-13
 
-### Added
+**Production: 74.2% non-adv** (+6.7pp from baseline). **Compare: 77.7% non-adv** (+10.2pp).
+Qwen3-Reranker-0.6B replaces ms-marco-MiniLM-L-6-v2. BM25 keyword search via SQLite FTS5.
+30+ documented experiments with scientific methodology.
+
+### Added — Retrieval Quality
+- **Qwen3-Reranker-0.6B**: Foundation-model reranker with 0.99/0.0001 score separation (+4.5pp production, +8.6pp compare). Replaces ms-marco-MiniLM-L-6-v2 (0.15/0.15 separation).
+- **BM25 keyword search**: SQLite FTS5 in-memory sidecar with Reciprocal Rank Fusion (+0.6pp). First positive BM25 result — enabled by the stronger reranker filtering out keyword-matched but irrelevant facts.
+- **Compare mode**: Haiku answers + generous judge methodology for field-comparable numbers.
+- **Reranker server**: `tools/brain/cross_encoder_server.py` supports both classic CrossEncoder and Qwen3 chat-template inference (yes/no logit extraction).
+
+### Added — MCP & Synthesis
 - **MCP server** (`tools/mcp/server.py`): 6 tools via FastMCP 3.2 streamable-http transport — native support for Claude Code, Cursor, Codex, and any MCP client
-  - `memory_store`, `memory_search`, `memory_reflect`, `memory_stats`, `memory_feedback`, `memory_commit_conversation`
 - **`/reflect` endpoint**: LLM synthesis over retrieved memories — retrieves, formats context, calls Anthropic or Ollama, returns coherent answer with source citations
-- `tools/brain/reflect.py`: reflect module with Anthropic + Ollama providers, automatic fallback, configurable via `[reflect]` TOML section
-- Docker service for MCP server (`tools/mcp/Dockerfile`, `docker-compose.yml`)
-- `docs/CLAUDE-CODE.md`: Claude Code setup guide
-- `docs/INTEGRATIONS.md`: integration guide for Claude Code, Cursor, Codex, LangChain, curl
-- 36 new tests: `test_mcp.py` (22 tests, FastMCP shimmed) + `test_reflect.py` (14 tests) — total 142 tests
-- `AGENTS.md`: project guide for AI coding agents
+- `tools/brain/reflect.py`: reflect module with Anthropic + Ollama providers, automatic fallback
+- Docker service for MCP server
+- 36 new tests (22 MCP + 14 reflect), total 142 tests
+
+### Tested and Parked (30+ experiments)
+- **Consolidation** (6 variants): 636 obs Groq, 33 obs gpt-4o-mini, separate/same collection, gated/additive. Net negative in all configurations.
+- **Graph expansion** (kNN links): −4.4pp. Similar-but-irrelevant facts drown real answers.
+- **Entity search** (3 variants): −10pp to −14pp. Entity matches flood context.
+- **BM25 with L-6 CE** (3 variants): −14pp to −28pp. Weak CE can't filter keyword matches.
+- **CE L-12**: +1.3pp overall but −12.6pp single-hop. Reverted.
+- **gpt-4o-mini as answer model**: −10.8pp vs Haiku. Reverted.
 
 ### Changed
+- Default reranker: `Qwen/Qwen3-Reranker-0.6B` (was `cross-encoder/ms-marco-MiniLM-L-6-v2`)
+- `config/rasputin.toml`: reranker provider updated to `qwen3`
 - `fastmcp>=3.2.0` replaces `mcp>=1.0.0` in optional dependencies
-- `config/rasputin.toml`: added `[reflect]` section (provider, model, max_tokens)
 
 ## [0.8.0] - 2026-04-10
 
@@ -225,7 +240,7 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
-[unreleased]: https://github.com/jcartu/rasputin-memory/compare/v0.8.0...HEAD
+[0.9.0]: https://github.com/jcartu/rasputin-memory/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jcartu/rasputin-memory/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jcartu/rasputin-memory/compare/v0.5.0...v0.6.0

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Cross-encoder / reranker server. Supports both classic cross-encoders
-(ms-marco-MiniLM) and foundation-model rerankers (Qwen3-Reranker).
+"""Reranker server. Supports classic cross-encoders and Qwen3 foundation-model rerankers.
 
 Usage:
-    CROSS_ENCODER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2 python cross_encoder_server.py
-    CROSS_ENCODER_MODEL=Qwen/Qwen3-Reranker-0.6B python cross_encoder_server.py
+    python cross_encoder_server.py                                          # Qwen3-Reranker-0.6B (default)
+    CROSS_ENCODER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2 python cross_encoder_server.py  # classic fallback
 """
 
 import argparse
@@ -19,7 +18,7 @@ from flask import Flask, request, jsonify
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-MODEL_NAME = os.environ.get("CROSS_ENCODER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+MODEL_NAME = os.environ.get("CROSS_ENCODER_MODEL", "Qwen/Qwen3-Reranker-0.6B")
 MAX_LENGTH = int(os.environ.get("CROSS_ENCODER_MAX_LENGTH", "8192"))
 BATCH_SIZE = int(os.environ.get("CROSS_ENCODER_BATCH_SIZE", "32"))
 RERANKER_INSTRUCTION = os.environ.get(
