@@ -346,7 +346,7 @@ def hybrid_search(
 
             if _ce.is_available():
                 all_candidates = _ce.rerank_with_recency(query, all_candidates, top_k=limit)
-                ce_applied = True
+                ce_applied = any("ce_score" in row for row in all_candidates)
                 ranking_score_key = "final_score"
         except ImportError:
             pass

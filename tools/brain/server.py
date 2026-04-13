@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlparse
 from brain import _state
 from brain import amac
 from brain import commit
+from brain import cross_encoder
 from brain import embedding
 from brain import graph
 from brain import proactive
@@ -44,8 +45,9 @@ class SimpleRateLimiter:
 
 
 _search_rpm = int(os.environ.get("RATE_LIMIT_SEARCH", "120"))
+_commit_rpm = int(os.environ.get("RATE_LIMIT_COMMIT", "30"))
 _rate_limiters: dict[str, SimpleRateLimiter | None] = {
-    "/commit": SimpleRateLimiter(calls_per_minute=30),
+    "/commit": SimpleRateLimiter(calls_per_minute=_commit_rpm) if _commit_rpm > 0 else None,
     "/search": SimpleRateLimiter(calls_per_minute=_search_rpm) if _search_rpm > 0 else None,
 }
 
@@ -172,12 +174,12 @@ class HybridHandler(BaseHTTPRequestHandler):
             health: dict[str, Any] = {
                 "status": "ok",
                 "engine": "hybrid-brain",
-                "version": "0.8.0",
+                "version": "0.9.0",
                 "components": {
                     "qdrant": "unknown",
                     "falkordb": "unknown",
                     "ollama_embed": "unknown",
-                    "reranker": "up" if embedding.is_reranker_available() else "down",
+                    "reranker": "up" if (search.CROSS_ENCODER_ENABLED and cross_encoder.is_available()) else "down",
                     "bm25": "up" if _state.BM25_AVAILABLE else "down",
                 },
             }
