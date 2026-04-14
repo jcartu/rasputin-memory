@@ -117,6 +117,8 @@ retrieval quality) and compare (Haiku answers, generous judge — field-comparab
 | Multi-hop | 49.0% | 64.6% | 96 | −6.2pp production from v0.8 (see note) |
 | Adversarial | 13.0% | 23.1% | 446 | Not an optimization target |
 
+**Wide retrieval pool option:** Set `BENCH_LANE_WINDOWS=75 BENCH_LANE_FACTS=25` for single-hop-heavy workloads. Trades open-domain (−1.2pp) for single-hop (+4.2pp, 58.5%). Overall stays at 74.1%. See [Retrieval Pool Tuning](#retrieval-pool-tuning) below.
+
 **Multi-hop note:** Multi-hop decreased in production mode (55.2% → 49.0%) because the Qwen3 reranker is better at ranking, which helps ranking-bound categories (single-hop +12.8pp, open-domain +3.0pp) but slightly hurts retrieval-bound categories where the gold content was never in the candidate pool. The compare mode number (64.6%) is higher because the generous judge credits partial answers. Our retrieval analysis shows 86% of multi-hop failures are retrieval misses (gold not in any chunk), not ranking failures — the reranker can't fix what retrieval didn't find.
 
 ### What's Been Tested (30+ Experiments)
@@ -125,6 +127,7 @@ retrieval quality) and compare (Haiku answers, generous judge — field-comparab
 |-----------|--------|--------|
 | **Qwen3-Reranker-0.6B** | **+4.5pp production, +8.6pp compare** | ✅ Shipped (v0.9) |
 | **BM25 FTS5 + RRF fusion** | **+0.6pp with Qwen3 CE** | ✅ Shipped (v0.9) |
+| **Wide retrieval pool (75w+25f)** | **Single-hop +4.2pp, open-dom −1.2pp** | ✅ Option (v0.9) |
 | Prompt routing (inference/factual/temporal) | +1.6pp full 10-conv | ✅ Shipped (v0.8) |
 | Two-lane search (windows + facts) | +6.5pp overall | ✅ Shipped (v0.7) |
 | Cross-encoder reranking | Essential at two-lane | ✅ Shipped (v0.7) |
@@ -300,6 +303,26 @@ The runtime loader reads this TOML and allows env overrides (see `tools/config.p
 
 ### `[entities]`
 - `known_entities_path` (string): entity dictionary JSON path
+
+### Retrieval Pool Tuning
+
+The default retrieval pool fetches 45 windows + 15 facts + 10 BM25 keywords = 70 candidates per query variant. The Qwen3-Reranker selects the best 60 for the answer model.
+
+For workloads dominated by single-hop factual questions (e.g. "What is Alice's job?", "Where does Bob live?"), a wider pool improves accuracy by giving the reranker more candidates to choose from:
+
+```bash
+export BENCH_LANE_WINDOWS=75   # default: 45
+export BENCH_LANE_FACTS=25     # default: 15
+```
+
+| Config | Overall | Single-hop | Open-domain | Temporal |
+|--------|---------|------------|-------------|----------|
+| Default (45w+15f) | **74.2%** | 54.3% | **84.8%** | **71.3%** |
+| Wide (75w+25f) | 74.1% | **58.5%** | 83.6% | 70.4% |
+
+The wider pool trades ~1pp open-domain for ~4pp single-hop. Use it when your users ask specific factual questions more than broad open-domain questions. The overall accuracy is unchanged.
+
+Both configs use the same Qwen3-Reranker and BM25 FTS5 pipeline — only the initial candidate count differs.
 
 ---
 

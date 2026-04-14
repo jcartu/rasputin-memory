@@ -14,6 +14,7 @@ Qwen3-Reranker-0.6B replaces ms-marco-MiniLM-L-6-v2. BM25 keyword search via SQL
 ### Added — Retrieval Quality
 - **Qwen3-Reranker-0.6B**: Foundation-model reranker with 0.99/0.0001 score separation (+4.5pp production, +8.6pp compare). Replaces ms-marco-MiniLM-L-6-v2 (0.15/0.15 separation).
 - **BM25 keyword search**: SQLite FTS5 in-memory sidecar with Reciprocal Rank Fusion (+0.6pp). First positive BM25 result — enabled by the stronger reranker filtering out keyword-matched but irrelevant facts.
+- **Wide retrieval pool option**: `BENCH_LANE_WINDOWS=75 BENCH_LANE_FACTS=25` for single-hop-heavy workloads (+4.2pp single-hop, −1.2pp open-domain, overall flat).
 - **Compare mode**: Haiku answers + generous judge methodology for field-comparable numbers.
 - **Reranker server**: `tools/brain/cross_encoder_server.py` supports both classic CrossEncoder and Qwen3 chat-template inference (yes/no logit extraction).
 

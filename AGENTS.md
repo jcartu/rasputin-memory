@@ -32,6 +32,8 @@ tests/               pytest suite with MockQdrant/MockRedis fixtures
 
 Runtime config lives in `config/rasputin.toml` with env var overrides.  See `tools/config.py` for the override mapping.  Key sections: `[server]`, `[qdrant]`, `[graph]`, `[embeddings]`, `[reranker]`, `[amac]`, `[reflect]`.
 
+Retrieval pool size is tunable via `BENCH_LANE_WINDOWS` (default 45) and `BENCH_LANE_FACTS` (default 15).  Set to 75/25 for single-hop-heavy workloads (+4.2pp single-hop, −1.2pp open-domain).
+
 ## Running
 
 ```bash
