@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any
 
 from brain import _state
@@ -53,7 +54,9 @@ def write_to_graph(point_id: int, text: str, entities: list[tuple[str, str]], ti
                 "GRAPH.QUERY",
                 _state.GRAPH_NAME,
                 f"MERGE (n:{safe_label} {{name: $name}}) "
-                f"ON CREATE SET n.type = $etype, n.created_at = $ts "
+                f"ON CREATE SET n.type = $etype, n.created_at = $ts, "
+                f"n.mention_count = 1, n.canonical = $name "
+                f"ON MATCH SET n.mention_count = COALESCE(n.mention_count, 0) + 1 "
                 f"WITH n MATCH (m:Memory {{id: $id}}) MERGE (m)-[:MENTIONS]->(n)",
                 "--params",
                 json.dumps({"name": name, "etype": entity_type, "ts": ts, "id": str(point_id)}),
@@ -76,6 +79,11 @@ def graph_search(query: str, hops: int = 2, limit: int = 10) -> list[dict[str, A
         return []
 
     typed_entities = entities.extract_entities_fast(query)
+    if os.environ.get("ENTITY_RESOLVER", "0") == "1":
+        from brain import entity_resolver
+
+        resolved = entity_resolver.resolve(typed_entities, query)
+        typed_entities = [(canon, etype) for _, canon, etype in resolved]
     if not typed_entities:
         typed_entities = [(query, "Unknown")]
 
