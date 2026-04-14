@@ -179,6 +179,7 @@ def qdrant_search(
                 "last_accessed": payload.get("last_accessed", ""),
                 "point_id": point.id,
                 "chunk_type": payload.get("chunk_type", ""),
+                "fact_type": payload.get("fact_type", ""),
                 "origin": "qdrant",
             }
         )
@@ -222,11 +223,17 @@ def qdrant_search(
                             "last_accessed": payload.get("last_accessed", ""),
                             "point_id": point.id,
                             "chunk_type": payload.get("chunk_type", ""),
+                            "fact_type": payload.get("fact_type", ""),
                             "origin": "qdrant_temporal",
                         }
                     )
             except Exception:
                 pass
+
+    # Demote inference facts so they don't displace direct factual answers
+    for row in out:
+        if row.get("chunk_type") == "fact" and row.get("fact_type") == "inference":
+            row["score"] = row["score"] * 0.9
 
     if SCORE_BREAKDOWN:
         for row in out:
