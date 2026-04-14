@@ -4,7 +4,9 @@ import json
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, Literal, Optional
+
+from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -12,27 +14,68 @@ FACT_EXTRACTION_MODEL = os.environ.get("FACT_EXTRACTION_MODEL", "claude-haiku-4-
 FACT_EXTRACTION_PROVIDER = os.environ.get("FACT_EXTRACTION_PROVIDER", "anthropic")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
-EXTRACTION_PROMPT = """Extract discrete facts from this conversation text. Each fact should be self-contained — understandable without the original context.
 
-For each fact, provide:
-- what: What happened or was stated (be specific — use exact names, numbers, items)
-- who: People involved (resolve pronouns: "my roommate Emily" → "Emily (user's roommate)")
-- when: When it happened (resolve relative dates using the Event Date)
-- entities: Named entities mentioned
+class ExtractedEntity(BaseModel):
+    name: str = Field(description="Named entity as it appears")
+    type: str = Field(description="Person, Organization, Location, Event, Thing")
 
-Skip greetings, filler, and trivial small talk. Keep decisions, preferences, relationships, events, facts about people, plans, emotions.
 
-CRITICAL: If text says "yesterday" and Event Date is "2023-05-08", the fact happened on 2023-05-07. Always resolve relative dates.
+class ExtractedFact(BaseModel):
+    what: str = Field(description="Core fact — concise, self-contained (1-2 sentences)")
+    who: str = Field(default="N/A", description="People involved, pronouns resolved")
+    when: str = Field(default="N/A", description="When it happened, relative dates resolved")
+    where: str = Field(default="N/A", description="Location if relevant")
+    fact_type: Literal["world", "experience", "inference"] = Field(
+        default="world",
+        description="world=objective, experience=subjective, inference=reasonable conclusion",
+    )
+    occurred_start: Optional[str] = Field(
+        default=None,
+        description="ISO date when this happened. Resolve relative: 'yesterday' + event_date 2023-05-08 = 2023-05-07",
+    )
+    occurred_end: Optional[str] = Field(
+        default=None,
+        description="ISO date when this ended. None for point-in-time",
+    )
+    entities: list[ExtractedEntity] = Field(default_factory=list)
+    confidence: float = Field(
+        default=0.8,
+        description="0.9 for explicit statements, 0.7 for inferences, 0.5 for weak signals",
+    )
+
+
+class FactExtractionResponse(BaseModel):
+    facts: list[ExtractedFact]
+
+
+EXTRACTION_PROMPT = """Extract discrete facts AND reasonable inferences from this conversation.
+
+RULES:
+1. Resolve ALL pronouns to names using context: "she went" → "Caroline went"
+2. Resolve relative dates using Event Date: "yesterday" + Event Date 2023-05-08 = 2023-05-07
+3. Extract INFERENCES — reasonable conclusions from evidence:
+   - Attends LGBTQ support groups → "likely supportive of LGBTQ causes" (inference, confidence 0.7)
+   - Collects children's books → "would likely enjoy Dr. Seuss" (inference, confidence 0.6)
+   - Had bad experience at restaurant → "probably wouldn't want to return there" (inference, confidence 0.7)
+   Mark these as fact_type="inference" with confidence 0.6-0.7
+4. fact_type: "world" for objective facts, "experience" for feelings/opinions, "inference" for conclusions
+5. occurred_start/occurred_end: ISO dates when determinable
+   - "worked at Google from 2021 to 2024" → occurred_start="2021-01-01", occurred_end="2024-12-31"
+   - "yesterday" + Event Date 2023-05-08 → occurred_start="2023-05-07"
 
 Event Date: {event_date}
 
 Text:
 {text}
 
-Return a JSON array. Example:
-[{{"what": "Emily got promoted to senior engineer at Google", "who": "Emily", "when": "June 2024", "entities": ["Emily", "Google"]}}]
+Return ONLY a JSON object: {{"facts": [...]}}
+Each fact: what, who, when, where, fact_type, occurred_start, occurred_end, entities, confidence
 
-Return ONLY the JSON array."""
+Example output:
+{{"facts": [
+  {{"what": "Caroline attended an LGBTQ support group meeting", "who": "Caroline", "when": "May 7, 2023", "where": "N/A", "fact_type": "world", "occurred_start": "2023-05-07", "occurred_end": null, "entities": [{{"name": "Caroline", "type": "Person"}}], "confidence": 0.9}},
+  {{"what": "Caroline is likely supportive of LGBTQ causes based on her attendance at support group meetings", "who": "Caroline", "when": "N/A", "where": "N/A", "fact_type": "inference", "occurred_start": null, "occurred_end": null, "entities": [{{"name": "Caroline", "type": "Person"}}], "confidence": 0.7}}
+]}}"""
 
 
 def extract_facts(
@@ -92,7 +135,7 @@ def extract_facts(
         # Strip thinking tags if present (qwen3.5 sometimes wraps in <think>)
         content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
 
-        facts = _parse_facts(content)
+        facts = _parse_extraction_response(content)
         for f in facts:
             f["source"] = source
             f["event_date"] = event_date
@@ -103,27 +146,55 @@ def extract_facts(
         return [{"what": text[:500], "who": "", "when": "", "entities": [], "source": source, "event_date": event_date}]
 
 
-def _parse_facts(content: str) -> list[dict[str, Any]]:
-    if "```" in content:
-        parts = content.split("```")
-        content = parts[1] if len(parts) >= 3 else parts[-1]
-        if content.startswith("json"):
-            content = content[4:]
+def _parse_extraction_response(response_text: str) -> list[dict[str, Any]]:
+    """Parse LLM response with Pydantic validation and graceful fallback."""
+    raw = response_text.strip()
 
-    start = content.find("[")
-    end = content.rfind("]") + 1
-    if start >= 0 and end > start:
+    if "```" in raw:
+        parts = raw.split("```")
+        raw = parts[1] if len(parts) >= 3 else parts[-1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+
+    obj_start = raw.find("{")
+    obj_end = raw.rfind("}") + 1
+    if obj_start >= 0 and obj_end > obj_start:
         try:
-            facts = json.loads(content[start:end])
-            if isinstance(facts, list):
-                return [f for f in facts if isinstance(f, dict) and f.get("what")]
+            parsed = json.loads(raw[obj_start:obj_end])
+        except json.JSONDecodeError:
+            parsed = None
+
+        if isinstance(parsed, dict):
+            try:
+                response = FactExtractionResponse(**parsed)
+                return [fact.model_dump() for fact in response.facts]
+            except (ValidationError, TypeError) as e:
+                logger.warning("Pydantic validation error, falling back to raw parse: %s", e)
+
+            if "facts" in parsed and isinstance(parsed["facts"], list):
+                return [f for f in parsed["facts"] if isinstance(f, dict) and f.get("what")]
+
+    # Fallback: try bare JSON array (backward compat with old format)
+    arr_start = raw.find("[")
+    arr_end = raw.rfind("]") + 1
+    if arr_start >= 0 and arr_end > arr_start:
+        try:
+            arr = json.loads(raw[arr_start:arr_end])
+            if isinstance(arr, list):
+                return [f for f in arr if isinstance(f, dict) and f.get("what")]
         except json.JSONDecodeError:
             pass
+
+    logger.warning("No valid JSON found in extraction response")
     return []
 
 
 def fact_to_text(fact: dict[str, Any]) -> str:
-    parts = []
+    parts: list[str] = []
+    fact_type = fact.get("fact_type", "")
+    if fact_type == "inference":
+        parts.append("[Inference]")
     what = fact.get("what", "")
     if what:
         parts.append(what)
@@ -133,4 +204,14 @@ def fact_to_text(fact: dict[str, Any]) -> str:
     when = fact.get("when", "")
     if when and when not in ("N/A", ""):
         parts.append(f"When: {when}")
+    where = fact.get("where", "")
+    if where and where not in ("N/A", ""):
+        parts.append(f"Where: {where}")
+    start = fact.get("occurred_start")
+    end = fact.get("occurred_end")
+    if start:
+        if end:
+            parts.append(f"Period: {start} to {end}")
+        else:
+            parts.append(f"Date: {start}")
     return " | ".join(parts)

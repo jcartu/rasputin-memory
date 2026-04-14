@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import importlib
+import os
 import re as _re
 import uuid
 from datetime import datetime, timezone
@@ -39,6 +40,10 @@ class MemoryPayload(TypedDict, total=False):
     pending_archive: bool
     soft_deleted: bool
     pending_delete: bool
+    fact_type: str
+    occurred_start: str | None
+    occurred_end: str | None
+    confidence: float
 
 
 safe_import = importlib.import_module("pipeline._imports").safe_import
@@ -153,6 +158,16 @@ def commit_memory(
             "has_date": bool(_DATE_RE.search(text)),
             "extracted_dates": _extract_dates(text),
         }
+        graph_entities_resolved: list[tuple[str, str]] | None = None
+        if os.environ.get("ENTITY_RESOLVER", "0") == "1":
+            from brain import entity_resolver
+
+            raw_entities = entities.extract_entities_fast(text)
+            resolved = entity_resolver.resolve(raw_entities, text)
+            canonical_names = list(dict.fromkeys(canon for _, canon, _ in resolved))
+            payload["mentioned_names"] = canonical_names
+            graph_entities_resolved = [(canon, etype) for _, canon, etype in resolved]
+
         if metadata and isinstance(metadata, dict):
             protected_fields = {
                 "text",
@@ -178,9 +193,19 @@ def commit_memory(
                 "last_accessed",
                 "constraints",
                 "constraint_summary",
+                "fact_type",
+                "occurred_start",
+                "occurred_end",
+                "confidence",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)  # type: ignore[typeddict-item]
+
+            if "fact_type" in metadata:
+                payload["fact_type"] = metadata.get("fact_type", "world")
+                payload["occurred_start"] = metadata.get("occurred_start")
+                payload["occurred_end"] = metadata.get("occurred_end")
+                payload["confidence"] = metadata.get("confidence", 0.8)
 
         constraint_texts: list[str] = []
         try:
@@ -230,7 +255,10 @@ def commit_memory(
         connected_to: list[str] = []
         graph_error: str | None = None
         try:
-            extracted_entities = entities.extract_entities_fast(text)
+            if graph_entities_resolved is not None:
+                extracted_entities = graph_entities_resolved
+            else:
+                extracted_entities = entities.extract_entities_fast(text)
             graph_entities = len(extracted_entities)
             if extracted_entities:
                 graph_result = graph.write_to_graph(point_id, text, extracted_entities, timestamp)

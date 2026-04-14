@@ -6,7 +6,9 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+import re as _re
+
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Range
 
 from brain import _state
 from brain import embedding
@@ -19,6 +21,40 @@ SCORE_BREAKDOWN = _os.environ.get("SCORE_BREAKDOWN", "0") == "1"
 CROSS_ENCODER_ENABLED = _os.environ.get("CROSS_ENCODER", "1") == "1"
 
 _access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
+
+_YEAR_PATTERN = _re.compile(r"\b(20[0-2]\d|19\d{2})\b")
+_MONTH_NAMES = {
+    "january": "01",
+    "february": "02",
+    "march": "03",
+    "april": "04",
+    "may": "05",
+    "june": "06",
+    "july": "07",
+    "august": "08",
+    "september": "09",
+    "october": "10",
+    "november": "11",
+    "december": "12",
+}
+
+
+def _extract_date_range(query: str) -> tuple[str | None, str | None]:
+    years = _YEAR_PATTERN.findall(query)
+    if not years:
+        return None, None
+
+    min_year = min(years)
+    max_year = max(years)
+
+    query_lower = query.lower()
+    months_found = [m for m in _MONTH_NAMES if m in query_lower]
+
+    if months_found and len(years) == 1:
+        month = _MONTH_NAMES[months_found[0]]
+        return f"{years[0]}-{month}-01", f"{years[0]}-{month}-28"
+
+    return f"{min_year}-01-01", f"{max_year}-12-31"
 
 
 def expand_queries(query: str, max_expansions: int = 5) -> list[str]:
@@ -146,6 +182,51 @@ def qdrant_search(
                 "origin": "qdrant",
             }
         )
+
+    if chunk_type_filter == "fact" and _os.environ.get("FACT_TEMPORAL_RANGES", "0") == "1":
+        start_date, end_date = _extract_date_range(query)
+        if start_date and end_date:
+            existing_ids = {r["point_id"] for r in out}
+            try:
+                temporal_filter = Filter(
+                    must=[
+                        FieldCondition(key="chunk_type", match=MatchValue(value="fact")),
+                        FieldCondition(
+                            key="occurred_start",
+                            range=Range(gte=start_date, lte=end_date),  # type: ignore[arg-type]
+                        ),
+                    ]
+                )
+                temporal_results = _state.qdrant.query_points(
+                    collection_name=target_collection,
+                    query=vector,
+                    query_filter=temporal_filter,
+                    limit=5,
+                    with_payload=True,
+                )
+                for point in temporal_results.points:
+                    if point.id in existing_ids:
+                        continue
+                    payload = point.payload or {}
+                    out.append(
+                        {
+                            "score": round(point.score, 4),
+                            "text": payload.get("text", ""),
+                            "source": payload.get("source", ""),
+                            "date": payload.get("date", ""),
+                            "title": payload.get("title", ""),
+                            "url": payload.get("url", ""),
+                            "domain": payload.get("domain", ""),
+                            "importance": payload.get("importance", 50),
+                            "retrieval_count": payload.get("retrieval_count", 0),
+                            "last_accessed": payload.get("last_accessed", ""),
+                            "point_id": point.id,
+                            "chunk_type": payload.get("chunk_type", ""),
+                            "origin": "qdrant_temporal",
+                        }
+                    )
+            except Exception:
+                pass
 
     if SCORE_BREAKDOWN:
         for row in out:
