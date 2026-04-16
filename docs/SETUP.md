@@ -27,7 +27,7 @@ pip install -r requirements-core.txt
 # Edit config/rasputin.toml if you need non-default ports or models
 
 # 4. Start databases (Qdrant + FalkorDB)
-docker-compose up -d
+docker compose up -d
 
 # 5. Create the Qdrant collection
 curl -X PUT http://localhost:6333/collections/second_brain \
@@ -88,7 +88,7 @@ curl http://localhost:7777/stats
 The `docker-compose.yml` starts both:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 - **Qdrant** on port 6333 — vector database for 768-dim embeddings

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rasputin-memory"
-version = "0.9.0"
+version = "0.9.1"
 description = "Production-grade long-term memory for AI agents — MCP server, two-lane retrieval, LLM synthesis, knowledge graph"
 readme = "README.md"
 license = {text = "MIT"}

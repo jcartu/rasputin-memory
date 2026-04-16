@@ -18,12 +18,10 @@ import { summarizeSession, INTERNAL_SUMMARY_PREFIX, callGatewayEmbeddings } from
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 console.log('[openclaw-mem] >>> HANDLER LOADED AT', new Date().toISOString(), '<<<');
-const USE_LLM_EXTRACTION = false; // Disabled: no DEEPSEEK_API_KEY, saves failed spawn attempts
+const USE_LLM_EXTRACTION = false; // Disabled: extraction handled by brain server at commit time
 const SUMMARY_MAX_MESSAGES = 200;
 const MCP_API_PORT = 18790;
 const MEMORY_API_BASE = process.env.MEMORY_API_URL || `http://${process.env.MEMORY_API_HOST || 'localhost:7777'}`;
-const HONCHO_BASE = `${process.env.HONCHO_URL || 'http://localhost:7780'}/v3`;
-const HONCHO_WORKSPACE = process.env.WORKSPACE_NAME || 'memory';
 
 // Track API server process
 let apiServerProcess = null;
@@ -481,27 +479,6 @@ async function handleAgentBootstrap(event) {
     //     console.log('[openclaw-mem] ✓ Appended to MEMORY.md in bootstrapFiles');
     //   }
     // }
-  // HONCHO CONTEXT INJECTION: read honcho-context.md if fresh and inject into bootstrap
-  try {
-    const honchoContextPath = path.join(workspaceDir, 'memory', 'honcho-context.md');
-    const honchoStat = await fs.stat(honchoContextPath);
-    if (Date.now() - honchoStat.mtimeMs < 120000) { // 2 min freshness window
-      const honchoContent = await fs.readFile(honchoContextPath, 'utf-8');
-      if (honchoContent.length > 50) {
-        if (!event.context.bootstrapFiles) event.context.bootstrapFiles = [];
-        event.context.bootstrapFiles.push({
-          name: 'HONCHO-CONTEXT.md',
-          content: honchoContent.slice(0, 4000),
-          source: 'honcho'
-        });
-        console.log(`[openclaw-mem] ✓ Honcho context injected into bootstrap (${honchoContent.length} chars)`);
-      }
-    }
-  } catch (err) {
-    // File doesn't exist or is stale — skip silently
-    console.log(`[openclaw-mem] Honcho context not injected: ${err.code || err.message}`);
-  }
-
   } else {
     console.log('[openclaw-mem] No context to inject (empty memory)');
     // Still write tool instructions even if no context
@@ -574,13 +551,12 @@ async function handleCommandNew(event) {
     // Raw messages are no longer stored individually — only the AI summary matters.
     console.log('[openclaw-mem] Generating AI summary...');
 
-    // Generate AI summary using DeepSeek
     let aiSummary = null;
     try {
       aiSummary = await summarizeSession(messages, { sessionKey });
-      console.log('[openclaw-mem] Kimi summary result:', aiSummary ? 'success' : 'null');
+      console.log('[openclaw-mem] AI summary result:', aiSummary ? 'success' : 'null');
     } catch (err) {
-      console.error('[openclaw-mem] Kimi summary error:', err.message);
+      console.error('[openclaw-mem] AI summary error:', err.message);
     }
 
     if (aiSummary && (aiSummary.request || aiSummary.learned || aiSummary.completed || aiSummary.next_steps)) {
@@ -1089,67 +1065,6 @@ async function handleUserPromptSubmit(event) {
 
   // User prompts are saved to user_prompts table only (no observation duplication).
 
-  // HONCHO INGEST: push user message into Honcho for deriver processing — fire and forget
-  try {
-    const HONCHO_PEER = 'user';
-    // Use a stable session name derived from the OpenClaw session key
-    const honchoSessionName = `openclaw-${sessionKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)}`;
-
-    if (prompt.length > 10) { // Skip trivially short messages
-      (async () => {
-        try {
-          // Create or get session in Honcho
-          const sessionResp = await fetch(`${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/sessions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: honchoSessionName,
-              peers: {
-                user: { observe_me: true, observe_others: true },
-                agent: { observe_me: true, observe_others: false }
-              }
-            }),
-            signal: AbortSignal.timeout(3000)
-          });
-          // 200 = existing, 201 = created — both are fine
-          if (!sessionResp.ok && sessionResp.status !== 409) {
-            console.log(`[openclaw-mem] Honcho session create failed: ${sessionResp.status}`);
-            return;
-          }
-
-          // Push the message
-          const msgResp = await fetch(`${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/sessions/${honchoSessionName}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: [{
-                content: prompt.slice(0, 10000),
-                peer_id: HONCHO_PEER,
-                metadata: {
-                  source: 'openclaw',
-                  session_key: sessionKey,
-                  timestamp: new Date().toISOString()
-                }
-              }]
-            }),
-            signal: AbortSignal.timeout(3000)
-          });
-
-          if (msgResp.ok) {
-            console.log(`[openclaw-mem] ✓ Honcho ingest: user message pushed to session ${honchoSessionName}`);
-          } else {
-            const errText = await msgResp.text().catch(() => '');
-            console.log(`[openclaw-mem] Honcho ingest failed: ${msgResp.status} ${errText.slice(0, 200)}`);
-          }
-        } catch (err) {
-          console.log(`[openclaw-mem] Honcho ingest failed (silent): ${err.message}`);
-        }
-      })();
-    }
-  } catch (err) {
-    console.log(`[openclaw-mem] Honcho ingest setup failed (silent): ${err.message}`);
-  }
-
   // AUTO-RECALL: async Qdrant search — fire and forget, never blocks the turn
   try {
     const keywords = prompt
@@ -1192,88 +1107,6 @@ async function handleUserPromptSubmit(event) {
     console.log(`[openclaw-mem] Auto-recall setup failed (silent): ${err.message}`);
   }
 
-  // HONCHO CONTEXT: async query to Honcho dialectic API — fire and forget, never blocks the turn
-  // Queries both /context (representation + peer card, fast ~0.6s) and /chat (dialectic, ~1.5s)
-  // Writes combined result to memory/honcho-context.md
-  try {
-    const HONCHO_PEER = 'user';
-
-    // Extract meaningful search terms from the prompt
-    const searchTerms = prompt
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 3)
-      .slice(0, 15)
-      .join(' ');
-
-    if (searchTerms.length > 5) {
-      (async () => {
-        try {
-          const honchoContextFile = path.join(workspaceDir, 'memory', 'honcho-context.md');
-          const lines = [`# Honcho User Context — ${new Date().toISOString()}\n`, `Prompt: ${prompt.slice(0, 200)}\n`];
-
-          // 1. Get peer context (representation + peer card) — curated by search query
-          //    This is fast (~0.6s) and gives us the structured observations
-          try {
-            const contextUrl = `${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/peers/${HONCHO_PEER}/context?` +
-              `search_query=${encodeURIComponent(searchTerms)}` +
-              `&include_most_frequent=true&max_conclusions=15`;
-            const contextResp = await fetch(contextUrl, {
-              signal: AbortSignal.timeout(5000)
-            });
-            if (contextResp.ok) {
-              const contextData = await contextResp.json();
-              const rep = contextData.representation || '';
-              const peerCard = contextData.peer_card || '';
-              if (rep) {
-                lines.push(`\n## Representation (what Honcho knows about the user)\n\n${rep.slice(0, 3000)}`);
-              }
-              if (peerCard) {
-                lines.push(`\n## Peer Card\n\n${peerCard}`);
-              }
-              console.log(`[openclaw-mem] ✓ Honcho context: ${rep.length} chars representation`);
-            }
-          } catch (ctxErr) {
-            console.log(`[openclaw-mem] Honcho context fetch failed (silent): ${ctxErr.message}`);
-          }
-
-          // 2. Dialectic chat — ask Honcho what it knows relevant to the prompt
-          //    This calls the agentic dialectic which reasons over memory (~1.5s with minimal)
-          try {
-            const chatResp = await fetch(`${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/peers/${HONCHO_PEER}/chat`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                query: `Based on what you know about the user, what context is most relevant to this message: "${prompt.slice(0, 500)}"`,
-                reasoning_level: 'minimal'
-              }),
-              signal: AbortSignal.timeout(10000)
-            });
-            if (chatResp.ok) {
-              const chatData = await chatResp.json();
-              const content = chatData.content || '';
-              if (content) {
-                lines.push(`\n## Dialectic Context (Honcho's understanding)\n\n${content.slice(0, 2000)}`);
-              }
-              console.log(`[openclaw-mem] ✓ Honcho dialectic: ${content.length} chars`);
-            }
-          } catch (chatErr) {
-            console.log(`[openclaw-mem] Honcho dialectic failed (silent): ${chatErr.message}`);
-          }
-
-          // Only write if we got something useful beyond the header
-          if (lines.length > 2) {
-            await fs.writeFile(honchoContextFile, lines.join('\n'), 'utf-8');
-            console.log(`[openclaw-mem] ✓ Honcho context written to honcho-context.md`);
-          }
-        } catch (err) {
-          console.log(`[openclaw-mem] Honcho context query failed (silent): ${err.message}`);
-        }
-      })();
-    }
-  } catch (err) {
-    console.log(`[openclaw-mem] Honcho context setup failed (silent): ${err.message}`);
-  }
 }
 
 /**
@@ -1313,58 +1146,6 @@ async function handleAgentStop(event) {
   );
 
   console.log(`[openclaw-mem] ✓ Agent stop recorded (reason: ${stopReason})`);
-
-  // HONCHO INGEST: push agent response into Honcho — fire and forget
-  try {
-    const honchoSessionName = `openclaw-${sessionKey.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60)}`;
-
-    // Extract agent response text from the event
-    const agentResponse = event.response || event.content || event.text || '';
-    const responseText = typeof agentResponse === 'string' ? agentResponse :
-      (Array.isArray(agentResponse) ? agentResponse.find(c => c.type === 'text')?.text : '') || '';
-
-    if (responseText && responseText.length > 10) {
-      (async () => {
-        try {
-          // Ensure session exists
-          await fetch(`${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/sessions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: honchoSessionName,
-              peers: {
-                user: { observe_me: true, observe_others: true },
-                agent: { observe_me: true, observe_others: false }
-              }
-            }),
-            signal: AbortSignal.timeout(3000)
-          });
-          // Push agent message
-          await fetch(`${HONCHO_BASE}/workspaces/${HONCHO_WORKSPACE}/sessions/${honchoSessionName}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              messages: [{
-                content: responseText.slice(0, 10000),
-                peer_id: 'agent',
-                metadata: {
-                  source: 'openclaw',
-                  session_key: sessionKey,
-                  timestamp: new Date().toISOString()
-                }
-              }]
-            }),
-            signal: AbortSignal.timeout(3000)
-          });
-          console.log(`[openclaw-mem] ✓ Honcho ingest: agent response pushed to session ${honchoSessionName}`);
-        } catch (err) {
-          console.log(`[openclaw-mem] Honcho agent ingest failed (silent): ${err.message}`);
-        }
-      })();
-    }
-  } catch (err) {
-    console.log(`[openclaw-mem] Honcho agent ingest setup failed (silent): ${err.message}`);
-  }
 
   // Generate summary on stop (Claude-Mem parity)
   try {

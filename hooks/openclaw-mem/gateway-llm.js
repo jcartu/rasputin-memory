@@ -1,24 +1,26 @@
 /**
- * DeepSeek LLM helper
- * Calls the DeepSeek OpenAI-compatible endpoint to summarize sessions.
+ * LLM helper for session summarization.
+ * Calls any OpenAI-compatible endpoint (default: local Ollama on :11436).
  */
 
 const SUMMARY_SESSION_PREFIX = 'mem-summary:';
-const DEFAULT_DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
-const DEFAULT_DEEPSEEK_MODEL = 'deepseek-chat';
+const DEFAULT_LLM_BASE_URL = 'http://localhost:11436/v1';
+const DEFAULT_LLM_MODEL = 'qwen3.5:35b';
 
-function getDeepSeekBaseUrl() {
-  return process.env.DEEPSEEK_BASE_URL
-    || DEFAULT_DEEPSEEK_BASE_URL;
+function getLlmBaseUrl() {
+  return process.env.LLM_BASE_URL
+    || process.env.DEEPSEEK_BASE_URL  // backwards compat
+    || DEFAULT_LLM_BASE_URL;
 }
 
-function getDeepSeekApiKey() {
-  return process.env.DEEPSEEK_API_KEY || '';
+function getLlmApiKey() {
+  return process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || '';
 }
 
-function getDeepSeekModel() {
-  return process.env.DEEPSEEK_MODEL
-    || DEFAULT_DEEPSEEK_MODEL;
+function getLlmModel() {
+  return process.env.LLM_MODEL
+    || process.env.DEEPSEEK_MODEL  // backwards compat
+    || DEFAULT_LLM_MODEL;
 }
 
 function truncateText(text, maxChars) {
@@ -74,13 +76,9 @@ async function callGatewayChat(messages, options = {}) {
     max_tokens = 300,
     model
   } = options;
-  const apiKey = getDeepSeekApiKey();
-  if (!apiKey) {
-    console.log('[openclaw-mem] No DEEPSEEK_API_KEY found');
-    return null;
-  }
-  const baseUrl = getDeepSeekBaseUrl();
-  const resolvedModel = model || getDeepSeekModel();
+  const baseUrl = getLlmBaseUrl();
+  const apiKey = getLlmApiKey();
+  const resolvedModel = model || getLlmModel();
   const url = `${baseUrl}/chat/completions`;
   const payload = {
     model: resolvedModel,
@@ -90,29 +88,30 @@ async function callGatewayChat(messages, options = {}) {
     messages
   };
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`
-  };
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
 
   try {
-    console.log('[openclaw-mem] Calling DeepSeek API...');
+    console.log(`[openclaw-mem] LLM call → ${resolvedModel} @ ${baseUrl}`);
     const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(120000)
     });
     if (!res.ok) {
       const errText = await res.text();
-      console.error('[openclaw-mem] DeepSeek API error:', res.status, errText);
+      console.error('[openclaw-mem] LLM API error:', res.status, errText);
       return null;
     }
     const json = await res.json();
     const content = json?.choices?.[0]?.message?.content || '';
-    console.log('[openclaw-mem] DeepSeek response received');
+    console.log(`[openclaw-mem] LLM response received (${content.length} chars)`);
     return content;
   } catch (err) {
-    console.error('[openclaw-mem] DeepSeek fetch error:', err.message);
+    console.error('[openclaw-mem] LLM fetch error:', err.message);
     return null;
   }
 }

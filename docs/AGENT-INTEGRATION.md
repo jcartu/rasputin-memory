@@ -84,10 +84,6 @@ The `memory/hot-context/` directory holds time-sensitive outputs from cron jobs 
 
 A nightly cron regenerates `MEMORY.md` with dynamic sections pulled from live Qdrant data, recent daily logs, and consolidated facts. This serves as the agent's "working memory" summary at session start.
 
-## Honcho Integration
-
-Theory of Mind / psychological modeling via [Honcho](https://github.com/plastic-labs/honcho). Tracks user preferences, communication style, and behavioral patterns to personalize retrieval and response generation.
-
 ## MCP Protocol
 
 For MCP-compatible agents, use the built-in MCP server (`tools/mcp/server.py`) which maps all tools to the HTTP API. See the [MCP Server](#mcp-server-recommended-for-claude-code-cursor-codex) section at the top of this document.

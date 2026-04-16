@@ -1,232 +1,247 @@
-# RASPUTIN Memory Architecture
+# RASPUTIN Memory Architecture (v0.9)
 
-Deep dive on the 7-layer hybrid retrieval pipeline, data flow, and design decisions.
+Deep dive on the hybrid retrieval pipeline, data flow, and design decisions.
 
 ## Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      RASPUTIN Memory System                     │
-└─────────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------------+
+|                      RASPUTIN Memory System                       |
++-------------------------------------------------------------------+
 
-LAYER 0: MCP INTERFACE (Model Context Protocol)
-└── tools/mcp/server.py (port 8808, FastMCP 3.2)
-    ├── memory_store, memory_search, memory_reflect
-    ├── memory_stats, memory_feedback, memory_commit_conversation
-    └── Thin HTTP proxy → Hybrid Brain API (port 7777)
+LAYER 0: MCP INTERFACE
++-- tools/mcp/server.py (port 8808, FastMCP 3.2, streamable-http)
+    +-- 6 tools: store, search, reflect, stats, feedback, commit_conversation
+    +-- Thin HTTP proxy -> API server (port 7777)
 
-LAYER 1: SEMANTIC SEARCH (on-demand retrieval)
-├── Qdrant (port 6333) — 768d nomic-embed-text v1
-├── BM25 sparse keyword search (bm25_search.py)
-└── Reranker (port 8006) — BAAI/bge-reranker-v2-m3
+LAYER 1: HYBRID SEARCH (two-lane retrieval + reranking)
++-- tools/brain/search.py
+    +-- Lane 1: Qdrant windows (45 slots, 768d nomic-embed-text)
+    +-- Lane 2: Qdrant facts (15 slots, 768d nomic-embed-text)
+    +-- Lane 3: BM25 keywords (SQLite FTS5 in-memory, 10 slots)
+    +-- RRF fusion -> Qwen3-Reranker-0.6B (GPU, 0.99/0.0001 separation)
+    +-- Prompt routing (inference / factual / temporal)
 
-LAYER 2: KNOWLEDGE GRAPH (relationship reasoning)
-├── FalkorDB (port 6380, Docker)
-├── Graph: "brain" — entities, relationships, temporal
-└── Entity extraction: fast NER on every commit
+LAYER 2: KNOWLEDGE GRAPH
++-- FalkorDB (port 6380, Cypher) -- graph "brain"
+    +-- Entity extraction (fast NER) + entity resolution
+    +-- Canonical names + alias tracking + mention counts
 
-LAYER 3: HYBRID SEARCH ENGINE (orchestration)
-└── hybrid_brain.py (port 7777)
-    ├── /search — vector + graph + BM25 + neural rerank
-    ├── /commit — embed + A-MAC + store + entity extract + graph
-    ├── /reflect — LLM synthesis over retrieved memories
-    ├── /graph — direct Cypher queries
-    ├── /stats — counts + health
-    └── /health — component health check
+LAYER 3: HTTP API (tools/brain/server.py, port 7777)
++-- /search, /commit, /reflect, /graph, /stats, /health
 
-LAYER 4: LLM ENRICHMENT (quality gate + extraction + synthesis)
-├── A-MAC quality gate — LLM scores every commit
-├── Entity extraction — fast NER + graph writes
-├── Reflect — LLM synthesis over search results (Anthropic / Ollama)
-└── fact_extractor.py — cron, mines sessions for facts
-
-LAYER 5: CONTINUOUS MAINTENANCE
-├── fact_extractor.py — periodic knowledge extraction
-├── Importance recalculation — daily scoring
-└── Graph deepening — FalkorDB relationship extraction
+LAYER 4: LLM ENRICHMENT
++-- A-MAC quality gate (Ollama qwen2.5:14b, local)
++-- Structured fact extraction (Pydantic-validated, Haiku/Cerebras)
++-- Reflect -- LLM synthesis (Anthropic / Ollama)
++-- Contradiction detection + supersede tracking
 ```
 
 ---
 
 ## Data Flow: Search Request
 
-When you call `GET /search?q=query&limit=10`:
-
 ```
-1. Query arrives at hybrid_brain.py HTTP server
-2. Query → Ollama nomic-embed-text → 768d vector (port 11434)
-3. Vector → Qdrant ANN search (HNSW, top 20 candidates, threshold 0.50)
-4. Query → FalkorDB Cypher match (entity lookup, 2-hop traversal, port 6380)
-5. Qdrant + FalkorDB results merged via RRF (Reciprocal Rank Fusion)
-6. BM25 sparse keyword scoring applied (bm25_search.py)
-7. Ebbinghaus temporal decay applied (power-law, importance-scaled)
-8. Neural reranker re-scores top candidates (bge-reranker-v2-m3, port 8006)
-9. Multi-factor composite score: similarity × importance × recency × source_reliability
-10. Top K results returned with graph context + entity enrichment
+ 1. Query arrives at HTTP server
+ 2. Multi-query expansion (known_entities.json lookup)
+ 3. Embed: query -> nomic-embed-text -> 768d vector
+ 4. Two-lane Qdrant search:
+    +-- Lane 1: window chunks (45 slots, HNSW ANN)
+    +-- Lane 2: fact chunks (15 slots, HNSW ANN)
+ 5. BM25 keyword search (FTS5 in-memory, 10 slots)
+ 6. Reciprocal Rank Fusion (k=60) merges dense + BM25
+ 7. FalkorDB graph search (entity lookup, 1-2 hop traversal)
+ 8. Qwen3-Reranker-0.6B re-scores candidates (cross-encoder, GPU)
+    +-- final_score = ce_score * recency_boost (alpha=0.2)
+ 9. Contradiction resolution (superseded memories demoted 0.3x)
+10. Top-60 results returned with graph context
 ```
 
-Total latency: ~150-200ms p95 (mostly embed + rerank)
+Latency: ~150-200ms p95 (embed + rerank dominant)
 
 ---
 
 ## Data Flow: Commit Request
 
-When you call `POST /commit {"text": "...", "source": "conversation"}`:
-
 ```
-1. A-MAC Quality Gate: text → LLM (configured in rasputin.toml [amac])
-   - Scores Relevance, Novelty, Specificity (0–10 each)
-   - Composite = mean of all three
-   - Composite < 4.0 → REJECTED (logged to /tmp/amac_rejected.log)
-   - Timeout (30s) → FAIL-OPEN (accepted anyway)
+1. A-MAC Quality Gate: text -> LLM (qwen2.5:14b, Ollama)
+   - Scores Relevance, Novelty, Specificity (0-10)
+   - Composite < 4.0 -> REJECTED; timeout 30s -> FAIL-OPEN
 
-2. Deduplication check:
-   - Embed the text (Ollama 11434)
-   - Search Qdrant for cosine > 0.92
-   - If duplicate found AND text overlap > 50% → UPDATE existing point
-   - Otherwise → create new point
+2. Deduplication: embed text, search Qdrant cosine > 0.92
+   - Duplicate found -> UPDATE existing point
+   - New content -> create point (UUID-based ID)
 
-3. Store in Qdrant:
-   - point_id = abs(hash(text + timestamp)) % 2^63
-   - payload: {text, source, date, importance, auto_committed: true}
-   - vector: 768d nomic-embed-text embedding
+3. Contradiction detection: top-5 similar, LLM-verified
+   - New memory supersedes contradicted ones
 
-4. Entity extraction (fast NER):
-   - Regex-based pattern matching for people, orgs, money amounts, dates
-   - Named entity list from text
+4. Qdrant upsert: 768d vector + payload (text, source, importance,
+   mentioned_names, extracted_dates, contradicts, supersedes, ...)
 
-5. FalkorDB graph write:
-   - MERGE Person/Entity nodes
-   - CREATE MENTIONS relationships
-   - Link entities to memory point
+5. Entity extraction (fast NER):
+   - Known-entity dictionary (persons, orgs, projects)
+   - Capitalized name regex (English + Cyrillic)
+   - Optional entity resolver (canonical names + aliases)
 
-6. Return: {point_id, entities, graph_written, amac_scores}
+6. FalkorDB: MERGE entity nodes, CREATE MENTIONS edges
+
+7. Return: {id, source, dedup, contradictions, graph}
 ```
 
 ---
 
-## Query Expansion
+## Data Flow: Reflect (LLM Synthesis)
 
-`pipeline/query_expansion.py` expands queries using known entities before embedding:
+```
+1. POST /reflect -> hybrid_search(query, limit=20)
+2. Format top 15 memories as numbered context blocks
+3. LLM call: Anthropic (claude-haiku-4-5-20251001) or Ollama fallback
+4. Return: {answer, sources[], search_elapsed_ms, reflect_model}
+```
 
-1. **Original query** — always included as baseline
-2. **Known entity lookup** — matches query against `config/known_entities.json` (persons, organizations, projects)
-3. **Entity graph enrichment** — augments matched entities with context from `config/entity_graph.json`
+Produces coherent synthesized answers from retrieved memories.  Connects
+dots across multiple memories, notes contradictions, favors most recent.
 
-Expansion is language-agnostic — it matches explicit configured names, not English-specific regex patterns. Source scoping (email, chatgpt, etc.) is handled via the `source_filter` parameter on the search API, not keyword detection.
+---
+
+## Structured Fact Extraction
+
+`tools/brain/fact_extractor.py` extracts facts at ingest time via LLM.
+Each fact is Pydantic-validated (`ExtractedFact` model):
+
+- `what` -- core fact, self-contained (1-2 sentences)
+- `who` -- people involved, pronouns resolved to names
+- `when` / `where` -- temporal and spatial context
+- `fact_type` -- `"world"` | `"experience"` | `"inference"`
+- `occurred_start` / `occurred_end` -- ISO dates when determinable
+- `entities` -- list of `{name, type}` pairs
+- `confidence` -- 0.9 explicit, 0.7 inference, 0.5 weak signal
+
+Facts stored as Qdrant points (`chunk_type="fact"`) and retrieved via
+Lane 2 in the two-lane search pipeline.
+
+---
+
+## BM25 + Reciprocal Rank Fusion
+
+`tools/bm25_search.py` provides sparse keyword search complementing dense
+retrieval.  In-process BM25Scorer (k1=1.5, b=0.75) with RRF fusion (k=60):
+
+```
+rrf(i) = 1/(k + rank_dense(i) + 1) + 1/(k + rank_bm25(i) + 1)
+hybrid  = (1 - 0.3) * dense_score + 0.3 * bm25_normalized
+```
+
+BM25 was net negative with the L-6 cross-encoder (-14pp to -28pp) but
+became +0.6pp with Qwen3-Reranker -- the stronger reranker filters BM25's
+false positives while keeping true keyword matches.
 
 ---
 
 ## Scoring Architecture
 
-Results are scored by a multi-factor composite:
+Multi-stage scoring pipeline:
 
-```python
-composite_score = (
-    semantic_similarity      # cosine distance from Qdrant
-    × importance_weight      # metadata importance field (0–100)
-    × temporal_decay         # Ebbinghaus power-law decay
-    × source_reliability     # ChatGPT > Perplexity > email > other
-    × retrieval_frequency    # how often this memory has been recalled
-)
+```
+Stage 1: Dense cosine similarity (Qdrant ANN)
+Stage 2: BM25 keyword scoring + RRF fusion
+Stage 3: Qwen3-Reranker-0.6B cross-encoder (ce_score)
+Stage 4: Recency boost: final = ce * (1 + 0.2 * (recency - 0.5))
+Stage 5: Contradiction demotion (superseded * 0.3)
 ```
 
-After initial scoring, the **neural reranker** (`bge-reranker-v2-m3`) applies cross-encoder scoring to re-rank the top-50 candidates. Cross-encoder models read query + passage together, producing far more accurate relevance scores than bi-encoder cosine similarity alone.
-
----
-
-## Source Tier System
-
-Not all memories are equal. The system prioritizes:
-
-**Tier 1 (GOLD):** ChatGPT conversations, Perplexity searches, direct conversations, social intel
-**Tier 2 (SILVER):** Email (multiplied by 0.85 to reduce noise)
-**Tier 3 (BRONZE):** All other sources (telegram, whatsapp, auto-commits)
-
-The two-tier search strategy first fills high-value sources, only backfilling with email if fewer than 50 candidates are found.
-
----
-
-## Deduplication
-
-The deduplication system prevents showing the same email thread 5 times:
-
-- **Email/Gmail**: dedup by `thread_id` or `gmail_id`
-- **ChatGPT**: dedup by title + MD5 of first 200 chars
-- **Perplexity**: dedup by filename or question text
-- **Other**: dedup by Qdrant point ID
-
-At commit time, if cosine similarity > 0.92 AND text overlap > 50%, the existing point is updated rather than a duplicate created.
-
----
-
-## Observational Memory (OM)
-
-A fast local cache layer that doesn't require a network call:
-
-- **File:** `memory/om_observations.md`
-- **Format:** Date-grouped observation blocks
-- **Lookup:** Keyword overlap scoring (pure Python, <1ms)
-- **TTL:** 24 hours (stale entries still used but flagged)
-- **Use case:** Recent events that happened this session or today
-
-OM results are prepended to the main MEMORY RECALL block in the context output.
-
----
-
-## Entity Graph (JSON)
-
-A lightweight in-memory entity graph at `memory/entity_graph.json`:
-
-```json
-{
-  "people": {
-    "Jordan Lee": {"role": "stakeholder", "context": "launch approvals"},
-    "Sam Patel": {"role": "engineering lead", "context": "delivery planning"}
-  },
-  "companies": {
-    "Northwind Labs": {"type": "customer", "context": "pilot rollout"},
-    "Contoso": {"type": "vendor", "context": "service integration"}
-  },
-  "topics": {
-    "release planning": {"context": "Q2 milestone decisions"},
-    "billing migration": {"context": "subscription platform update"}
-  }
-}
+Pre-reranker multifactor (when source_weight present):
+```
+multiplier = 0.45 + 0.30*importance_norm + 0.15*source_weight + 0.10*retrieval_boost
 ```
 
-This JSON is read in-process during query expansion to enrich entity-based queries before they hit Qdrant.
+The Qwen3 cross-encoder reads query + passage together, producing far more
+accurate relevance scores than bi-encoder cosine similarity alone.
 
 ---
 
 ## FalkorDB Knowledge Graph
 
-FalkorDB is a Redis-compatible graph database using the Cypher query language.
+Redis-compatible graph database using Cypher.
 
 **Schema:**
-- `(:Entity {name: "...", type: "person|org|concept|location|money|date"})` — nodes
-- `[:MENTIONS {memory_id: "...", timestamp: "..."}]` — memory links
-- `[:RELATED_TO {strength: 0.8}]` — entity-to-entity relationships
+- `(:Memory {id, text, created_at})` -- memory nodes
+- `(:Person {name, type, canonical, mention_count})` -- entity nodes
+- `(:Organization ...)`, `(:Project ...)`, `(:Topic ...)`, `(:Location ...)`
+- `[:MENTIONS]` -- memory-to-entity edges
 
-**Graph search logic:**
-1. Extract candidate entity names from query (NER)
-2. `MATCH (e:Entity) WHERE toLower(e.name) CONTAINS toLower($term)` 
-3. Traverse 2 hops: `MATCH (e)-[*1..2]-(related)`
-4. Collect memory IDs from `MENTIONS` edges
-5. Fetch those points from Qdrant
+**Search:** Extract entities from query -> match nodes by name ->
+1-hop (direct MENTIONS) -> 2-hop (co-mentioned entities, up to 5) ->
+keyword fallback on Memory.text -> entity-to-entity context edges.
+
+---
+
+## Deduplication
+
+At commit time: embed text, query Qdrant for cosine > 0.92.  If a
+near-duplicate is found, update the existing point in-place.  Otherwise
+create a new point.  All content types use the same cosine threshold --
+no source-specific dedup logic.
+
+---
+
+## MCP Server
+
+`tools/mcp/server.py` -- thin HTTP proxy, never imports brain modules.
+
+```
+FastMCP 3.2, streamable-http transport, port 8808
+
+memory_store               -> POST /commit
+memory_search              -> GET  /search
+memory_reflect             -> POST /reflect
+memory_stats               -> GET  /stats
+memory_feedback            -> POST /feedback
+memory_commit_conversation -> POST /commit_conversation
+```
 
 ---
 
 ## Design Decisions
 
-**Why Qdrant?** Fast HNSW ANN search, excellent Docker deployment, strong filtering API, good Python client.
+**Why Qdrant?** Fast HNSW ANN, strong filtering API, good Python client.
+Two-lane search uses `chunk_type` field conditions in a single collection.
 
-**Why FalkorDB?** Redis-protocol compatible (any Redis client works), persistent graph with Cypher, lightweight Docker footprint.
+**Why FalkorDB?** Redis-protocol compatible, persistent Cypher graph,
+lightweight Docker.  Entity nodes track canonical names and mention counts.
 
-**Why nomic-embed-text v1?** 768 dimensions is the sweet spot — large enough for nuanced similarity, small enough for fast cosine search. v1.5 uses a different dimension count and is incompatible with existing collections. Switching models requires re-embedding everything.
+**Why nomic-embed-text v1?** 768d is the sweet spot.  Qwen3 embeddings
+(768d and 4096d) tested, showed 0pp or worse.  Switching requires
+re-embedding.
 
-**Why neural reranking?** Bi-encoder cosine similarity (ANN search) is fast but imprecise — it embeds query and passage independently. Cross-encoder reranking reads query+passage together, which is dramatically more accurate. Running it only on top-50 keeps latency acceptable.
+**Why Qwen3-Reranker-0.6B?** Foundation model vs lightweight cross-encoder.
+ms-marco-MiniLM-L-6-v2 (v0.7) had score distributions too narrow for
+effective ranking.  Qwen3 separates relevant/irrelevant at 0.99 vs 0.0001
+-- clear binary signal.  +4.5pp production, +8.6pp compare.  L-12 CE also
+tested and reverted (-12.6pp single-hop).
 
-**Why A-MAC?** Without a quality gate, trivial content ("ok", "thanks", "yes") would flood the vector store and dilute search quality. A-MAC ensures only information-dense, novel, specific memories get stored.
+**Why BM25 + RRF?** Dense retrieval misses exact keyword matches.  BM25
+was net negative with L-6 CE (-14pp to -28pp) but +0.6pp with Qwen3 --
+the stronger reranker keeps true matches, discards noise.
 
-**Why local LLMs?** Zero marginal cost. A-MAC runs continuously scoring every commit. Using local inference avoids recurring cloud API costs.
+**Why A-MAC?** Without a quality gate, trivial content floods the store.
+Uses Ollama locally for zero marginal cost.
+
+**Why two-lane retrieval?** Windows capture narrative context, facts
+capture discrete knowledge.  Merging via reranker: +6.5pp over single-lane.
+
+---
+
+## Benchmarks
+
+LoCoMo full 10-conv (1986 questions, non-adversarial):
+
+| Mode | Score |
+|------|-------|
+| Production (Haiku answers, strict judge) | 74.2% |
+| Compare (Haiku answers, generous judge) | 77.7% |
+
+```
+nomic-embed-text (768d) -> Two-lane (45w+15f) + BM25 FTS5 (10)
+  -> RRF -> Qwen3-Reranker-0.6B -> top-60 -> Haiku -> gpt-4o-mini judge
+```

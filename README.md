@@ -461,7 +461,7 @@ pytest tests/test_integration.py -v
 pytest tests/ --cov=tools --cov-report=term-missing
 ```
 
-Coverage threshold is configured in `pyproject.toml` (`fail_under = 55`).
+Coverage threshold is configured in `pyproject.toml` (`fail_under = 53`).
 
 Test breakdown: 106 core pipeline + 22 MCP server proxy + 14 reflect module = **142 tests**.
 

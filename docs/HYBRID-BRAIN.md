@@ -287,28 +287,40 @@ def commit_memory(text, source="conversation", importance=60, metadata=None):
 
 ## Configuration
 
-Key constants at the top of `hybrid_brain.py`:
+All runtime configuration lives in `config/rasputin.toml`.  Environment variables override TOML values — see `tools/config.py` for the mapping.
 
-```python
-QDRANT_URL = "http://localhost:6333"
-COLLECTION = "second_brain"
-EMBED_URL = "http://localhost:11434/api/embed"
-EMBED_MODEL = "nomic-embed-text"
-RERANKER_URL = "http://localhost:8006/rerank"
-FALKORDB_HOST = "localhost"
-FALKORDB_PORT = 6380
-FALKORDB_GRAPH = "brain"
+Key sections:
 
-# A-MAC settings
-AMAC_THRESHOLD = 4.0           # Minimum composite score to accept
-AMAC_OLLAMA_MODEL = "qwen2.5:14b"  # Set in config/rasputin.toml [amac] section
-AMAC_REJECT_LOG = "/tmp/amac_rejected.log"
-AMAC_TIMEOUT = 30              # Seconds — fail-open on timeout
+```toml
+[server]
+port = 7777
 
-# Search settings
-DEFAULT_SEARCH_THRESHOLD = 0.50   # Minimum cosine similarity
-DEDUP_THRESHOLD = 0.92            # Cosine similarity = duplicate
+[qdrant]
+url = "http://localhost:6333"
+collection = "second_brain"
+
+[embeddings]
+model = "nomic-embed-text"         # 768-dim
+url = "http://localhost:11434/api/embed"
+
+[reranker]
+provider = "qwen3"                 # Qwen3-Reranker-0.6B
+url = "http://192.168.1.41:9091/rerank"
+timeout = 30
+enabled = true
+
+[graph]
+host = "localhost"
+port = 6380                        # FalkorDB
+graph_name = "brain"
+
+[amac]
+threshold = 4.0                    # Minimum composite score to accept
+model = "qwen2.5:14b"             # Via Ollama
+timeout = 30                       # Seconds — fail-open on timeout
 ```
+
+See `config/rasputin.toml` for the full reference including `[reflect]`, `[scoring]`, `[constraints]`, and `[benchmark]` sections.
 
 ---
 
