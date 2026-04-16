@@ -5,6 +5,32 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-04-16
+
+Docs refresh, dead code removal, experimental kNN graph feature, version alignment.
+
+### Added
+- **Semantic kNN graph expansion** (experimental, gated `KNN_LINKS=1`, off by default): at ingest each fact linked to top-30 similar existing facts (cosine >= 0.6) via Qdrant payload `similar_ids`; at search, fact-lane seeds expanded through links before CE reranking (capped at 10). Architectural parity with Hindsight's `link_expansion_retrieval.py`. Full 10-conv benchmark: 72.1% non-adv (−2.1pp from baseline) — useful for graph-traversal workloads, not for retrieval-precision benchmarks.
+- **Entity resolution at commit time**: canonical names, alias tracking, mention counts via `tools/brain/entities.py`
+- **Structured fact extraction**: inferences, temporal ranges, Pydantic validation in `tools/brain/fact_extractor.py`
+- **Cerebras-first fact extraction** with Haiku fallback (5-failure auto-disable counter)
+- `tools/brain/knn_links.py`: core kNN module (`compute_links_for_point`, `store_links`, `expand_seeds`)
+- `tests/test_knn_links.py`: 7 unit tests for kNN module
+- `benchmarks/precompute_links.py`: CLI with `--collection`, `--top-k`, `--threshold` args
+
+### Changed
+- Architecture docs (`ARCHITECTURE.md`, `HYBRID-BRAIN.md`, `SETUP.md`) rewritten for v0.9 two-lane pipeline
+- `server.py` health endpoint version: 0.8.0 → 0.9.1
+- Inference fact scoring demoted 0.9x in `qdrant_search` to reduce single-hop regression
+
+### Removed
+- **Honcho integration** from `handler.js` (dead code — service decommissioned)
+- Stale `HONCHO_URL` / `HONCHO_BASE` / `HONCHO_WORKSPACE` references
+
+### Fixed
+- Stale test asserting `HONCHO_URL` in handler.js (removed assertion)
+- README coverage threshold note (55% → 53%)
+
 ## [0.9.0] - 2026-04-13
 
 **Production: 74.2% non-adv** (+6.7pp from baseline). **Compare: 77.7% non-adv** (+10.2pp).
@@ -241,6 +267,7 @@ Major release: hybrid retrieval pipeline hardened, knowledge graph overhauled, a
 - Python matrix CI standardized around 3.11/3.12.
 - Coverage and type-checking gates added to pull request validation.
 
+[0.9.1]: https://github.com/jcartu/rasputin-memory/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/jcartu/rasputin-memory/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jcartu/rasputin-memory/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jcartu/rasputin-memory/compare/v0.6.0...v0.7.0
