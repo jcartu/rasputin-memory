@@ -712,6 +712,29 @@ def commit_conversation(conv, collection):
         except Exception as e:
             print(f"    BM25 index error: {e}")
 
+    if os.environ.get("KNN_LINKS", "0") == "1":
+        print("  Computing kNN links...")
+        knn_result = subprocess.run(
+            [
+                sys.executable,
+                str(REPO / "benchmarks" / "precompute_links.py"),
+                "--collection",
+                collection,
+                "--top-k",
+                os.environ.get("KNN_TOP_K", "30"),
+                "--threshold",
+                os.environ.get("KNN_THRESHOLD", "0.5"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if knn_result.returncode != 0:
+            print(f"  kNN link error: {knn_result.stderr[:200]}")
+        else:
+            lines = knn_result.stdout.strip().split("\n")
+            if lines:
+                print(f"  {lines[-1]}")
+
     time.sleep(2)
     print(
         f"  Committed {committed} turns + {window_committed} windows + {fact_committed} facts across {num_sessions} sessions"
@@ -746,6 +769,9 @@ def start_bench_server(collection, port=BENCH_PORT):
     env["CROSS_ENCODER"] = os.environ.get("CROSS_ENCODER", "1")
     env["CROSS_ENCODER_URL"] = os.environ.get("CROSS_ENCODER_URL", "")
     env["CUDA_VISIBLE_DEVICES"] = os.environ.get("BENCH_CUDA_DEVICES", "")
+    env["KNN_LINKS"] = os.environ.get("KNN_LINKS", "0")
+    env["KNN_TOP_K"] = os.environ.get("KNN_TOP_K", "30")
+    env["KNN_THRESHOLD"] = os.environ.get("KNN_THRESHOLD", "0.5")
     env["PYTHONPATH"] = str(REPO / "tools")
 
     server_log = RESULTS_DIR / "bench-server.log"

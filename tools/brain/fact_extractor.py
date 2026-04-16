@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 FACT_EXTRACTION_MODEL = os.environ.get("FACT_EXTRACTION_MODEL", "claude-haiku-4-5-20251001")
 FACT_EXTRACTION_PROVIDER = os.environ.get("FACT_EXTRACTION_PROVIDER", "anthropic")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+CEREBRAS_API_KEY = os.environ.get("CEREBRAS_API_KEY", "")
+CEREBRAS_URL = "https://api.cerebras.ai/v1/chat/completions"
+CEREBRAS_MODEL = os.environ.get("CEREBRAS_FACT_MODEL", "qwen-3-235b-a22b-instruct-2507")
+_CEREBRAS_MAX_FAILURES = 5
+_cerebras_consecutive_failures = 0
 
 
 class ExtractedEntity(BaseModel):
@@ -96,7 +101,40 @@ def extract_facts(
     try:
         import urllib.request
 
-        if FACT_EXTRACTION_PROVIDER == "anthropic" and ANTHROPIC_API_KEY:
+        global _cerebras_consecutive_failures
+        content = None
+
+        if (
+            CEREBRAS_API_KEY
+            and FACT_EXTRACTION_PROVIDER != "anthropic_only"
+            and _cerebras_consecutive_failures < _CEREBRAS_MAX_FAILURES
+        ):
+            try:
+                body = json.dumps(
+                    {
+                        "model": CEREBRAS_MODEL,
+                        "max_tokens": 2000,
+                        "temperature": 0.0,
+                        "messages": [{"role": "user", "content": prompt}],
+                    }
+                ).encode()
+                req = urllib.request.Request(CEREBRAS_URL, data=body, method="POST")
+                req.add_header("Content-Type", "application/json")
+                req.add_header("Authorization", f"Bearer {CEREBRAS_API_KEY}")
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    data = json.loads(resp.read().decode())
+                content = data["choices"][0]["message"]["content"].strip()
+                _cerebras_consecutive_failures = 0
+            except Exception as e:
+                _cerebras_consecutive_failures += 1
+                logger.warning(
+                    "Cerebras extraction failed (%d/%d), falling back to Haiku: %s",
+                    _cerebras_consecutive_failures,
+                    _CEREBRAS_MAX_FAILURES,
+                    e,
+                )
+
+        if content is None and FACT_EXTRACTION_PROVIDER in ("anthropic", "anthropic_only") and ANTHROPIC_API_KEY:
             body = json.dumps(
                 {
                     "model": FACT_EXTRACTION_MODEL,
@@ -116,7 +154,8 @@ def extract_facts(
             with urllib.request.urlopen(req, timeout=30) as resp:
                 data = json.loads(resp.read().decode())
             content = data["content"][0]["text"].strip()
-        else:
+
+        if content is None:
             import requests as _req
 
             resp = _req.post(

@@ -422,6 +422,35 @@ def hybrid_search(
 
     all_candidates = list(qdrant_results[: limit * 2]) + graph_memory_results
 
+    if _os.environ.get("KNN_LINKS", "0") == "1":
+        try:
+            from brain import knn_links
+
+            seed_ids = [
+                r["point_id"] for r in all_candidates[:20] if r.get("point_id") and r.get("chunk_type") == "fact"
+            ]
+            if seed_ids:
+                existing_pids = {r["point_id"] for r in all_candidates if r.get("point_id")}
+                knn_expanded = knn_links.expand_seeds(
+                    collection=collection or _state.COLLECTION,
+                    seed_ids=seed_ids,
+                    exclude_ids=existing_pids,
+                )
+                if knn_expanded:
+                    all_candidates.extend(knn_expanded)
+                    seen_pids: set[Any] = set()
+                    deduped_candidates: list[dict[str, Any]] = []
+                    for r in all_candidates:
+                        pid = r.get("point_id")
+                        if pid and pid not in seen_pids:
+                            seen_pids.add(pid)
+                            deduped_candidates.append(r)
+                        elif not pid:
+                            deduped_candidates.append(r)
+                    all_candidates = deduped_candidates
+        except Exception as exc:
+            _state.logger.warning("kNN expansion failed: %s", exc)
+
     ranking_score_key = "hybrid_score" if any("hybrid_score" in row for row in all_candidates) else "score"
     if SCORE_BREAKDOWN:
         for row in all_candidates:
