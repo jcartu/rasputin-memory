@@ -27,9 +27,9 @@ class ExtractedEntity(BaseModel):
 
 class ExtractedFact(BaseModel):
     what: str = Field(description="Core fact — concise, self-contained (1-2 sentences)")
-    who: str = Field(default="N/A", description="People involved, pronouns resolved")
-    when: str = Field(default="N/A", description="When it happened, relative dates resolved")
-    where: str = Field(default="N/A", description="Location if relevant")
+    who: Optional[str] = Field(default="N/A", description="People involved, pronouns resolved")
+    when: Optional[str] = Field(default="N/A", description="When it happened, relative dates resolved")
+    where: Optional[str] = Field(default="N/A", description="Location if relevant")
     fact_type: Literal["world", "experience", "inference"] = Field(
         default="world",
         description="world=objective, experience=subjective, inference=reasonable conclusion",
@@ -121,6 +121,7 @@ def extract_facts(
                 req = urllib.request.Request(CEREBRAS_URL, data=body, method="POST")
                 req.add_header("Content-Type", "application/json")
                 req.add_header("Authorization", f"Bearer {CEREBRAS_API_KEY}")
+                req.add_header("User-Agent", "rasputin-memory/0.9.1")  # Cloudflare 1010 blocks default Python-urllib UA
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     data = json.loads(resp.read().decode())
                 content = data["choices"][0]["message"]["content"].strip()
@@ -134,7 +135,11 @@ def extract_facts(
                     e,
                 )
 
-        if content is None and FACT_EXTRACTION_PROVIDER in ("anthropic", "anthropic_only") and ANTHROPIC_API_KEY:
+        if (
+            content is None
+            and FACT_EXTRACTION_PROVIDER in ("anthropic", "anthropic_only", "cerebras")
+            and ANTHROPIC_API_KEY
+        ):
             body = json.dumps(
                 {
                     "model": FACT_EXTRACTION_MODEL,
