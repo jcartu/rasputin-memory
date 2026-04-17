@@ -526,6 +526,30 @@ def delete_collection(name):
         pass
 
 
+def _assert_collection_ready(name: str) -> int:
+    """Raise if collection missing/empty or vector dim != EMBED_DIM. Returns point count."""
+    try:
+        info = http_json(f"{QDRANT_URL}/collections/{name}", method="GET", timeout=5)
+    except Exception as e:
+        raise RuntimeError(
+            f"--skip-ingest requires existing Qdrant collection '{name}' but it is missing or unreachable: {e}"
+        )
+    result = info.get("result", {})
+    count = int(result.get("points_count", 0) or 0)
+    if count == 0:
+        raise RuntimeError(
+            f"--skip-ingest: collection '{name}' exists but has 0 points. Run baseline (without --skip-ingest) first."
+        )
+    vec_cfg = result.get("config", {}).get("params", {}).get("vectors", {})
+    dim = vec_cfg.get("size") if isinstance(vec_cfg, dict) else None
+    if dim is not None and dim != EMBED_DIM:
+        raise RuntimeError(
+            f"--skip-ingest: collection '{name}' has vector dim {dim}, expected {EMBED_DIM}. "
+            f"Collection was ingested with a different embedding model — re-run baseline."
+        )
+    return count
+
+
 def _build_conversation_windows(all_turns, window_size=5, stride=2):
     """Create overlapping multi-turn windows so vector search captures cross-turn context."""
     windows = []
@@ -1347,8 +1371,12 @@ def rescore_existing(checkpoint_path):
 # ─── Full pipeline ───────────────────────────────────────────
 
 
-def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
-    """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge."""
+def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_ingest=False):
+    """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge.
+
+    skip_ingest=True reuses existing locomo_lb_conv_* Qdrant collections and does NOT
+    delete them at the end. Use for search-only experiments (Phase A/B/C).
+    """
 
     # Load checkpoint
     checkpoint = {"results": [], "completed_keys": set()}
@@ -1385,9 +1413,14 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
 
         try:
             speakers = extract_speakers(conv_data["conversation"])
-            create_collection(collection)
+            if skip_ingest:
+                count = _assert_collection_ready(collection)
+                print(f"  Reusing {collection} ({count} pts)")
+            else:
+                create_collection(collection)
             proc = start_bench_server(collection, port)
-            commit_conversation(conv_data["conversation"], collection)
+            if not skip_ingest:
+                commit_conversation(conv_data["conversation"], collection)
 
             # Process QA pairs concurrently (5 at a time)
             from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1493,7 +1526,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT):
 
         finally:
             kill_server(proc)
-            if not KEEP_COLLECTIONS:
+            if not skip_ingest and not KEEP_COLLECTIONS:
                 delete_collection(collection)
             time.sleep(1)
 
@@ -1688,6 +1721,11 @@ def main():
     parser.add_argument("--rescore-only", action="store_true")
     parser.add_argument("--search-only", action="store_true")
     parser.add_argument("--ingest-only", action="store_true")
+    parser.add_argument(
+        "--skip-ingest",
+        action="store_true",
+        help="Reuse existing locomo_lb_conv_* Qdrant collections (skip create + commit_conversation).",
+    )
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
@@ -1732,7 +1770,7 @@ def main():
         print(f"\nIngest complete: {len(indices)} conversations")
         return
 
-    results = run_full_pipeline(conversations, conv_indices, args.port)
+    results = run_full_pipeline(conversations, conv_indices, args.port, skip_ingest=args.skip_ingest)
 
     # Generate and save report
     report = generate_report(results)

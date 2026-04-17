@@ -567,6 +567,11 @@ def main():
     parser.add_argument("--constraints", action="store_true")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--conversations", type=str, default=None)
+    parser.add_argument(
+        "--skip-ingest",
+        action="store_true",
+        help="Reuse existing Qdrant collections (skip ingest phase). Requires prior baseline run.",
+    )
     args = parser.parse_args()
 
     if args.compare_to and args.benchmark:
@@ -604,6 +609,8 @@ def main():
         extra_args.extend(["--conversations", args.conversations])
     if args.constraints and args.benchmark == "locomo-plus":
         extra_args.append("--constraints")
+    if args.skip_ingest:
+        extra_args.append("--skip-ingest")
 
     print(f"Benchmark: {args.benchmark}")
     print(f"Mode:      {args.mode}")
