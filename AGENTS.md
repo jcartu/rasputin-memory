@@ -60,6 +60,40 @@ python3 benchmarks/bench_runner.py locomo --mode production  # Full LoCoMo
 
 Do not modify files in `benchmarks/` without explicit instruction.
 
+## Benchmark discipline
+
+Added 2026-04-19 after the ghost-checkpoint regression where Phase A appeared
+to regress -14.1pp. Root cause was a stale checkpoint file being resumed from
+under a default filename that Phase A did not override. See
+`benchmarks/results/quarantine_2026-04-19/README.md` for the full forensic.
+
+**Invariant 1 — Artifact/log hash equivalence.**
+Before interpreting any leaderboard score, hash-check the artifact's per-conv
+predictions against the originating log's per-conv printouts. If they disagree
+for any conversation, the artifact is corrupt — do not trust the score.
+
+A helper script `scripts/verify_bench_artifact.py` should do this check
+automatically (not yet written — file as the first task after Phase B's
+payload fix lands). Until then, verify manually by comparing per-conv
+accuracy lines in the run log against per-conv accuracy computed from the
+artifact JSON.
+
+**Invariant 2 — Explicit checkpoint naming.**
+Every `locomo_leaderboard_bench.py` invocation must explicitly set
+`BENCH_CHECKPOINT=<unique-experiment-id>.json` (e.g.
+`BENCH_CHECKPOINT=phase-b-four-lane-checkpoint.json`). Never rely on the
+default `locomo-leaderboard-checkpoint.json` — a stale file by that name may
+exist from a previous experiment and the raw harness will silently resume
+from it. Prefer `bench_runner.py locomo --mode production` over direct
+`locomo_leaderboard_bench.py` invocation: the former writes commit-prefixed
+artifacts that cannot collide with stale lineage.
+
+**Invariant 3 — Canonical baseline is the commit-hash-prefixed artifact.**
+The canonical v0.9.1-honest baseline is
+`benchmarks/results/59c0a369...-locomo-production.json` at 72.53% non-adv.
+Recorded in `history.csv` row 59c0a369. Do not replace, quarantine, or rename
+this file. Any future baseline comparisons must cite it by filename + row.
+
 ## Code Style
 
 - `from __future__ import annotations` on every file
