@@ -745,6 +745,10 @@ def commit_conversation(conv, collection):
                                 "retrieval_count": 0,
                                 "chunk_type": "fact",
                                 "entities": json.dumps(fact.get("entities", [])),
+                                "fact_type": fact.get("fact_type"),
+                                "occurred_start": fact.get("occurred_start"),
+                                "occurred_end": fact.get("occurred_end"),
+                                "confidence": fact.get("confidence"),
                             },
                         }
                     )
