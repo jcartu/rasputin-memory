@@ -37,7 +37,6 @@ REPO = Path(__file__).resolve().parent.parent
 BENCH_DIR = REPO / "benchmarks"
 RESULTS_DIR = BENCH_DIR / "results"
 LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
-CHECKPOINT_FILE = RESULTS_DIR / os.environ.get("BENCH_CHECKPOINT", "locomo-leaderboard-checkpoint.json")
 OUTPUT_FILE = RESULTS_DIR / "locomo-leaderboard-v1.json"
 COMPARISON_FILE = RESULTS_DIR / "locomo-leaderboard-comparison.md"
 
@@ -79,6 +78,57 @@ BM25_SEARCH = os.environ.get("BM25_SEARCH", "0") == "1"
 LANE_BM25_SEARCH = int(os.environ.get("BENCH_LANE_BM25_SEARCH", "10"))
 
 _bm25_index = None
+
+
+def _resolve_checkpoint_path(resume_from: str | None = None, *, allow_existing: bool = False) -> Path:
+    """Resolve the checkpoint path, enforcing AGENTS.md §Benchmark discipline Invariant 2."""
+    env_val = os.environ.get("BENCH_CHECKPOINT")
+    if not env_val:
+        raise RuntimeError(
+            "BENCH_CHECKPOINT env var is required. See AGENTS.md §Benchmark discipline "
+            "Invariant 2. Set it to a unique experiment identifier, e.g. "
+            "BENCH_CHECKPOINT=phase-b-four-lane-checkpoint.json. Prefer bench_runner.py "
+            "locomo --mode production which sets this automatically to a commit-hash-prefixed name."
+        )
+
+    env_path = Path(env_val)
+    path = env_path if env_path.is_absolute() else RESULTS_DIR / env_path
+
+    if resume_from is not None:
+        resume_candidate = Path(resume_from)
+        resume_path = resume_candidate if resume_candidate.is_absolute() else RESULTS_DIR / resume_candidate
+        if resume_path.resolve() != path.resolve():
+            raise RuntimeError(
+                f"--resume-from {resume_from} does not match BENCH_CHECKPOINT {env_val}. "
+                "The flag must point to the same file as the env var to prevent mismatched "
+                "resume acknowledgment."
+            )
+
+    if path.exists() and path.stat().st_size > 0 and not allow_existing:
+        if resume_from is None:
+            raise RuntimeError(
+                f"Checkpoint file {path} already exists ({path.stat().st_size} bytes). "
+                "To avoid the ghost-checkpoint bug (see AGENTS.md §Benchmark discipline "
+                "and benchmarks/results/quarantine_2026-04-19/README.md):\n"
+                f"  - To discard it and start fresh: rm {path}\n"
+                f"  - To explicitly resume from it: add --resume-from {path}"
+            )
+        try:
+            with open(path) as f:
+                data = json.load(f)
+            rows = data.get("results", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+            convs = sorted({str(r.get("conv_id", "?")) for r in rows if isinstance(r, dict)})
+            print(
+                f"RESUMING from checkpoint: {path}\n"
+                f"  mtime: {datetime.fromtimestamp(path.stat().st_mtime).isoformat()}\n"
+                f"  rows:  {len(rows)}\n"
+                f"  convs: {', '.join(convs)}",
+                file=sys.stderr,
+            )
+        except Exception as e:
+            print(f"WARNING: Could not read resume metadata from {path}: {e}", file=sys.stderr)
+
+    return path
 
 
 def get_bm25_index():
@@ -1371,17 +1421,19 @@ def rescore_existing(checkpoint_path):
 # ─── Full pipeline ───────────────────────────────────────────
 
 
-def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_ingest=False):
+def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_ingest=False, checkpoint_file: Path | None = None):
     """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge.
 
     skip_ingest=True reuses existing locomo_lb_conv_* Qdrant collections and does NOT
     delete them at the end. Use for search-only experiments (Phase A/B/C).
     """
+    if checkpoint_file is None:
+        raise RuntimeError("Checkpoint path was not resolved before running the full pipeline.")
 
     # Load checkpoint
     checkpoint = {"results": [], "completed_keys": set()}
-    if CHECKPOINT_FILE.exists():
-        with open(CHECKPOINT_FILE) as f:
+    if checkpoint_file.exists():
+        with open(checkpoint_file) as f:
             cp = json.load(f)
         # Check if it's the new format (list of per-QA results)
         if isinstance(cp.get("results"), list) and cp["results"] and "predicted" in cp["results"][0]:
@@ -1506,9 +1558,9 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_in
 
                     # Checkpoint every 10
                     if done_count % 10 == 0:
-                        save_checkpoint(checkpoint)
+                        save_checkpoint(checkpoint, checkpoint_file)
 
-            save_checkpoint(checkpoint)
+            save_checkpoint(checkpoint, checkpoint_file)
 
             # Print conv summary
             conv_results = [r for r in checkpoint["results"] if r["conv_id"] == conv_id]
@@ -1522,7 +1574,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_in
             import traceback
 
             traceback.print_exc()
-            save_checkpoint(checkpoint)
+            save_checkpoint(checkpoint, checkpoint_file)
 
         finally:
             kill_server(proc)
@@ -1533,9 +1585,9 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_in
     return checkpoint["results"]
 
 
-def save_checkpoint(checkpoint):
+def save_checkpoint(checkpoint, checkpoint_file: Path):
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with open(CHECKPOINT_FILE, "w") as f:
+    with open(checkpoint_file, "w") as f:
         json.dump(
             {
                 "results": checkpoint["results"],
@@ -1727,8 +1779,27 @@ def main():
         help="Reuse existing locomo_lb_conv_* Qdrant collections (skip create + commit_conversation).",
     )
     parser.add_argument("--port", type=int, default=BENCH_PORT)
-    parser.add_argument("--reset", action="store_true")
+    parser.add_argument(
+        "--reset",
+        action="store_true",
+        help="Delete any existing checkpoint before starting. Implies no resume.",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Explicitly acknowledge consumption of an existing checkpoint. Required when "
+        "BENCH_CHECKPOINT points to a file that already exists. Path must match "
+        "BENCH_CHECKPOINT. See AGENTS.md §Benchmark discipline.",
+    )
     args = parser.parse_args()
+
+    if args.reset and args.resume_from:
+        raise RuntimeError(
+            "--reset and --resume-from are mutually exclusive. "
+            "--reset discards the checkpoint; --resume-from consumes it. Pick one."
+        )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -1741,8 +1812,13 @@ def main():
         rescore_existing(old_cp)
         return
 
-    if args.reset and CHECKPOINT_FILE.exists():
-        CHECKPOINT_FILE.unlink()
+    checkpoint_file: Path | None = None
+    needs_checkpoint = args.reset or not (args.search_only or args.ingest_only)
+    if needs_checkpoint:
+        checkpoint_file = _resolve_checkpoint_path(args.resume_from, allow_existing=args.reset)
+
+    if args.reset and checkpoint_file is not None and checkpoint_file.exists():
+        checkpoint_file.unlink()
         print("Checkpoint cleared.")
 
     print("Loading LoCoMo dataset...")
@@ -1770,7 +1846,16 @@ def main():
         print(f"\nIngest complete: {len(indices)} conversations")
         return
 
-    results = run_full_pipeline(conversations, conv_indices, args.port, skip_ingest=args.skip_ingest)
+    if checkpoint_file is None:
+        raise RuntimeError("Checkpoint path was not resolved for the checkpointed benchmark path.")
+
+    results = run_full_pipeline(
+        conversations,
+        conv_indices,
+        args.port,
+        skip_ingest=args.skip_ingest,
+        checkpoint_file=checkpoint_file,
+    )
 
     # Generate and save report
     report = generate_report(results)

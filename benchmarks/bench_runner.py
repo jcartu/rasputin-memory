@@ -237,6 +237,10 @@ def batch_submit(benchmark: str, commit: str, mode_cfg: dict, extra_args: list[s
     env["BENCH_COMMIT"] = commit
     env["BENCH_SEARCH_OUTPUT"] = str(search_output)
     set_bench_env(env, mode_cfg)
+    if benchmark == "locomo" and "BENCH_CHECKPOINT" not in env:
+        # Auto-assign commit-prefixed checkpoint name per AGENTS.md §Benchmark discipline Invariant 2
+        commit_short = env.get("BENCH_COMMIT", commit)[:8]
+        env["BENCH_CHECKPOINT"] = f"{commit_short}-locomo-{mode_cfg['mode']}-checkpoint.json"
 
     cmd = [sys.executable, "-u", str(REPO / script), "--reset", "--search-only"] + extra_args
     print(f"  Phase 1 (search): {script}")
@@ -489,6 +493,10 @@ def run_sequential(benchmark: str, commit: str, mode_cfg: dict, extra_args: list
     env["BENCH_RESULT_FILE"] = str(rf)
     env["BENCH_COMMIT"] = commit
     set_bench_env(env, mode_cfg)
+    if benchmark == "locomo" and "BENCH_CHECKPOINT" not in env:
+        # Auto-assign commit-prefixed checkpoint name per AGENTS.md §Benchmark discipline Invariant 2
+        commit_short = env.get("BENCH_COMMIT", commit)[:8]
+        env["BENCH_CHECKPOINT"] = f"{commit_short}-locomo-{mode_cfg['mode']}-checkpoint.json"
 
     cmd = [sys.executable, "-u", str(REPO / script), "--reset"] + extra_args
     print(f"  Running: {script} {' '.join(extra_args)}")
