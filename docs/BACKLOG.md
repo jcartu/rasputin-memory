@@ -17,6 +17,15 @@ starting a new session to see what's queued.
   Qdrant payload before upsert. Blocks Phase B four-lane retrieval. Fix on
   branch `bench-payload-structured-fields`. Filed 2026-04-17, still open.
 
+- **`entities` field serialization in locomo_leaderboard_bench.py fact upsert.**
+  Code does `json.dumps(fact.get("entities", []))`. Works currently because
+  extract_facts() returns dicts via model_dump(), which converts
+  ExtractedEntity objects to plain dicts. Still, this is implicit — if someone
+  later changes extract_facts() to return Pydantic objects, `json.dumps` will
+  fail silently or raise. Consider explicit normalization
+  (`[e if isinstance(e, dict) else e.model_dump() for e in fact.get("entities", [])]`)
+  during a future harness cleanup. Filed 2026-04-20.
+
 ## Housekeeping
 
 - **19 untracked `benchmarks/results/*.json` files** from prior experiments
@@ -47,3 +56,6 @@ starting a new session to see what's queued.
 - Local Qwen3-Reranker-0.6B server at `tools/qwen3_reranker_server.py` → port
   9091. Running as a user process; convert to systemd user service so it
   survives reboots. Filed 2026-04-20.
+  - Observed live launch command on 2026-04-20: `python3 /home/josh/.openclaw/workspace/rasputin-memory/tools/qwen3_reranker_server.py 9091`
+  - Observed working directory: `/home/josh/.openclaw/workspace/rasputin-memory`
+  - Observed non-secret launch env vars: none beyond the default user shell environment.
