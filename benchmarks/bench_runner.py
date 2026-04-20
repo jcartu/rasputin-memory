@@ -25,6 +25,7 @@ import argparse
 import csv
 import json
 import os
+import socket
 import subprocess
 import sys
 from datetime import datetime
@@ -55,6 +56,14 @@ HISTORY_FIELDS = [
     "search_limit",
     "note",
 ]
+
+# Bench server port — must be free before bench child spawns hybrid_brain.py --port N.
+# See AGENTS.md §Benchmark discipline: 2026-04-20 overnight failure was caused by orphaned
+# hybrid_brain.py processes holding :7779 via SO_REUSEPORT. The bench child joined the
+# LISTEN group, and clients load-balanced across 4 processes — 3 of 4 had no data.
+# 9 hours wasted. Fail fast if port is already bound so this can never recur.
+BENCH_SERVER_PORT = 7779
+
 
 JUDGE_MODEL_PINNED = "gpt-4o-mini-2024-07-18"
 
@@ -87,6 +96,36 @@ MODE_DEFAULTS = {
         "search_limit": 60,
     },
 }
+
+
+def preflight_port_free(port: int = BENCH_SERVER_PORT) -> None:
+    """Abort the bench run if `port` is already bound.
+
+    Prevents the 2026-04-20 orphan-server class of bug: multiple `hybrid_brain.py --port N`
+    processes sharing a port via SO_REUSEPORT cause load-balancing across N listeners, most
+    of which lack the bench's Qdrant collection mapping — resulting in silent data
+    misrouting, ephemeral port exhaustion (Errno 99), and unbounded retry loops.
+
+    We do NOT attempt automatic cleanup (killing random PIDs on a shared dev box is unsafe).
+    Operator must free the port manually.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("127.0.0.1", port))
+    except OSError as e:
+        print(
+            f"FATAL: bench server port {port} is already in use by one or more processes.\n"
+            f"  OSError: {e}\n"
+            f"  This is the bug that caused the 2026-04-20 overnight run to fail (9h wasted).\n"
+            f"  Free the port before retrying: lsof -i :{port} or ss -tlnp | grep :{port}\n"
+            f"  Then (if you are sure they are orphans): kill $(lsof -t -i :{port})\n"
+            f"  See AGENTS.md \u00a7Benchmark discipline for rationale.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    finally:
+        s.close()
+
 
 
 def get_commit_hash() -> str:
@@ -230,6 +269,7 @@ def set_bench_env(env: dict, mode_cfg: dict) -> None:
 
 def batch_submit(benchmark: str, commit: str, mode_cfg: dict, extra_args: list[str]) -> None:
     script = BENCH_SCRIPTS[benchmark]
+    preflight_port_free()
     search_output = RESULTS_DIR / f"{commit}-{benchmark}-search.json"
 
     env = os.environ.copy()
@@ -481,6 +521,7 @@ def batch_finalize(benchmark: str, commit: str, mode_cfg: dict) -> None:
 
 def run_sequential(benchmark: str, commit: str, mode_cfg: dict, extra_args: list[str]) -> None:
     script = BENCH_SCRIPTS.get(benchmark)
+    preflight_port_free()
     if not script:
         print(f"Unknown benchmark: {benchmark}")
         sys.exit(1)
