@@ -15,13 +15,14 @@ from __future__ import annotations
 import json
 import logging
 import os
-import urllib.parse
 import urllib.request
 from typing import Any
 
 from fastmcp import FastMCP
 
 logger = logging.getLogger("rasputin.mcp")
+
+_MAX_COMMIT_TEXT_CHARS = 8000
 
 RASPUTIN_URL = os.environ.get("RASPUTIN_URL", "http://127.0.0.1:7777")
 RASPUTIN_TOKEN = os.environ.get("RASPUTIN_TOKEN", "")
@@ -91,6 +92,9 @@ def memory_store(
         importance: Priority 0-100.  Default 60.  Use 80+ for critical
                     decisions, 40 for background context.
     """
+    if len(content) > _MAX_COMMIT_TEXT_CHARS:
+        return f"Error: content too long (max {_MAX_COMMIT_TEXT_CHARS} characters)."
+
     payload: dict[str, Any] = {
         "text": content,
         "source": source,
@@ -133,10 +137,9 @@ def memory_search(
         limit: Maximum results to return (1-30, default 10).
     """
     limit = max(1, min(30, limit))
-    qs: dict[str, Any] = {"q": query, "limit": limit}
-    qs.update(_collection_params())
-    params = urllib.parse.urlencode(qs)
-    result = _api(f"/search?{params}")
+    payload: dict[str, Any] = {"q": query, "limit": limit}
+    payload.update(_collection_params())
+    result = _api("/search", method="POST", data=payload)
     results = result.get("results", [])
     if not results:
         return "No matching memories found."
