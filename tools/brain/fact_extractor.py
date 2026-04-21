@@ -40,7 +40,19 @@ class ExtractedEntity(BaseModel):
     type: str = Field(description="Person, Organization, Location, Event, Thing")
 
 
+class CausalLink(BaseModel):
+    target_fact_id: str = Field(description="Local fact_id of another fact in this extraction batch")
+    link_type: Literal["causes", "caused_by", "enables", "prevents"] = Field(
+        description="Allowed causal relation between this fact and target_fact_id"
+    )
+    weight: float = Field(default=0.7, ge=0.0, le=1.0)
+
+
 class ExtractedFact(BaseModel):
+    fact_id: Optional[str] = Field(
+        default=None,
+        description="Local batch-only fact handle like F1, F2, F3 for inline causal references",
+    )
     what: str = Field(description="Core fact — concise, self-contained (1-2 sentences)")
     who: Optional[str] = Field(default="N/A", description="People involved, pronouns resolved")
     when: Optional[str] = Field(default="N/A", description="When it happened, relative dates resolved")
@@ -58,6 +70,7 @@ class ExtractedFact(BaseModel):
         description="ISO date when this ended. None for point-in-time",
     )
     entities: list[ExtractedEntity] = Field(default_factory=list)
+    causal_links: list[CausalLink] = Field(default_factory=list)
     confidence: float = Field(
         default=0.8,
         description="0.9 for explicit statements, 0.7 for inferences, 0.5 for weak signals",
@@ -68,7 +81,10 @@ class FactExtractionResponse(BaseModel):
     facts: list[ExtractedFact]
 
 
-EXTRACTION_PROMPT = """Extract discrete facts AND reasonable inferences from this conversation.
+VERBOSE_EXTRACTION_PROMPT = """Extract 5-10 discrete facts AND reasonable inferences from this conversation.
+
+Aim for high recall per window by covering atomic facts, temporal facts, spatial facts,
+preference facts, inferences, and causal relations between co-extracted facts.
 
 RULES:
 1. Resolve ALL pronouns to names using context: "she went" → "Caroline went"
@@ -82,6 +98,17 @@ RULES:
 5. occurred_start/occurred_end: ISO dates when determinable
    - "worked at Google from 2021 to 2024" → occurred_start="2021-01-01", occurred_end="2024-12-31"
    - "yesterday" + Event Date 2023-05-08 → occurred_start="2023-05-07"
+6. CAUSAL LINKS:
+   - Assign every fact a local "fact_id" at emission time: "F1", "F2", "F3", ...
+   - Each fact should include "causal_links": [] even if empty
+   - causal_links may ONLY reference other fact_ids from this same extraction batch
+   - Allowed link_type values EXACTLY: "causes", "caused_by", "enables", "prevents"
+   - Use "causes" when this fact directly causes target_fact_id
+   - Use "caused_by" when this fact happens because of target_fact_id
+   - Use "enables" when this fact creates conditions that make target_fact_id possible or easier
+   - Use "prevents" when this fact blocks or reduces the chance of target_fact_id
+   - Emit causal links only when the relation is explicit or strongly implied in the text
+   - Never link a fact to itself; leave causal_links empty when no strong within-batch relation exists
 
 Event Date: {event_date}
 
@@ -89,12 +116,58 @@ Text:
 {text}
 
 Return ONLY a JSON object: {{"facts": [...]}}
-Each fact: what, who, when, where, fact_type, occurred_start, occurred_end, entities, confidence
+Return 5-10 facts when the text supports it.
+Each fact: fact_id, what, who, when, where, fact_type, occurred_start, occurred_end,
+entities, causal_links, confidence
 
 Example output:
 {{"facts": [
-  {{"what": "Caroline attended an LGBTQ support group meeting", "who": "Caroline", "when": "May 7, 2023", "where": "N/A", "fact_type": "world", "occurred_start": "2023-05-07", "occurred_end": null, "entities": [{{"name": "Caroline", "type": "Person"}}], "confidence": 0.9}},
-  {{"what": "Caroline is likely supportive of LGBTQ causes based on her attendance at support group meetings", "who": "Caroline", "when": "N/A", "where": "N/A", "fact_type": "inference", "occurred_start": null, "occurred_end": null, "entities": [{{"name": "Caroline", "type": "Person"}}], "confidence": 0.7}}
+  {{
+    "fact_id": "F1",
+    "what": "Caroline joined an LGBTQ support group",
+    "who": "Caroline",
+    "when": "May 7, 2023",
+    "where": "Community Center",
+    "fact_type": "world",
+    "occurred_start": "2023-05-07",
+    "occurred_end": null,
+    "entities": [
+      {{"name": "Caroline", "type": "Person"}},
+      {{"name": "Community Center", "type": "Location"}}
+    ],
+    "causal_links": [
+      {{"target_fact_id": "F2", "link_type": "enables", "weight": 0.8}}
+    ],
+    "confidence": 0.9
+  }},
+  {{
+    "fact_id": "F2",
+    "what": "Caroline became more confident at work after joining the support group",
+    "who": "Caroline",
+    "when": "after May 7, 2023",
+    "where": "Work",
+    "fact_type": "inference",
+    "occurred_start": null,
+    "occurred_end": null,
+    "entities": [{{"name": "Caroline", "type": "Person"}}],
+    "causal_links": [
+      {{"target_fact_id": "F1", "link_type": "caused_by", "weight": 0.8}}
+    ],
+    "confidence": 0.7
+  }},
+  {{
+    "fact_id": "F3",
+    "what": "Caroline prefers community spaces that feel supportive",
+    "who": "Caroline",
+    "when": "N/A",
+    "where": "N/A",
+    "fact_type": "inference",
+    "occurred_start": null,
+    "occurred_end": null,
+    "entities": [{{"name": "Caroline", "type": "Person"}}],
+    "causal_links": [],
+    "confidence": 0.6
+  }}
 ]}}"""
 
 
@@ -109,7 +182,7 @@ def extract_facts(
     if not event_date:
         event_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    prompt = EXTRACTION_PROMPT.format(event_date=event_date, text=text[:4000])
+    prompt = VERBOSE_EXTRACTION_PROMPT.format(event_date=event_date, text=text[:4000])
 
     global _CURRENT_EXTRACTION_SESSION_ID
     _CURRENT_EXTRACTION_SESSION_ID = source
@@ -485,6 +558,55 @@ def _parse_extraction_response(response_text: str) -> list[dict[str, Any]]:
 
     logger.warning("No valid JSON found in extraction response")
     return []
+
+
+def extract_causal_links_for_commit(facts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    valid_fact_ids = {
+        fact_id
+        for fact in facts
+        if isinstance(fact, dict)
+        for fact_id in [fact.get("fact_id")]
+        if isinstance(fact_id, str) and fact_id
+    }
+    valid_link_types = {"causes", "caused_by", "enables", "prevents"}
+    links_for_commit: list[dict[str, Any]] = []
+
+    for fact in facts:
+        if not isinstance(fact, dict):
+            continue
+
+        from_fact_id = fact.get("fact_id")
+        if not isinstance(from_fact_id, str) or not from_fact_id:
+            continue
+
+        raw_links = fact.get("causal_links", [])
+        if not isinstance(raw_links, list):
+            continue
+
+        for raw_link in raw_links:
+            if not isinstance(raw_link, dict):
+                continue
+
+            to_fact_id = raw_link.get("target_fact_id")
+            link_type = raw_link.get("link_type")
+            raw_weight = raw_link.get("weight", 0.7)
+
+            if not isinstance(to_fact_id, str) or not to_fact_id or to_fact_id == from_fact_id:
+                continue
+            if to_fact_id not in valid_fact_ids or link_type not in valid_link_types:
+                continue
+
+            weight = float(raw_weight) if isinstance(raw_weight, (int, float)) else 0.7
+            links_for_commit.append(
+                {
+                    "from_fact_id": from_fact_id,
+                    "to_fact_id": to_fact_id,
+                    "link_type": link_type,
+                    "weight": max(0.0, min(1.0, weight)),
+                }
+            )
+
+    return links_for_commit
 
 
 def fact_to_text(fact: dict[str, Any]) -> str:
