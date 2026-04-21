@@ -126,6 +126,8 @@ def extract_facts(
 
 def _call_local_vllm(prompt: str, event_date: str) -> list[dict[str, Any]] | None:
     del event_date
+    # chat_template_kwargs.enable_thinking=false disables Qwen3 reasoning-mode <think>...</think>
+    # blocks that would otherwise prefix the JSON output and break fact parsing.
     body = {
         "model": LOCAL_VLLM_MODEL,
         "max_tokens": 2000,
@@ -133,6 +135,7 @@ def _call_local_vllm(prompt: str, event_date: str) -> list[dict[str, Any]] | Non
         "top_p": 1.0,
         "seed": LOCAL_VLLM_SEED,
         "messages": [{"role": "user", "content": prompt}],
+        "chat_template_kwargs": {"enable_thinking": False},
     }
     return _call_provider(
         provider="local_vllm",
