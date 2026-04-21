@@ -140,7 +140,7 @@ def get_commit_hash() -> str:
 
 def repo_is_dirty() -> bool:
     result = subprocess.run(
-        ["git", "diff", "--quiet", "HEAD"],
+        ["git", "diff", "--quiet", "HEAD", "--", ".", ":(exclude)benchmarks/results/history.csv"],
         capture_output=True,
         cwd=str(REPO),
     )
