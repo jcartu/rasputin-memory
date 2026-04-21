@@ -33,7 +33,13 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
+from qdrant_client import QdrantClient
+
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "tools"))
+
+from brain.ingest_metadata import get_ingest_metadata  # noqa: E402  (post sys.path insert)
+
 BENCH_DIR = REPO / "benchmarks"
 RESULTS_DIR = BENCH_DIR / "results"
 LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
@@ -576,7 +582,11 @@ def delete_collection(name):
         pass
 
 
-def _assert_collection_ready(name: str) -> int:
+def _warn(message: str) -> None:
+    print(f"\033[33mWARN:\033[0m {message}", file=sys.stderr)
+
+
+def _assert_collection_ready(name: str, allow_cross_commit: bool = False) -> int:
     """Raise if collection missing/empty or vector dim != EMBED_DIM. Returns point count."""
     try:
         info = http_json(f"{QDRANT_URL}/collections/{name}", method="GET", timeout=5)
@@ -596,6 +606,30 @@ def _assert_collection_ready(name: str) -> int:
         raise RuntimeError(
             f"--skip-ingest: collection '{name}' has vector dim {dim}, expected {EMBED_DIM}. "
             f"Collection was ingested with a different embedding model — re-run baseline."
+        )
+
+    current_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, check=True, cwd=str(REPO), text=True
+    ).stdout.strip()
+    qdrant_client = QdrantClient(url=QDRANT_URL)
+    points, _ = qdrant_client.scroll(collection_name=name, limit=1, with_payload=True, with_vectors=False)
+    payload = (points[0].payload or {}) if points else {}
+    ingest_sha = payload.get("_ingest_commit_sha")
+    if ingest_sha is None:
+        _warn(
+            f"Collection {name} has no _ingest_commit_sha — likely pre-S1.2 legacy. "
+            f"Consider running scripts/backfill_ingest_metadata.py --collection {name} --commit <actual-ingest-sha>. Continuing."
+        )
+        return count
+    if ingest_sha != current_sha and not allow_cross_commit:
+        raise RuntimeError(
+            f"Collection {name} was ingested at {ingest_sha} but HEAD is {current_sha}. "
+            "Re-ingest or pass --allow-cross-commit (unsafe)."
+        )
+    if ingest_sha != current_sha:
+        _warn(
+            f"Collection {name} was ingested at {ingest_sha} but HEAD is {current_sha}. "
+            "Continuing because --allow-cross-commit was passed (unsafe)."
         )
     return count
 
@@ -618,6 +652,7 @@ def _build_conversation_windows(all_turns, window_size=5, stride=2):
 
 def commit_conversation(conv, collection):
     """Commit individual turns + overlapping conversation windows to Qdrant."""
+    ingest_metadata = get_ingest_metadata()
     points = []
     committed = 0
     session_idx = 1
@@ -659,6 +694,7 @@ def commit_conversation(conv, collection):
                         "importance": 70,
                         "retrieval_count": 0,
                         "chunk_type": "turn",
+                        **ingest_metadata,
                     },
                 }
             )
@@ -701,6 +737,7 @@ def commit_conversation(conv, collection):
                         "retrieval_count": 0,
                         "chunk_type": "window",
                         "speakers": window["speakers"],
+                        **ingest_metadata,
                     },
                 }
             )
@@ -749,6 +786,7 @@ def commit_conversation(conv, collection):
                                 "occurred_start": fact.get("occurred_start"),
                                 "occurred_end": fact.get("occurred_end"),
                                 "confidence": fact.get("confidence"),
+                                **ingest_metadata,
                             },
                         }
                     )
@@ -1425,7 +1463,14 @@ def rescore_existing(checkpoint_path):
 # ─── Full pipeline ───────────────────────────────────────────
 
 
-def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_ingest=False, checkpoint_file: Path | None = None):
+def run_full_pipeline(
+    conversations,
+    conv_indices=None,
+    port=BENCH_PORT,
+    skip_ingest=False,
+    allow_cross_commit: bool = False,
+    checkpoint_file: Path | None = None,
+):
     """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge.
 
     skip_ingest=True reuses existing locomo_lb_conv_* Qdrant collections and does NOT
@@ -1470,7 +1515,7 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_in
         try:
             speakers = extract_speakers(conv_data["conversation"])
             if skip_ingest:
-                count = _assert_collection_ready(collection)
+                count = _assert_collection_ready(collection, allow_cross_commit=allow_cross_commit)
                 print(f"  Reusing {collection} ({count} pts)")
             else:
                 create_collection(collection)
@@ -1782,6 +1827,11 @@ def main():
         action="store_true",
         help="Reuse existing locomo_lb_conv_* Qdrant collections (skip create + commit_conversation).",
     )
+    parser.add_argument(
+        "--allow-cross-commit",
+        action="store_true",
+        help="Allow --skip-ingest against collections tagged with a different ingest commit SHA (unsafe).",
+    )
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument(
         "--reset",
@@ -1858,6 +1908,7 @@ def main():
         conv_indices,
         args.port,
         skip_ingest=args.skip_ingest,
+        allow_cross_commit=args.allow_cross_commit,
         checkpoint_file=checkpoint_file,
     )
 
