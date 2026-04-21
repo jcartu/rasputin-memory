@@ -9,6 +9,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from qdrant_client import QdrantClient
+
 EXIT_OK = 0
 EXIT_MISMATCH = 1
 EXIT_PARSE_ERROR = 2
@@ -19,6 +21,7 @@ RUNTIME_LINE_RE = re.compile(
 REPORT_LINE_RE = re.compile(
     r"^- \*\*(conv-\d+)\*\*: ([0-9]+(?:\.[0-9]+)?)% \((\d+)/(\d+) excl\. adv\)\s*$"
 )
+ARTIFACT_COMMIT_RE = re.compile(r"^([0-9a-f]{40})-(.+)-(?:production|compare)\.json$")
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--artifact", required=True, help="Path to benchmark result JSON")
     parser.add_argument("--log", required=True, help="Path to benchmark run log")
     parser.add_argument("--tolerance-pp", type=float, default=0.5, help="Allowed percentage-point drift (default: 0.5)")
+    parser.add_argument("--qdrant-url", default="http://localhost:6333", help="Qdrant base URL")
     return parser.parse_args()
 
 
@@ -138,6 +142,45 @@ def parse_log_stats(path: Path) -> dict[str, LogStats]:
     return parsed
 
 
+def artifact_commit_sha(path: Path) -> str | None:
+    match = ARTIFACT_COMMIT_RE.match(path.name)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def verify_collection_commit_coupling(rows: list[dict], artifact_path: Path, qdrant_url: str) -> int:
+    artifact_sha = artifact_commit_sha(artifact_path)
+    if artifact_sha is None:
+        print(
+            f"PARSE ERROR: could not infer artifact commit SHA from filename {artifact_path.name}",
+            file=sys.stderr,
+        )
+        return EXIT_PARSE_ERROR
+
+    client = QdrantClient(url=qdrant_url)
+    conv_ids = sorted({conv_id_for(row) for row in rows})
+    exit_code = EXIT_OK
+    for conv_id in conv_ids:
+        collection = f"locomo_lb_{conv_id.replace('-', '_')}"
+        points, _ = client.scroll(collection_name=collection, limit=1, with_payload=True, with_vectors=False)
+        if not points:
+            print(f"MISMATCH {collection}: collection empty or missing sample payload", file=sys.stderr)
+            exit_code = EXIT_MISMATCH
+            continue
+        payload = points[0].payload or {}
+        ingest_sha = payload.get("_ingest_commit_sha")
+        if ingest_sha != artifact_sha:
+            print(
+                f"MISMATCH {collection}: artifact commit {artifact_sha} != collection ingest {ingest_sha}",
+                file=sys.stderr,
+            )
+            exit_code = EXIT_MISMATCH
+            continue
+        print(f"COUPLED {collection}: artifact commit matches ingest SHA {artifact_sha[:12]}")
+    return exit_code
+
+
 def compare_stats(artifact: dict[str, ArtifactStats], log_stats: dict[str, LogStats], tolerance_pp: float) -> int:
     if not log_stats:
         print("PARSE ERROR: no per-conversation score lines found in log", file=sys.stderr)
@@ -181,7 +224,8 @@ def compare_stats(artifact: dict[str, ArtifactStats], log_stats: dict[str, LogSt
 
 def main() -> int:
     args = parse_args()
-    rows = load_rows(Path(args.artifact))
+    artifact_path = Path(args.artifact)
+    rows = load_rows(artifact_path)
     if not rows:
         print("PARSE ERROR: artifact did not contain any benchmark rows", file=sys.stderr)
         return EXIT_PARSE_ERROR
@@ -192,7 +236,15 @@ def main() -> int:
         return EXIT_PARSE_ERROR
 
     log_stats = parse_log_stats(Path(args.log))
-    return compare_stats(artifact_stats, log_stats, args.tolerance_pp)
+    stats_exit = compare_stats(artifact_stats, log_stats, args.tolerance_pp)
+    if stats_exit == EXIT_PARSE_ERROR:
+        return stats_exit
+    coupling_exit = verify_collection_commit_coupling(rows, artifact_path, args.qdrant_url)
+    if coupling_exit == EXIT_PARSE_ERROR:
+        return coupling_exit
+    if stats_exit == EXIT_MISMATCH or coupling_exit == EXIT_MISMATCH:
+        return EXIT_MISMATCH
+    return EXIT_OK
 
 
 if __name__ == "__main__":

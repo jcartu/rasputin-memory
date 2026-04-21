@@ -621,6 +621,11 @@ def main():
         action="store_true",
         help="Reuse existing Qdrant collections (skip ingest phase). Requires prior baseline run.",
     )
+    parser.add_argument(
+        "--allow-cross-commit",
+        action="store_true",
+        help="Allow skip-ingest with collections tagged from a different commit SHA (unsafe).",
+    )
     args = parser.parse_args()
 
     if args.compare_to and args.benchmark:
@@ -660,6 +665,8 @@ def main():
         extra_args.append("--constraints")
     if args.skip_ingest:
         extra_args.append("--skip-ingest")
+    if args.allow_cross_commit:
+        extra_args.append("--allow-cross-commit")
 
     print(f"Benchmark: {args.benchmark}")
     print(f"Mode:      {args.mode}")

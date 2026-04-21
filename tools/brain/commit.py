@@ -14,6 +14,7 @@ from brain import _state
 from brain import embedding
 from brain import entities
 from brain import graph
+from brain.ingest_metadata import get_ingest_metadata
 
 
 class MemoryPayload(TypedDict, total=False):
@@ -44,6 +45,10 @@ class MemoryPayload(TypedDict, total=False):
     occurred_start: str | None
     occurred_end: str | None
     confidence: float
+    _ingest_commit_sha: str
+    _ingest_config_hash: str
+    _ingest_timestamp: str
+    _ingest_bench_version: str
 
 
 safe_import = importlib.import_module("pipeline._imports").safe_import
@@ -140,6 +145,7 @@ def commit_memory(
 
         timestamp = datetime.now(timezone.utc).isoformat()
 
+        ingest_metadata = get_ingest_metadata()
         payload: MemoryPayload = {
             "text": text[:4000],
             "source": source,
@@ -157,6 +163,7 @@ def commit_memory(
             "mentioned_names": _extract_mentioned_names(text),
             "has_date": bool(_DATE_RE.search(text)),
             "extracted_dates": _extract_dates(text),
+            **ingest_metadata,
         }
         graph_entities_resolved: list[tuple[str, str]] | None = None
         if os.environ.get("ENTITY_RESOLVER", "0") == "1":
@@ -197,6 +204,10 @@ def commit_memory(
                 "occurred_start",
                 "occurred_end",
                 "confidence",
+                "_ingest_commit_sha",
+                "_ingest_config_hash",
+                "_ingest_timestamp",
+                "_ingest_bench_version",
             }
             safe_metadata = {key: value for key, value in metadata.items() if key not in protected_fields}
             payload.update(safe_metadata)  # type: ignore[typeddict-item]
@@ -233,6 +244,7 @@ def commit_memory(
                                         "parent_text": text[:500],
                                         "source": source,
                                         "date": timestamp,
+                                        **ingest_metadata,
                                     },
                                 )
                             ],
