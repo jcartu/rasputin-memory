@@ -40,6 +40,10 @@ sys.path.insert(0, str(REPO / "tools"))
 
 from brain.ingest_metadata import get_ingest_metadata  # noqa: E402  (post sys.path insert)
 
+sys.path.insert(0, str(REPO))  # enable `from benchmarks import ingest_cache` when run as script
+
+from benchmarks import ingest_cache  # noqa: E402  (post sys.path insert)
+
 BENCH_DIR = REPO / "benchmarks"
 RESULTS_DIR = BENCH_DIR / "results"
 LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
@@ -1469,6 +1473,8 @@ def run_full_pipeline(
     port=BENCH_PORT,
     skip_ingest=False,
     allow_cross_commit: bool = False,
+    force_reingest: bool = False,
+    cache_only: bool = False,
     checkpoint_file: Path | None = None,
 ):
     """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge.
@@ -1514,14 +1520,51 @@ def run_full_pipeline(
 
         try:
             speakers = extract_speakers(conv_data["conversation"])
+            effective_skip = skip_ingest
+            if not skip_ingest and not force_reingest:
+                try:
+                    current_sha_for_cache = ingest_cache.get_current_sha(REPO)
+                    cache_entry = ingest_cache.is_cache_fresh(collection, current_sha_for_cache)
+                except Exception:
+                    cache_entry = None
+                if cache_entry is not None:
+                    try:
+                        count = _assert_collection_ready(collection, allow_cross_commit=False)
+                        print(
+                            f"  Cache HIT: reusing {collection} ({count} pts) from "
+                            f"{cache_entry.get('ingest_timestamp', '?')} — pass --force-reingest to override"
+                        )
+                        effective_skip = True
+                    except Exception:
+                        pass  # collection missing/broken; fall through to fresh ingest
             if skip_ingest:
                 count = _assert_collection_ready(collection, allow_cross_commit=allow_cross_commit)
-                print(f"  Reusing {collection} ({count} pts)")
-            else:
+                print(f"  Reusing {collection} ({count} pts) — --skip-ingest")
+            elif not effective_skip:
                 create_collection(collection)
             proc = start_bench_server(collection, port)
-            if not skip_ingest:
+            if not skip_ingest and not effective_skip:
                 commit_conversation(conv_data["conversation"], collection)
+                try:
+                    info = http_json(f"{QDRANT_URL}/collections/{collection}", method="GET", timeout=5)
+                    post_ingest_count = int(info.get("result", {}).get("points_count", 0))
+                    ingest_cache.update_cache_entry(
+                        collection,
+                        commit_sha=ingest_cache.get_current_sha(REPO),
+                        point_count=post_ingest_count,
+                        extractor_provider=os.environ.get("FACT_EXTRACTION_PROVIDER", "anthropic"),
+                        embedder=os.environ.get("EMBED_MODEL", os.environ.get("BENCH_EMBED_MODEL", "nomic-embed-text")),
+                    )
+                except Exception as cache_err:
+                    print(f"  WARN: failed to update ingest cache status: {cache_err}")
+            if cache_only:
+                print(f"  --cache-only: skipping search/answer for {conv_id}.")
+                if proc is not None:
+                    try:
+                        kill_server(proc)
+                    except Exception:
+                        pass
+                continue
 
             # Process QA pairs concurrently (5 at a time)
             from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1832,6 +1875,21 @@ def main():
         action="store_true",
         help="Allow --skip-ingest against collections tagged with a different ingest commit SHA (unsafe).",
     )
+    parser.add_argument(
+        "--force-reingest",
+        action="store_true",
+        help="Re-ingest even if a matching-SHA cache entry exists (bypass auto-cache).",
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help="Run ingest phase only; skip search/answer. Useful for warming the cache.",
+    )
+    parser.add_argument(
+        "--cache-info",
+        action="store_true",
+        help="Print per-collection ingest-cache status and exit 0.",
+    )
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument(
         "--reset",
@@ -1848,6 +1906,10 @@ def main():
         "BENCH_CHECKPOINT. See AGENTS.md §Benchmark discipline.",
     )
     args = parser.parse_args()
+
+    if args.cache_info:
+        print(ingest_cache.format_cache_info())
+        sys.exit(0)
 
     if args.reset and args.resume_from:
         raise RuntimeError(
@@ -1909,6 +1971,8 @@ def main():
         args.port,
         skip_ingest=args.skip_ingest,
         allow_cross_commit=args.allow_cross_commit,
+        force_reingest=args.force_reingest,
+        cache_only=args.cache_only,
         checkpoint_file=checkpoint_file,
     )
 

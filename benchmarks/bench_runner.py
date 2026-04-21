@@ -626,6 +626,21 @@ def main():
         action="store_true",
         help="Allow skip-ingest with collections tagged from a different commit SHA (unsafe).",
     )
+    parser.add_argument(
+        "--force-reingest",
+        action="store_true",
+        help="Re-ingest even if a matching-SHA cache entry exists (bypass auto-cache).",
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help="Run ingest phase only; skip search/answer. Useful for warming the cache.",
+    )
+    parser.add_argument(
+        "--cache-info",
+        action="store_true",
+        help="Print per-collection ingest-cache status and exit 0.",
+    )
     args = parser.parse_args()
 
     if args.compare_to and args.benchmark:
@@ -667,6 +682,12 @@ def main():
         extra_args.append("--skip-ingest")
     if args.allow_cross_commit:
         extra_args.append("--allow-cross-commit")
+    if args.force_reingest:
+        extra_args.append("--force-reingest")
+    if args.cache_only:
+        extra_args.append("--cache-only")
+    if args.cache_info:
+        extra_args.append("--cache-info")
 
     print(f"Benchmark: {args.benchmark}")
     print(f"Mode:      {args.mode}")
