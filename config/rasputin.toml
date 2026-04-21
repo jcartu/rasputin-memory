@@ -12,6 +12,10 @@ port = 6380
 graph_name = "brain"
 disabled = false
 
+[graph_store]
+sqlite_path = "data/graph.db"
+enabled = true
+
 [embeddings]
 provider = "gemini"
 fallback = "ollama"
