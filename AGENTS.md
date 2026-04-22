@@ -94,6 +94,16 @@ The canonical v0.9.1-honest baseline is
 Recorded in `history.csv` row 59c0a369. Do not replace, quarantine, or rename
 this file. Any future baseline comparisons must cite it by filename + row.
 
+**Invariant 5 — GPU allocation.**
+Added 2026-04-22 after the Sprint 1 Exit Gate throughput failure where Qwen3-32B-AWQ
+was deployed to GPU1 (RTX 5090, 32GB) and ran at 4.6 tok/s under memory pressure,
+causing the bench to time out on conv 1/10 after 60 minutes.
+
+- Models with VRAM footprint > 25GB deploy to the **RTX PRO 6000 Blackwells (nvidia-smi index 0 or index 2)** only.
+- The **RTX 5090 (nvidia-smi index 1)** is reserved for small models (<25GB footprint) and low-duty services (e.g. reranker-0.6B, embed-4B). Never deploy large (>25GB) models there even if VRAM technically fits — the 32GB budget leaves no headroom for chat-template + prefix cache + KV growth, and throughput collapses.
+- Always use `CUDA_DEVICE_ORDER=PCI_BUS_ID` + explicit `CUDA_VISIBLE_DEVICES=<0|1|2>` when launching vLLM. Never rely on default ordering.
+- 122B tensor-parallel deployments on GPU0+GPU2 are deprecated for Sprint 1+; local 32B-AWQ on a single Pro 6000 is sufficient.
+
 ## Code Style
 
 - `from __future__ import annotations` on every file
