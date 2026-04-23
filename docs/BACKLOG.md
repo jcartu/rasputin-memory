@@ -59,3 +59,19 @@ starting a new session to see what's queued.
   - Observed live launch command on 2026-04-20: `python3 /home/josh/.openclaw/workspace/rasputin-memory/tools/qwen3_reranker_server.py 9091`
   - Observed working directory: `/home/josh/.openclaw/workspace/rasputin-memory`
   - Observed non-secret launch env vars: none beyond the default user shell environment.
+
+
+## Deferred
+
+- **Standalone BM25 keyword lane (5th retrieval partition).** Sprint 2 Phase B
+  initially speced 5 lanes (window + 3 fact_types + BM25). The BM25 lane was
+  removed from the four-partition path on 2026-04-23 because
+  `tools/bm25_search.py` only exposes rerank-stage fusion helpers
+  (`BM25Scorer`, `hybrid_rerank`, `reciprocal_rank_fusion`) — not a standalone
+  `search()` function. BM25 keeps its existing rerank-stage role, unchanged
+  from Sprint 1. A standalone BM25 retrieval lane would require: SQLite FTS5
+  table over memory passage text (the existing `entities_fts` table only
+  indexes entities), ingest-time indexing hook in `commit.py`, query-time
+  MATCH, plus tests. Estimated ~200-400 LoC new code + tests. Aspirational
+  in README. Re-evaluate after Phase B/C+D exit gates to see if retrieval
+  recall is a remaining gap. Filed 2026-04-23.
