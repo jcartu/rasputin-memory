@@ -431,10 +431,19 @@ def hybrid_search(
 
     if _os.environ.get("FOUR_LANE", "0") == "1":
         # Phase B: four-partition parallel retrieval across expanded queries.
+        # Phase C: optionally fuse lanes via RRF when RRF_FUSION=1.
+        rrf_enabled = _os.environ.get("RRF_FUSION", "0") == "1"
         for expanded_query in queries:
             lane_results = _four_lane_search(expanded_query, collection, source_filter)
-            for lane_name, lane_hits in lane_results.items():
-                all_qdrant_results.extend(lane_hits)
+            if rrf_enabled:
+                from brain.fusion import reciprocal_rank_fusion
+
+                fused = reciprocal_rank_fusion(lane_results, k=60)
+                # Cap at limit*2+60, matching parity plan §4.3 pre-CE budget
+                all_qdrant_results.extend(fused[: min(limit * 2 + 60, 120)])
+            else:
+                for lane_name, lane_hits in lane_results.items():
+                    all_qdrant_results.extend(lane_hits)
     else:
         # Legacy: single qdrant_search per expanded query.
         for expanded_query in queries:
