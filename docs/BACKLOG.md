@@ -56,8 +56,8 @@ starting a new session to see what's queued.
 - Local Qwen3-Reranker-0.6B server at `tools/qwen3_reranker_server.py` → port
   9091. Running as a user process; convert to systemd user service so it
   survives reboots. Filed 2026-04-20.
-  - Observed live launch command on 2026-04-20: `python3 /home/josh/.openclaw/workspace/rasputin-memory/tools/qwen3_reranker_server.py 9091`
-  - Observed working directory: `/home/josh/.openclaw/workspace/rasputin-memory`
+  - Observed live launch command on 2026-04-20: `python3 <repo-root>/tools/qwen3_reranker_server.py 9091`
+  - Observed working directory: `<repo-root>` (the rasputin-memory checkout)
   - Observed non-secret launch env vars: none beyond the default user shell environment.
 
 

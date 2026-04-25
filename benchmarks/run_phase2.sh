@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 trap '' USR1 USR2 HUP
-cd /home/josh/.openclaw/workspace/rasputin-memory
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 export QDRANT_URL="http://localhost:6333"
 export EMBED_URL="http://localhost:11434/api/embed"
 export EMBED_MODEL="nomic-embed-text"
 export CROSS_ENCODER=1
-export CROSS_ENCODER_URL="http://192.168.1.41:9091/rerank"
+export CROSS_ENCODER_URL="http://${CROSS_ENCODER_HOST:-localhost}:9091/rerank"  # override CROSS_ENCODER_HOST for remote inference host
 export FACT_EXTRACTION=1
 export CHUNK_WINDOWS=1
 export CHUNK_WINDOW_SIZE=5
