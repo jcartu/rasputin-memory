@@ -1,7 +1,8 @@
 # Rasputin Memory — Backlog
 
-Things noticed during sessions but deliberately deferred. Check here when
-starting a new session to see what's queued.
+> **Project archived 2026-04-25.** This file is preserved as historical context, not an active roadmap. None of the items below will be picked up. They remain documented for anyone forking the codebase who wants a starting list of known follow-ups.
+
+Things noticed during sessions but deliberately deferred. Originally maintained as a queue for the next session; preserved here unchanged.
 
 ## Bench harness hardening
 

@@ -7,6 +7,18 @@
 
 ---
 
+## 0. Why I stopped
+
+The target was Hindsight parity on Qdrant and beating mem0 on LoCoMo. RASPUTIN did beat mem0 for a stretch — until their April update flipped the leaderboard. Hindsight has held SOTA at 89.61% throughout.
+
+RASPUTIN sits at 72.40%. The remaining gap is ~17 points. The realistic path to closing it (Sprint 3 + Sprint 4) projected 9–11 days of engineering plus thousands of dollars in additional tokens for a best-case +5 to +12 points — still short of Hindsight, with no guaranteed delta.
+
+I'm not going to grind weeks of my life and a four-figure token budget for a leaderboard delta that doesn't change my conclusion. The architecture is documented, the insights are recorded, the code is here. Fork it if you want to try. For production, use Hindsight.
+
+The rest of this document is the structured version: closure rationale, what shipped, the architectural insights, what was deliberately not shipped, and pointers for forks.
+
+---
+
 ## 1. Closure rationale
 
 RASPUTIN was a research project exploring fact-type partitioned retrieval for LLM agent memory, evaluated against the LoCoMo conversational-memory benchmark.
