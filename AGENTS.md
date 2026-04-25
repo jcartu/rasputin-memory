@@ -2,6 +2,8 @@
 
 Guide for AI coding agents working on this repository.
 
+> **Project archived 2026-04-25.** This file describes the operational invariants of the final shipped state (`sprint-2-integration` HEAD `29bbcb7`). It is preserved verbatim as the conventions any fork should preserve to keep the architecture coherent. The repo is no longer actively developed — see [`README.md`](README.md) and [`.sisyphus/PROJECT-WINDDOWN.md`](.sisyphus/PROJECT-WINDDOWN.md) for closure context.
+
 ## Project Structure
 
 ```

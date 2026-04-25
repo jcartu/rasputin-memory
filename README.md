@@ -14,6 +14,16 @@ The closure rationale, final benchmark, key insights, and pointers for future wo
 
 ---
 
+## Why I stopped
+
+The target was Hindsight parity on Qdrant and beating mem0 on LoCoMo. RASPUTIN did beat mem0 for a stretch — until their April update flipped the leaderboard. Hindsight has held SOTA at 89.61% throughout.
+
+RASPUTIN sits at 72.40%. The remaining gap is ~17 points. The realistic path to closing it (Sprint 3 + Sprint 4) projected 9–11 days of engineering plus thousands of dollars in additional tokens for a best-case +5 to +12 points — still short of Hindsight, with no guaranteed delta.
+
+I'm not going to grind weeks of my life and a four-figure token budget for a leaderboard delta that doesn't change my conclusion. The architecture is documented, the insights are recorded, the code is here. Fork it if you want to try. For production, use Hindsight.
+
+---
+
 ## What this is
 
 RASPUTIN is a long-term conversational memory system for LLM agents. It maintains a persistent store of memories extracted from conversations and exposes them via a search API and an MCP server. Internally, retrieval is partitioned across four fact-type lanes (windows, facts, entities, events) and reranked with a cross-encoder.
@@ -49,15 +59,15 @@ LoCoMo benchmark: [snap-research/locomo](https://github.com/snap-research/locomo
 
 ## Key architectural insights
 
-These are the findings worth reading the code for:
+These are the findings worth reading the code for. The full reasoning, ablation evidence, and Sprint verdicts live in [`.sisyphus/`](.sisyphus/).
 
 ### 1. Fact-type partitioning works for single-hop, breaks multi-hop without lane calibration
 
-Splitting retrieval into typed lanes improves precision when an answer lives cleanly in one lane. But each lane independently truncates to top-k_lane, and the union is no longer the global top-k. Multi-hop questions, which need evidence from multiple lanes, are degraded unless lane budgets are explicitly tuned. The defaults baked into this archive (113 windows / 20 facts / 10 entities / 8 events) were chosen by ablation.
+Splitting retrieval into typed lanes improves precision when the answer lives cleanly in one lane. But each lane independently truncates to top-k_lane, and the union is no longer the global top-k. Multi-hop questions, which need evidence from multiple lanes, are degraded unless lane budgets are explicitly tuned. The defaults baked into this archive (113 windows / 20 facts / 10 entities / 8 events, total budget 151) were chosen by ablation against a 33-question regression corpus.
 
 ### 2. RRF and wider lane budgets are alternatives, not additive
 
-Reciprocal Rank Fusion and wider per-lane budgets address the same problem (per-lane truncation) from opposite directions. Combining them does not stack. RRF helps at narrow budgets and goes neutral or slightly negative at wider budgets.
+Reciprocal Rank Fusion and wider per-lane budgets address the same problem (per-lane truncation) from opposite directions. Combining them does not stack. RRF helps at narrow budgets and goes neutral or slightly negative at wider budgets. Pick one.
 
 ### 3. Ablation discipline catches noise that benchmark deltas don't
 
@@ -152,6 +162,7 @@ The full status list and pointers for forks: [`.sisyphus/PROJECT-WINDDOWN.md`](.
 - **[LoCoMo](https://github.com/snap-research/locomo)** benchmark authors (ACL 2024) — for the evaluation framework.
 - **Qwen team** — for `Qwen3-Embedding-8B` and `Qwen3-Reranker-0.6B`.
 - **vLLM project** — for the inference serving layer.
+- **[mem0](https://github.com/mem0ai/mem0)** — the competitive baseline that motivated the project, and the moving target that made Sprint 1 and Sprint 2 worth running.
 
 ---
 
