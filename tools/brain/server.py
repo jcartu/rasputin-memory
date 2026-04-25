@@ -200,8 +200,18 @@ class HybridHandler(BaseHTTPRequestHandler):
                     json={"model": _state.EMBED_MODEL, "input": "health check"},
                     timeout=5,
                 )
-                if test_resp.status_code == 200 and "embeddings" in test_resp.json():
-                    health["components"]["ollama_embed"] = "up"
+                if test_resp.status_code == 200:
+                    resp_json = test_resp.json()
+                    # Accept both response formats:
+                    #   vLLM OpenAI-compat: {"data":[{"embedding":[...]}]}
+                    #   Ollama native:      {"embeddings":[[...]]}
+                    has_vllm_data = bool(resp_json.get("data") and resp_json["data"][0].get("embedding"))
+                    has_ollama_embeddings = bool(resp_json.get("embeddings"))
+                    if has_vllm_data or has_ollama_embeddings:
+                        health["components"]["ollama_embed"] = "up"
+                    else:
+                        health["components"]["ollama_embed"] = "error"
+                        health["status"] = "degraded"
                 else:
                     health["components"]["ollama_embed"] = "error"
                     health["status"] = "degraded"
