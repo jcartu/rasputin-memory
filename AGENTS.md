@@ -32,7 +32,7 @@ tests/               pytest suite with MockQdrant/MockRedis fixtures
 
 Runtime config lives in `config/rasputin.toml` with env var overrides.  See `tools/config.py` for the override mapping.  Key sections: `[server]`, `[qdrant]`, `[graph]`, `[embeddings]`, `[reranker]`, `[amac]`, `[reflect]`.
 
-Retrieval pool size is tunable via `BENCH_LANE_WINDOWS` (default 45) and `BENCH_LANE_FACTS` (default 15).  Set to 75/25 for single-hop-heavy workloads (+4.2pp single-hop, −1.2pp open-domain).
+Retrieval pool size is tunable via `BENCH_LANE_WINDOWS` (default 113), `BENCH_LANE_FACT_W` (default 20), `BENCH_LANE_FACT_E` (default 10), and `BENCH_LANE_FACT_I` (default 8). Total per-query budget: 151. Four-partition routing is on by default (Sprint 2 Ablation C, 2026-04-25, +2.14pp vs S1 Mean); set `FOUR_LANE=0` to disable. RRF fusion is off by default (Ablation D 2026-04-25 verified RRF doesn't help at lane budget 151); set `RRF_FUSION=1` to enable for narrow-budget operating points.
 
 ## Running
 

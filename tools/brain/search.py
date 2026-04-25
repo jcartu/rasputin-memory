@@ -318,10 +318,10 @@ def _four_lane_search(
     (this phase) or RRF-fuse (Phase C).
     """
     # Read budgets at call time so env overrides take effect without reload.
-    lane_windows = int(_os.environ.get("BENCH_LANE_WINDOWS", "45"))
-    lane_fact_w = int(_os.environ.get("BENCH_LANE_FACT_W", "8"))
-    lane_fact_e = int(_os.environ.get("BENCH_LANE_FACT_E", "4"))
-    lane_fact_i = int(_os.environ.get("BENCH_LANE_FACT_I", "3"))
+    lane_windows = int(_os.environ.get("BENCH_LANE_WINDOWS", "113"))
+    lane_fact_w = int(_os.environ.get("BENCH_LANE_FACT_W", "20"))
+    lane_fact_e = int(_os.environ.get("BENCH_LANE_FACT_E", "10"))
+    lane_fact_i = int(_os.environ.get("BENCH_LANE_FACT_I", "8"))
 
     def _window_lane() -> list[dict[str, Any]]:
         return qdrant_search(
@@ -429,7 +429,7 @@ def hybrid_search(
     fetch_limit = limit * 4
     all_qdrant_results: list[dict[str, Any]] = []
 
-    if _os.environ.get("FOUR_LANE", "0") == "1":
+    if _os.environ.get("FOUR_LANE", "1") != "0":
         # Phase B: four-partition parallel retrieval across expanded queries.
         # Phase C: optionally fuse lanes via RRF when RRF_FUSION=1.
         rrf_enabled = _os.environ.get("RRF_FUSION", "0") == "1"
