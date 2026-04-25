@@ -39,6 +39,16 @@ def load_config(path: str = "config/rasputin.toml") -> dict[str, Any]:
     cfg["graph"]["graph_name"] = os.environ.get("FALKORDB_GRAPH", cfg["graph"]["graph_name"])
     cfg["graph"]["disabled"] = _bool_env("DISABLE_FALKORDB", bool(cfg["graph"]["disabled"]))
 
+    cfg.setdefault("graph_store", {})
+    cfg["graph_store"]["sqlite_path"] = os.environ.get(
+        "GRAPH_STORE_SQLITE_PATH",
+        cfg["graph_store"].get("sqlite_path", "data/graph.db"),
+    )
+    cfg["graph_store"]["enabled"] = _bool_env(
+        "GRAPH_STORE_ENABLED",
+        bool(cfg["graph_store"].get("enabled", True)),
+    )
+
     cfg["embeddings"]["url"] = os.environ.get("EMBED_URL", cfg["embeddings"]["url"])
     cfg["embeddings"]["model"] = os.environ.get("EMBED_MODEL", cfg["embeddings"]["model"])
     cfg["embeddings"]["prefix_query"] = os.environ.get("EMBED_PREFIX_QUERY", cfg["embeddings"]["prefix_query"])

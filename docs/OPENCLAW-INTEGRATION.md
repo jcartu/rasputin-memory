@@ -35,7 +35,7 @@ Session end (command:new or agent:stop)
 # The hook lives at <openclaw-home>/hooks/openclaw-mem/
 # If installing from scratch:
 cd <openclaw-home>/hooks/
-git clone https://github.com/phenomenoner/openclaw-mem
+git clone <openclaw-mem-repo-url> openclaw-mem  # see your OpenClaw distribution for the canonical hook source
 
 # Install dependencies
 cd openclaw-mem
@@ -252,7 +252,7 @@ curl -X POST http://localhost:7777/commit \
   -d '{"text": "Memory to store", "source": "manual"}'
 
 # Search recall
-curl -s "http://localhost:7777/search?q=What+did+we+decide+about+the+product+affiliate+deal%3F&limit=5"
+curl -s "http://localhost:7777/search?q=What+timeline+did+we+agree+for+the+API+migration%3F&limit=5"
 
 # Deep-dive style search (broader context terms)
 curl -s "http://localhost:7777/search?q=billing+migration+details+history+decisions+research+email&limit=20"

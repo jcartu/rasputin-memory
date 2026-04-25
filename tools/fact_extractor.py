@@ -214,7 +214,7 @@ def pass1_extract_facts(chunk_text):
 
 Categories to use:
 - Family members: names, relationships, specific details about family
-- Health information: specific medications, dosages, conditions, doctors, dates
+- Project milestones: specific deadlines, owners, deliverables, dates
 - Life events: specific dates, places, milestones with concrete details
 - Business details: company names, revenue numbers, decisions, partnerships
 - Personal preferences: specific brands, types, reasons (not just "likes X")
@@ -334,7 +334,7 @@ Respond with JSON array containing ONLY the facts to KEEP (not remove).
 Return empty array [] if nothing new to keep.
 
 Example response format:
-[{{"fact": "The user increased their medication dosage from 5mg to 7.5mg on March 3"}}, ...]
+[{{"fact": "The user moved the project review from Tuesday weekly to Thursday biweekly on March 3"}}, ...]
 
 Just return the JSON array:"""
 

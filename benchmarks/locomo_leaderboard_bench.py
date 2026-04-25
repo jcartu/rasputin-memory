@@ -30,10 +30,20 @@ import urllib.error
 import urllib.request
 import urllib.parse
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
+from qdrant_client import QdrantClient
+
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "tools"))
+
+from brain.ingest_metadata import get_ingest_metadata  # noqa: E402  (post sys.path insert)
+
+sys.path.insert(0, str(REPO))  # enable `from benchmarks import ingest_cache` when run as script
+
+from benchmarks import ingest_cache  # noqa: E402  (post sys.path insert)
+
 BENCH_DIR = REPO / "benchmarks"
 RESULTS_DIR = BENCH_DIR / "results"
 LOCOMO_FILE = BENCH_DIR / "locomo" / "locomo10.json"
@@ -576,7 +586,11 @@ def delete_collection(name):
         pass
 
 
-def _assert_collection_ready(name: str) -> int:
+def _warn(message: str) -> None:
+    print(f"\033[33mWARN:\033[0m {message}", file=sys.stderr)
+
+
+def _assert_collection_ready(name: str, allow_cross_commit: bool = False) -> int:
     """Raise if collection missing/empty or vector dim != EMBED_DIM. Returns point count."""
     try:
         info = http_json(f"{QDRANT_URL}/collections/{name}", method="GET", timeout=5)
@@ -596,6 +610,30 @@ def _assert_collection_ready(name: str) -> int:
         raise RuntimeError(
             f"--skip-ingest: collection '{name}' has vector dim {dim}, expected {EMBED_DIM}. "
             f"Collection was ingested with a different embedding model — re-run baseline."
+        )
+
+    current_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, check=True, cwd=str(REPO), text=True
+    ).stdout.strip()
+    qdrant_client = QdrantClient(url=QDRANT_URL)
+    points, _ = qdrant_client.scroll(collection_name=name, limit=1, with_payload=True, with_vectors=False)
+    payload = (points[0].payload or {}) if points else {}
+    ingest_sha = payload.get("_ingest_commit_sha")
+    if ingest_sha is None:
+        _warn(
+            f"Collection {name} has no _ingest_commit_sha — likely pre-S1.2 legacy. "
+            f"Consider running scripts/backfill_ingest_metadata.py --collection {name} --commit <actual-ingest-sha>. Continuing."
+        )
+        return count
+    if ingest_sha != current_sha and not allow_cross_commit:
+        raise RuntimeError(
+            f"Collection {name} was ingested at {ingest_sha} but HEAD is {current_sha}. "
+            "Re-ingest or pass --allow-cross-commit (unsafe)."
+        )
+    if ingest_sha != current_sha:
+        _warn(
+            f"Collection {name} was ingested at {ingest_sha} but HEAD is {current_sha}. "
+            "Continuing because --allow-cross-commit was passed (unsafe)."
         )
     return count
 
@@ -618,6 +656,7 @@ def _build_conversation_windows(all_turns, window_size=5, stride=2):
 
 def commit_conversation(conv, collection):
     """Commit individual turns + overlapping conversation windows to Qdrant."""
+    ingest_metadata = get_ingest_metadata()
     points = []
     committed = 0
     session_idx = 1
@@ -659,6 +698,7 @@ def commit_conversation(conv, collection):
                         "importance": 70,
                         "retrieval_count": 0,
                         "chunk_type": "turn",
+                        **ingest_metadata,
                     },
                 }
             )
@@ -701,6 +741,7 @@ def commit_conversation(conv, collection):
                         "retrieval_count": 0,
                         "chunk_type": "window",
                         "speakers": window["speakers"],
+                        **ingest_metadata,
                     },
                 }
             )
@@ -721,10 +762,137 @@ def commit_conversation(conv, collection):
     if os.environ.get("FACT_EXTRACTION", "0") == "1":
         sys.path.insert(0, str(REPO / "tools"))
         from brain.fact_extractor import extract_facts, fact_to_text
+        import asyncio
 
-        for turn_info in all_turns:
-            session_date = turn_info.get("session_date", "")
-            facts = extract_facts(turn_info["commit_text"], event_date=session_date, source="locomo_bench")
+        # Parallel fact extraction via asyncio.Semaphore with deterministic commit order.
+        #
+        # CONCURRENCY BOUNDS: Semaphore(6) — six concurrent extractions max.
+        # vLLM batches are happiest at 2-6 concurrent per instance for 32B AWQ at 16K context.
+        # Above 8 you hit KV cache contention. If OOM/backend-overloaded, drop to 4 via env var.
+        #
+        # DETERMINISM PRESERVATION: async completion order != message order. We key results
+        # by the turn's position in all_turns (which is the canonical deterministic ordering:
+        # sessions in numeric order, turns within session in source order). After gather(),
+        # we sort by that key and commit to Qdrant sequentially — preserving the determinism
+        # signal while parallelizing only the LLM bottleneck.
+        #
+        # ERROR HANDLING: return_exceptions=True. Per-turn exceptions logged to
+        # extraction_errors.jsonl. Fallback chain (cerebras/groq/anthropic) is internal to
+        # extract_facts(). After the batch we check the fallback rate — if >5% of this run's
+        # extractions ran on non-local_vllm providers, halt and write diagnostic.
+        _fact_sem_size = int(os.environ.get("FACT_EXTRACT_SEMAPHORE", "6"))
+        _errors_path = os.environ.get("EXTRACTION_ERRORS_LOG", "/tmp/bench_runs/extraction_errors.jsonl")
+        _provider_log = "/tmp/bench_runs/extraction_provider_log.jsonl"
+
+        # Snapshot provider-log line count so we can attribute only this run's entries.
+        try:
+            with open(_provider_log, "rb") as _pf:
+                _provider_log_pre_lines = sum(1 for _ in _pf)
+        except FileNotFoundError:
+            _provider_log_pre_lines = 0
+
+        async def _extract_one(idx: int, turn_info: dict, sem: asyncio.Semaphore) -> tuple[int, dict, list]:
+            """Dispatch one extract_facts call under semaphore. Returns (idx, turn_info, facts)."""
+            async with sem:
+                session_date = turn_info.get("session_date", "")
+                facts = await asyncio.to_thread(
+                    extract_facts,
+                    turn_info["commit_text"],
+                    event_date=session_date,
+                    source="locomo_bench",
+                )
+                return idx, turn_info, facts
+
+        async def _run_extractions() -> list:
+            sem = asyncio.Semaphore(_fact_sem_size)
+            tasks = [_extract_one(i, ti, sem) for i, ti in enumerate(all_turns)]
+            return await asyncio.gather(*tasks, return_exceptions=True)
+
+        _results = asyncio.run(_run_extractions())
+
+        # Separate exceptions from successes; log exceptions.
+        _ok: list[tuple[int, dict, list]] = []
+        _err_count = 0
+        for _idx, _res in enumerate(_results):
+            if isinstance(_res, BaseException):
+                _err_count += 1
+                _turn_info = all_turns[_idx] if _idx < len(all_turns) else {}
+                try:
+                    with open(_errors_path, "a") as _ef:
+                        _ef.write(json.dumps({
+                            "ts": datetime.now(timezone.utc).isoformat(),
+                            "collection": collection,
+                            "turn_index": _idx,
+                            "speaker": _turn_info.get("speaker"),
+                            "session_date": _turn_info.get("session_date"),
+                            "commit_text_preview": _turn_info.get("commit_text", "")[:200],
+                            "error_type": type(_res).__name__,
+                            "error_msg": str(_res)[:500],
+                        }) + "\n")
+                except Exception:
+                    pass
+                if _err_count <= 3:
+                    print(f"    Fact extract error (idx={_idx}): {type(_res).__name__}: {_res}")
+            else:
+                _ok.append(_res)  # (idx, turn_info, facts)
+
+        # Sort by idx — deterministic commit order matches original serial order.
+        _ok.sort(key=lambda t: t[0])
+
+        # Fallback-rate guardrail: count this run's provider-log entries.
+        try:
+            with open(_provider_log, "rb") as _pf:
+                _all_lines = _pf.readlines()
+            _this_run_lines = _all_lines[_provider_log_pre_lines:]
+            _total = len(_this_run_lines)
+            _non_local = 0
+            for _line in _this_run_lines:
+                try:
+                    _entry = json.loads(_line)
+                    # Schema: provider_used='local_vllm'|'cerebras'|'groq'|'anthropic',
+                    # fallback_reason=None when provider succeeded on first attempt.
+                    # Any non-local_vllm provider OR any fallback_reason counts as non-local.
+                    _prov = _entry.get("provider_used")
+                    _fallback = _entry.get("fallback_reason")
+                    if _prov != "local_vllm" or _fallback is not None:
+                        _non_local += 1
+                        _non_local += 1
+                except Exception:
+                    continue
+            _fallback_rate = (_non_local / _total) if _total else 0.0
+            if _total > 0 and _fallback_rate > 0.05:
+                _conv_id = collection
+                _diag = {
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "conv": _conv_id,
+                    "total_extractions": _total,
+                    "non_local_vllm": _non_local,
+                    "fallback_rate": _fallback_rate,
+                    "semaphore_size": _fact_sem_size,
+                    "message": "Fallback rate exceeded 5% — likely concurrency-induced vLLM failure.",
+                }
+                _diag_path = Path(REPO) / ".sisyphus" / "extraction-fallback-exceeded.md"
+                try:
+                    _diag_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(_diag_path, "a") as _df:
+                        _df.write(f"## {_diag['ts']} — conv {_conv_id}\n\n")
+                        _df.write(f"- total extractions: {_total}\n")
+                        _df.write(f"- non-local_vllm: {_non_local}\n")
+                        _df.write(f"- fallback rate: {_fallback_rate:.2%}\n")
+                        _df.write(f"- semaphore size: {_fact_sem_size}\n\n")
+                except Exception:
+                    pass
+                raise RuntimeError(
+                    f"Extraction fallback rate {_fallback_rate:.2%} exceeds 5% threshold "
+                    f"({_non_local}/{_total} non-local_vllm). Halting conv {_conv_id}. "
+                    f"See {_diag_path}."
+                )
+        except FileNotFoundError:
+            pass
+
+        # Sequential, deterministic-order commit. This is cheap (embed + Qdrant upsert); the
+        # LLM work above was the actual bottleneck.
+        for _idx, _turn_info, facts in _ok:
             for fact in facts:
                 fact_text = fact_to_text(fact)
                 if len(fact_text) < 20:
@@ -745,6 +913,11 @@ def commit_conversation(conv, collection):
                                 "retrieval_count": 0,
                                 "chunk_type": "fact",
                                 "entities": json.dumps(fact.get("entities", [])),
+                                "fact_type": fact.get("fact_type"),
+                                "occurred_start": fact.get("occurred_start"),
+                                "occurred_end": fact.get("occurred_end"),
+                                "confidence": fact.get("confidence"),
+                                **ingest_metadata,
                             },
                         }
                     )
@@ -1421,7 +1594,16 @@ def rescore_existing(checkpoint_path):
 # ─── Full pipeline ───────────────────────────────────────────
 
 
-def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_ingest=False, checkpoint_file: Path | None = None):
+def run_full_pipeline(
+    conversations,
+    conv_indices=None,
+    port=BENCH_PORT,
+    skip_ingest=False,
+    allow_cross_commit: bool = False,
+    force_reingest: bool = False,
+    cache_only: bool = False,
+    checkpoint_file: Path | None = None,
+):
     """Run full pipeline: embed + windows → multi-query search (top-60) → dedup → Opus answer → judge.
 
     skip_ingest=True reuses existing locomo_lb_conv_* Qdrant collections and does NOT
@@ -1465,14 +1647,51 @@ def run_full_pipeline(conversations, conv_indices=None, port=BENCH_PORT, skip_in
 
         try:
             speakers = extract_speakers(conv_data["conversation"])
+            effective_skip = skip_ingest
+            if not skip_ingest and not force_reingest:
+                try:
+                    current_sha_for_cache = ingest_cache.get_current_sha(REPO)
+                    cache_entry = ingest_cache.is_cache_fresh(collection, current_sha_for_cache)
+                except Exception:
+                    cache_entry = None
+                if cache_entry is not None:
+                    try:
+                        count = _assert_collection_ready(collection, allow_cross_commit=False)
+                        print(
+                            f"  Cache HIT: reusing {collection} ({count} pts) from "
+                            f"{cache_entry.get('ingest_timestamp', '?')} — pass --force-reingest to override"
+                        )
+                        effective_skip = True
+                    except Exception:
+                        pass  # collection missing/broken; fall through to fresh ingest
             if skip_ingest:
-                count = _assert_collection_ready(collection)
-                print(f"  Reusing {collection} ({count} pts)")
-            else:
+                count = _assert_collection_ready(collection, allow_cross_commit=allow_cross_commit)
+                print(f"  Reusing {collection} ({count} pts) — --skip-ingest")
+            elif not effective_skip:
                 create_collection(collection)
             proc = start_bench_server(collection, port)
-            if not skip_ingest:
+            if not skip_ingest and not effective_skip:
                 commit_conversation(conv_data["conversation"], collection)
+                try:
+                    info = http_json(f"{QDRANT_URL}/collections/{collection}", method="GET", timeout=5)
+                    post_ingest_count = int(info.get("result", {}).get("points_count", 0))
+                    ingest_cache.update_cache_entry(
+                        collection,
+                        commit_sha=ingest_cache.get_current_sha(REPO),
+                        point_count=post_ingest_count,
+                        extractor_provider=os.environ.get("FACT_EXTRACTION_PROVIDER", "anthropic"),
+                        embedder=os.environ.get("EMBED_MODEL", os.environ.get("BENCH_EMBED_MODEL", "nomic-embed-text")),
+                    )
+                except Exception as cache_err:
+                    print(f"  WARN: failed to update ingest cache status: {cache_err}")
+            if cache_only:
+                print(f"  --cache-only: skipping search/answer for {conv_id}.")
+                if proc is not None:
+                    try:
+                        kill_server(proc)
+                    except Exception:
+                        pass
+                continue
 
             # Process QA pairs concurrently (5 at a time)
             from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -1778,6 +1997,26 @@ def main():
         action="store_true",
         help="Reuse existing locomo_lb_conv_* Qdrant collections (skip create + commit_conversation).",
     )
+    parser.add_argument(
+        "--allow-cross-commit",
+        action="store_true",
+        help="Allow --skip-ingest against collections tagged with a different ingest commit SHA (unsafe).",
+    )
+    parser.add_argument(
+        "--force-reingest",
+        action="store_true",
+        help="Re-ingest even if a matching-SHA cache entry exists (bypass auto-cache).",
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help="Run ingest phase only; skip search/answer. Useful for warming the cache.",
+    )
+    parser.add_argument(
+        "--cache-info",
+        action="store_true",
+        help="Print per-collection ingest-cache status and exit 0.",
+    )
     parser.add_argument("--port", type=int, default=BENCH_PORT)
     parser.add_argument(
         "--reset",
@@ -1794,6 +2033,10 @@ def main():
         "BENCH_CHECKPOINT. See AGENTS.md §Benchmark discipline.",
     )
     args = parser.parse_args()
+
+    if args.cache_info:
+        print(ingest_cache.format_cache_info())
+        sys.exit(0)
 
     if args.reset and args.resume_from:
         raise RuntimeError(
@@ -1854,6 +2097,9 @@ def main():
         conv_indices,
         args.port,
         skip_ingest=args.skip_ingest,
+        allow_cross_commit=args.allow_cross_commit,
+        force_reingest=args.force_reingest,
+        cache_only=args.cache_only,
         checkpoint_file=checkpoint_file,
     )
 

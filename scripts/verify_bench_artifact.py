@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import re
@@ -9,9 +10,27 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from qdrant_client import QdrantClient
+
 EXIT_OK = 0
 EXIT_MISMATCH = 1
 EXIT_PARSE_ERROR = 2
+
+ROOT = Path(__file__).resolve().parent.parent
+HISTORY_FILE = ROOT / "benchmarks" / "results" / "history.csv"
+HISTORY_FIELDS = (
+    "commit",
+    "commit_short",
+    "date",
+    "benchmark",
+    "mode",
+    "headline_score",
+    "answer_model",
+    "judge_model",
+    "context_chunks",
+    "search_limit",
+    "note",
+)
 
 RUNTIME_LINE_RE = re.compile(
     r"^\s*✅\s+(conv-\d+):\s+([0-9]+(?:\.[0-9]+)?)% \(excl\. adversarial, (\d+) Qs\)\s*$"
@@ -19,6 +38,7 @@ RUNTIME_LINE_RE = re.compile(
 REPORT_LINE_RE = re.compile(
     r"^- \*\*(conv-\d+)\*\*: ([0-9]+(?:\.[0-9]+)?)% \((\d+)/(\d+) excl\. adv\)\s*$"
 )
+ARTIFACT_COMMIT_RE = re.compile(r"^([0-9a-f]{40})-(.+)-(?:production|compare)\.json$")
 
 
 @dataclass(frozen=True)
@@ -44,6 +64,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--artifact", required=True, help="Path to benchmark result JSON")
     parser.add_argument("--log", required=True, help="Path to benchmark run log")
     parser.add_argument("--tolerance-pp", type=float, default=0.5, help="Allowed percentage-point drift (default: 0.5)")
+    parser.add_argument("--qdrant-url", default="http://localhost:6333", help="Qdrant base URL")
     return parser.parse_args()
 
 
@@ -70,12 +91,134 @@ def load_rows(path: Path) -> list[dict]:
         return extract_rows(json.load(f))
 
 
+def load_json(path: Path) -> object:
+    with open(path) as f:
+        return json.load(f)
+
+
 def conv_id_for(row: dict) -> str:
     return str(row.get("conv_id") or row.get("conversation_id") or row.get("sample_id") or "?")
 
 
 def prediction_text(row: dict) -> str:
     return str(row.get("predicted") or row.get("predicted_answer") or row.get("answer") or row.get("prediction") or "")
+
+
+def parse_artifact_identity(path: Path, data: dict[str, object]) -> tuple[str, str, str]:
+    stem = path.stem
+    if "-" in stem:
+        stem_without_mode, fallback_mode = stem.rsplit("-", 1)
+    else:
+        stem_without_mode, fallback_mode = stem, ""
+    if "-" in stem_without_mode:
+        fallback_commit, fallback_benchmark = stem_without_mode.split("-", 1)
+    else:
+        fallback_commit, fallback_benchmark = stem_without_mode, ""
+    commit = str(data.get("commit") or data.get("commit_sha") or fallback_commit)
+    benchmark = str(data.get("benchmark") or fallback_benchmark)
+    mode = str(data.get("mode") or fallback_mode)
+    return commit, benchmark, mode
+
+
+def load_history_rows(path: Path = HISTORY_FILE) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with open(path, newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
+def history_row_exists(rows: list[dict[str, str]], commit: str, benchmark: str, mode: str) -> bool:
+    return any(
+        row.get("commit") == commit and row.get("benchmark") == benchmark and row.get("mode") == mode for row in rows
+    )
+
+
+def category_breakdown(rows: list[dict]) -> str:
+    grouped: dict[str, list[dict]] = {}
+    for row in rows:
+        if not is_non_adversarial(row):
+            continue
+        category = str(row.get("cat_name") or row.get("category") or "unknown")
+        grouped.setdefault(category, []).append(row)
+
+    parts = []
+    for category, category_rows in sorted(grouped.items()):
+        correct = sum(1 for row in category_rows if row.get("correct"))
+        parts.append(f"{category}={correct}/{len(category_rows)}")
+    return "; ".join(parts)
+
+
+def build_history_note(data: dict[str, object], rows: list[dict]) -> str:
+    parts: list[str] = []
+    note = str(data.get("note") or "").strip()
+    if note:
+        parts.append(note)
+
+    breakdown = category_breakdown(rows)
+    if breakdown:
+        parts.append(f"categories:{breakdown}")
+
+    fact_count = data.get("fact_count") or data.get("facts_count") or data.get("extracted_fact_count")
+    if fact_count is not None:
+        parts.append(f"facts={fact_count}")
+
+    extractor_provider = data.get("extractor_provider") or data.get("provider")
+    if extractor_provider:
+        parts.append(f"extractor={extractor_provider}")
+
+    wall_clock = (
+        data.get("wall_clock_seconds")
+        or data.get("wall_clock_ms")
+        or data.get("wall_clock")
+        or data.get("elapsed_seconds")
+        or data.get("duration_seconds")
+    )
+    if wall_clock is not None:
+        parts.append(f"wall_clock={wall_clock}")
+
+    return " | ".join(parts)
+
+
+def write_history_row(row: dict[str, str], path: Path = HISTORY_FILE) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing_rows = load_history_rows(path)
+    if history_row_exists(existing_rows, row["commit"], row["benchmark"], row["mode"]):
+        return
+
+    write_header = not path.exists() or path.stat().st_size == 0
+    with open(path, "a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=HISTORY_FIELDS)
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
+
+
+def append_history_row(
+    artifact: dict[str, object],
+    artifact_rows: list[dict],
+    headline_score: str,
+    path: Path,
+    history_path: Path = HISTORY_FILE,
+) -> None:
+    commit, benchmark, mode = parse_artifact_identity(path, artifact)
+    if not commit or not benchmark or not mode:
+        return
+
+    methodology = artifact.get("methodology") if isinstance(artifact.get("methodology"), dict) else {}
+    row = {
+        "commit": commit,
+        "commit_short": str(artifact.get("commit_short") or commit[:8]),
+        "date": str(artifact.get("date") or ""),
+        "benchmark": benchmark,
+        "mode": mode,
+        "headline_score": headline_score,
+        "answer_model": str(artifact.get("answer_model") or methodology.get("answer_model") or ""),
+        "judge_model": str(artifact.get("judge_model") or methodology.get("judge_model") or ""),
+        "context_chunks": str(artifact.get("context_chunks") or methodology.get("context_chunks") or ""),
+        "search_limit": str(artifact.get("search_limit") or methodology.get("search_limit") or ""),
+        "note": build_history_note(artifact, artifact_rows),
+    }
+    write_history_row(row, history_path)
 
 
 def is_non_adversarial(row: dict) -> bool:
@@ -138,6 +281,45 @@ def parse_log_stats(path: Path) -> dict[str, LogStats]:
     return parsed
 
 
+def artifact_commit_sha(path: Path) -> str | None:
+    match = ARTIFACT_COMMIT_RE.match(path.name)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def verify_collection_commit_coupling(rows: list[dict], artifact_path: Path, qdrant_url: str) -> int:
+    artifact_sha = artifact_commit_sha(artifact_path)
+    if artifact_sha is None:
+        print(
+            f"PARSE ERROR: could not infer artifact commit SHA from filename {artifact_path.name}",
+            file=sys.stderr,
+        )
+        return EXIT_PARSE_ERROR
+
+    client = QdrantClient(url=qdrant_url)
+    conv_ids = sorted({conv_id_for(row) for row in rows})
+    exit_code = EXIT_OK
+    for conv_id in conv_ids:
+        collection = f"locomo_lb_{conv_id.replace('-', '_')}"
+        points, _ = client.scroll(collection_name=collection, limit=1, with_payload=True, with_vectors=False)
+        if not points:
+            print(f"MISMATCH {collection}: collection empty or missing sample payload", file=sys.stderr)
+            exit_code = EXIT_MISMATCH
+            continue
+        payload = points[0].payload or {}
+        ingest_sha = payload.get("_ingest_commit_sha")
+        if ingest_sha != artifact_sha:
+            print(
+                f"MISMATCH {collection}: artifact commit {artifact_sha} != collection ingest {ingest_sha}",
+                file=sys.stderr,
+            )
+            exit_code = EXIT_MISMATCH
+            continue
+        print(f"COUPLED {collection}: artifact commit matches ingest SHA {artifact_sha[:12]}")
+    return exit_code
+
+
 def compare_stats(artifact: dict[str, ArtifactStats], log_stats: dict[str, LogStats], tolerance_pp: float) -> int:
     if not log_stats:
         print("PARSE ERROR: no per-conversation score lines found in log", file=sys.stderr)
@@ -179,20 +361,48 @@ def compare_stats(artifact: dict[str, ArtifactStats], log_stats: dict[str, LogSt
     return exit_code
 
 
+def overall_score_for(artifact_stats: dict[str, ArtifactStats]) -> str:
+    if not artifact_stats:
+        return "ERROR"
+    overall_correct = sum(stat.correct for stat in artifact_stats.values())
+    overall_total = sum(stat.total for stat in artifact_stats.values())
+    if not overall_total:
+        return "ERROR"
+    return f"{overall_correct / overall_total * 100.0:.2f}"
+
+
 def main() -> int:
     args = parse_args()
-    rows = load_rows(Path(args.artifact))
+    artifact_path = Path(args.artifact)
+    try:
+        artifact_payload = load_json(artifact_path)
+    except (OSError, json.JSONDecodeError):
+        print("PARSE ERROR: artifact JSON could not be loaded", file=sys.stderr)
+        artifact_payload = {}
+    rows = extract_rows(artifact_payload)
+    artifact_data = artifact_payload if isinstance(artifact_payload, dict) else {}
     if not rows:
         print("PARSE ERROR: artifact did not contain any benchmark rows", file=sys.stderr)
-        return EXIT_PARSE_ERROR
 
     artifact_stats = compute_artifact_stats(rows)
     if not artifact_stats:
         print("PARSE ERROR: artifact did not contain any non-adversarial rows", file=sys.stderr)
-        return EXIT_PARSE_ERROR
 
     log_stats = parse_log_stats(Path(args.log))
-    return compare_stats(artifact_stats, log_stats, args.tolerance_pp)
+    stats_exit = compare_stats(artifact_stats, log_stats, args.tolerance_pp) if (artifact_stats and log_stats) else EXIT_PARSE_ERROR
+    coupling_exit = verify_collection_commit_coupling(rows, artifact_path, args.qdrant_url) if rows else EXIT_PARSE_ERROR
+
+    if stats_exit == EXIT_OK and coupling_exit == EXIT_OK:
+        headline_score = overall_score_for(artifact_stats)
+    else:
+        headline_score = "ERROR"
+    append_history_row(artifact_data, rows, headline_score, artifact_path, history_path=HISTORY_FILE)
+
+    if stats_exit == EXIT_PARSE_ERROR or coupling_exit == EXIT_PARSE_ERROR:
+        return EXIT_PARSE_ERROR
+    if stats_exit == EXIT_MISMATCH or coupling_exit == EXIT_MISMATCH:
+        return EXIT_MISMATCH
+    return EXIT_OK
 
 
 if __name__ == "__main__":

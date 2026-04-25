@@ -25,7 +25,7 @@ Examples:
 "Things are going well." -> 0,1,0
 "BTC went up today." -> 4,2,2
 "BrandA DACH revenue hit €580K in Feb 2026, up 23% MoM." -> 10,9,10
-"The user's family member had a medical procedure at a major hospital." -> 10,9,10
+"The team scheduled a system migration window for next quarter." -> 10,9,10
 
 Memory: "{text}"
 

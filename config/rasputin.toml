@@ -12,6 +12,10 @@ port = 6380
 graph_name = "brain"
 disabled = false
 
+[graph_store]
+sqlite_path = "data/graph.db"
+enabled = true
+
 [embeddings]
 provider = "gemini"
 fallback = "ollama"
@@ -25,7 +29,7 @@ prefix_doc = "search_document: "
 provider = "qwen3"
 fallback = "local"
 model = "Qwen/Qwen3-Reranker-0.6B"
-url = "http://192.168.1.41:9091/rerank"
+url = "http://localhost:9091/rerank"  # set to remote inference host if running off-box
 timeout = 30
 enabled = true
 

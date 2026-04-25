@@ -12,7 +12,7 @@ will improve retrieval quality over nomic-embed-text (768d native).
 ## Setup
 
 - **Baseline:** nomic-embed-text on local Ollama (22ms/embed)
-- **Test:** qwen3-embedding:8b on Sunbreaker (192.168.1.69, ~200ms/embed over LAN)
+- **Test:** qwen3-embedding:8b on a remote inference host (~200ms/embed over LAN)
 - Both use Qdrant collections with 768d vectors
 - qwen3 output truncated from 4096d to 768d + L2 normalized
 

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Monitor LoCoMo benchmark progress — prints when a conversation completes."""
 import json
+import os
 import time
+from pathlib import Path
 
-CP = "/home/josh/.openclaw/workspace/rasputin-memory/benchmarks/results/locomo-leaderboard-checkpoint.json"
+REPO_ROOT = Path(os.environ.get("REPO_ROOT") or os.popen("git rev-parse --show-toplevel").read().strip() or ".")
+CP = str(REPO_ROOT / "benchmarks" / "results" / "locomo-leaderboard-checkpoint.json")
 EXPECTED = {'conv-26':199,'conv-30':105,'conv-41':193,'conv-42':260,'conv-43':242,'conv-44':158,'conv-47':190,'conv-48':239,'conv-49':196,'conv-50':204}
 TOTAL_QA = sum(EXPECTED.values())
 

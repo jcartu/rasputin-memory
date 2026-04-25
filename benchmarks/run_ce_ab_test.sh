@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 trap '' USR1 USR2 HUP
-cd /home/josh/.openclaw/workspace/rasputin-memory
+cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 export QDRANT_URL="http://localhost:6333"
 export EMBED_URL="http://localhost:11434/api/embed"
@@ -20,11 +20,11 @@ export GEMINI_API_KEY="$GEMINI_API_KEY"
 
 echo "=== Cross-Encoder A/B Test: L-6 vs L-12 ==="
 echo "Start: $(date)"
-echo "Arcstrider 192.168.1.41 — L-6 on :9091, L-12 on :9092"
+echo "Cross-encoder host: ${CROSS_ENCODER_HOST:-localhost} — L-6 on :9091, L-12 on :9092"
 echo ""
 
 echo "--- Run A: L-6 (ms-marco-MiniLM-L-6-v2) conv-0 ---"
-export CROSS_ENCODER_URL="http://192.168.1.41:9091/rerank"
+export CROSS_ENCODER_URL="http://${CROSS_ENCODER_HOST:-localhost}:9091/rerank"  # override CROSS_ENCODER_HOST for remote inference host
 export BENCH_CHECKPOINT="ce-ab-L6-checkpoint.json"
 rm -f "benchmarks/results/$BENCH_CHECKPOINT"
 python3 -u benchmarks/locomo_leaderboard_bench.py --conversations 0 --reset 2>&1
@@ -34,7 +34,7 @@ echo "L-6 done: $(date)"
 
 echo ""
 echo "--- Run B: L-12 (ms-marco-MiniLM-L-12-v2) conv-0 ---"
-export CROSS_ENCODER_URL="http://192.168.1.41:9092/rerank"
+export CROSS_ENCODER_URL="http://${CROSS_ENCODER_HOST:-localhost}:9092/rerank"  # override CROSS_ENCODER_HOST for remote inference host
 export BENCH_CHECKPOINT="ce-ab-L12-checkpoint.json"
 rm -f "benchmarks/results/$BENCH_CHECKPOINT"
 python3 -u benchmarks/locomo_leaderboard_bench.py --conversations 0 --reset 2>&1

@@ -305,7 +305,7 @@ url = "http://localhost:11434/api/embed"
 
 [reranker]
 provider = "qwen3"                 # Qwen3-Reranker-0.6B
-url = "http://192.168.1.41:9091/rerank"
+url = "http://localhost:9091/rerank"  # set to remote inference host if running off-box
 timeout = 30
 enabled = true
 

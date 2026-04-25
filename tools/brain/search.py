@@ -20,6 +20,12 @@ import os as _os
 SCORE_BREAKDOWN = _os.environ.get("SCORE_BREAKDOWN", "0") == "1"
 CROSS_ENCODER_ENABLED = _os.environ.get("CROSS_ENCODER", "1") == "1"
 
+# Phase B — four-partition parallel retrieval (Hindsight parity). Env vars are read at
+# call time inside _four_lane_search() / hybrid_search() so tests and runtime toggles
+# take effect without module reload.
+
+_lane_pool = concurrent.futures.ThreadPoolExecutor(max_workers=4, thread_name_prefix="lane")
+
 _access_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2, thread_name_prefix="access-track")
 
 _YEAR_PATTERN = _re.compile(r"\b(20[0-2]\d|19\d{2})\b")
@@ -138,6 +144,7 @@ def qdrant_search(
     source_filter: Optional[str] = None,
     collection: Optional[str] = None,
     chunk_type_filter: Optional[str] = None,
+    fact_type_filter: Optional[str] = None,
 ) -> list[dict[str, Any]]:
     try:
         vector = embedding.get_embedding(query)
@@ -150,6 +157,8 @@ def qdrant_search(
         conditions.append(FieldCondition(key="source", match=MatchValue(value=source_filter)))
     if chunk_type_filter:
         conditions.append(FieldCondition(key="chunk_type", match=MatchValue(value=chunk_type_filter)))
+    if fact_type_filter:
+        conditions.append(FieldCondition(key="fact_type", match=MatchValue(value=fact_type_filter)))
     search_filter = Filter(must=conditions) if conditions else None
 
     target_collection = collection or _state.COLLECTION
@@ -294,6 +303,81 @@ def _decompose_query_intent(query: str) -> list[str]:
     return [query]
 
 
+def _four_lane_search(
+    query: str,
+    collection: Optional[str],
+    source_filter: Optional[str],
+) -> dict[str, list[dict[str, Any]]]:
+    """Hindsight-parity parallel retrieval: 4 semantic partitions.
+
+    Four lanes: window + fact_world + fact_experience + fact_inference.
+    BM25 remains as a rerank-stage fusion signal via tools/bm25_search.py;
+    a standalone FTS5-backed BM25 lane is deferred (see docs/BACKLOG.md).
+
+    Returns dict {lane_name -> ordered candidate list}. Callers flat-concat
+    (this phase) or RRF-fuse (Phase C).
+    """
+    # Read budgets at call time so env overrides take effect without reload.
+    lane_windows = int(_os.environ.get("BENCH_LANE_WINDOWS", "113"))
+    lane_fact_w = int(_os.environ.get("BENCH_LANE_FACT_W", "20"))
+    lane_fact_e = int(_os.environ.get("BENCH_LANE_FACT_E", "10"))
+    lane_fact_i = int(_os.environ.get("BENCH_LANE_FACT_I", "8"))
+
+    def _window_lane() -> list[dict[str, Any]]:
+        return qdrant_search(
+            query,
+            limit=lane_windows,
+            source_filter=source_filter,
+            collection=collection,
+            chunk_type_filter="window",
+        )
+
+    def _fact_world_lane() -> list[dict[str, Any]]:
+        return qdrant_search(
+            query,
+            limit=lane_fact_w,
+            source_filter=source_filter,
+            collection=collection,
+            chunk_type_filter="fact",
+            fact_type_filter="world",
+        )
+
+    def _fact_experience_lane() -> list[dict[str, Any]]:
+        return qdrant_search(
+            query,
+            limit=lane_fact_e,
+            source_filter=source_filter,
+            collection=collection,
+            chunk_type_filter="fact",
+            fact_type_filter="experience",
+        )
+
+    def _fact_inference_lane() -> list[dict[str, Any]]:
+        return qdrant_search(
+            query,
+            limit=lane_fact_i,
+            source_filter=source_filter,
+            collection=collection,
+            chunk_type_filter="fact",
+            fact_type_filter="inference",
+        )
+
+    futures = {
+        "window": _lane_pool.submit(_window_lane),
+        "world": _lane_pool.submit(_fact_world_lane),
+        "exp": _lane_pool.submit(_fact_experience_lane),
+        "inf": _lane_pool.submit(_fact_inference_lane),
+    }
+    results: dict[str, list[dict[str, Any]]] = {}
+    for name, fut in futures.items():
+        try:
+            results[name] = fut.result(timeout=10)
+        except Exception as exc:
+            _state.logger.warning("Lane %s failed/timeout: %s", name, exc)
+            results[name] = []
+    return results
+
+
 def _resolve_contradictions_in_results(results: list[dict[str, Any]]) -> None:
     supersede_map: dict[Any, set[Any]] = {}
     for row in results:
@@ -343,17 +427,35 @@ def hybrid_search(
             queries = [q for q in expanded if not (q in seen or seen.add(q))]  # type: ignore[func-returns-value]
 
     fetch_limit = limit * 4
-    all_qdrant_results = []
-    for expanded_query in queries:
-        qdrant_kwargs: dict[str, Any] = {
-            "limit": fetch_limit,
-            "source_filter": source_filter,
-        }
-        if collection:
-            qdrant_kwargs["collection"] = collection
-        if chunk_type:
-            qdrant_kwargs["chunk_type_filter"] = chunk_type
-        all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
+    all_qdrant_results: list[dict[str, Any]] = []
+
+    if _os.environ.get("FOUR_LANE", "1") != "0":
+        # Phase B: four-partition parallel retrieval across expanded queries.
+        # Phase C: optionally fuse lanes via RRF when RRF_FUSION=1.
+        rrf_enabled = _os.environ.get("RRF_FUSION", "0") == "1"
+        for expanded_query in queries:
+            lane_results = _four_lane_search(expanded_query, collection, source_filter)
+            if rrf_enabled:
+                from brain.fusion import reciprocal_rank_fusion
+
+                fused = reciprocal_rank_fusion(lane_results, k=60)
+                # Cap at limit*2+60, matching parity plan §4.3 pre-CE budget
+                all_qdrant_results.extend(fused[: min(limit * 2 + 60, 120)])
+            else:
+                for lane_name, lane_hits in lane_results.items():
+                    all_qdrant_results.extend(lane_hits)
+    else:
+        # Legacy: single qdrant_search per expanded query.
+        for expanded_query in queries:
+            qdrant_kwargs: dict[str, Any] = {
+                "limit": fetch_limit,
+                "source_filter": source_filter,
+            }
+            if collection:
+                qdrant_kwargs["collection"] = collection
+            if chunk_type:
+                qdrant_kwargs["chunk_type_filter"] = chunk_type
+            all_qdrant_results.extend(qdrant_search(expanded_query, **qdrant_kwargs))
 
     constraint_hits: list[dict[str, Any]] = []
     try:

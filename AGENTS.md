@@ -32,7 +32,7 @@ tests/               pytest suite with MockQdrant/MockRedis fixtures
 
 Runtime config lives in `config/rasputin.toml` with env var overrides.  See `tools/config.py` for the override mapping.  Key sections: `[server]`, `[qdrant]`, `[graph]`, `[embeddings]`, `[reranker]`, `[amac]`, `[reflect]`.
 
-Retrieval pool size is tunable via `BENCH_LANE_WINDOWS` (default 45) and `BENCH_LANE_FACTS` (default 15).  Set to 75/25 for single-hop-heavy workloads (+4.2pp single-hop, −1.2pp open-domain).
+Retrieval pool size is tunable via `BENCH_LANE_WINDOWS` (default 113), `BENCH_LANE_FACT_W` (default 20), `BENCH_LANE_FACT_E` (default 10), and `BENCH_LANE_FACT_I` (default 8). Total per-query budget: 151. Four-partition routing is on by default (Sprint 2 Ablation C, 2026-04-25, +2.14pp vs S1 Mean); set `FOUR_LANE=0` to disable. RRF fusion is off by default (Ablation D 2026-04-25 verified RRF doesn't help at lane budget 151); set `RRF_FUSION=1` to enable for narrow-budget operating points.
 
 ## Running
 
@@ -93,6 +93,26 @@ The canonical v0.9.1-honest baseline is
 `benchmarks/results/59c0a369...-locomo-production.json` at 72.53% non-adv.
 Recorded in `history.csv` row 59c0a369. Do not replace, quarantine, or rename
 this file. Any future baseline comparisons must cite it by filename + row.
+
+**Invariant 5 — GPU allocation.**
+Added 2026-04-22 after the Sprint 1 Exit Gate throughput failure where Qwen3-32B-AWQ
+was deployed to GPU1 (RTX 5090, 32GB) and ran at 4.6 tok/s under memory pressure,
+causing the bench to time out on conv 1/10 after 60 minutes.
+
+- Models with VRAM footprint > 25GB deploy to the **RTX PRO 6000 Blackwells (nvidia-smi index 0 or index 2)** only.
+- The **RTX 5090 (nvidia-smi index 1)** is reserved for small models (<25GB footprint) and low-duty services (e.g. reranker-0.6B, embed-4B). Never deploy large (>25GB) models there even if VRAM technically fits — the 32GB budget leaves no headroom for chat-template + prefix cache + KV growth, and throughput collapses.
+- Always use `CUDA_DEVICE_ORDER=PCI_BUS_ID` + explicit `CUDA_VISIBLE_DEVICES=<0|1|2>` when launching vLLM. Never rely on default ordering.
+- 122B tensor-parallel deployments on GPU0+GPU2 are deprecated for Sprint 1+; local 32B-AWQ on a single Pro 6000 is sufficient.
+
+**Invariant 6 — Production service isolation.**
+Added 2026-04-22 after an overnight Sprint 1 Exit Gate halt where restarting the bench
+API server on `:7777` would have disrupted production services holding 134,919 Qdrant
+points and serving `cartu-proxy`, `casino-dashboard`, `honcho-api`, `enrich-daemon`.
+
+- Port `:7777` (pm2 `hybrid-brain`, `second_brain_*` / `memories_archive` / `episodes` collections) and any Rasputin MCP server running from the main `rasputin-memory` worktree are **PRODUCTION**. Sprint/bench work never binds to these ports, never restarts these services, and never writes to their Qdrant collections.
+- Production Qdrant collections (forbidden write targets from bench code): `second_brain_v3`, `second_brain_v2`, `memories_archive`, `episodes`, and all `lme_*` collections.
+- Bench API services bind to `:7779` or higher. Bench Qdrant collections use the `locomo_lb_conv_*` or `memory_units_*` prefixes exclusively.
+- If any bench code path is found writing to a forbidden collection, treat as a stop-the-world bug. Fix before the next bench run.
 
 ## Code Style
 
